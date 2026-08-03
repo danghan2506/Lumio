@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Redirect } from "expo-router";
 import {
   View,
   Text,
@@ -8,10 +9,16 @@ import {
   StatusBar,
 } from "react-native";
 import { colors } from "@/theme/colors";
+import { useOnboardingStore } from "@/store/useOnboardingStore";
 
 export default function DesignSystemShowcase() {
+  const hasSeenOnboarding = useOnboardingStore((state) => state.hasSeenOnboarding);
   const [pressedBtn, setPressedBtn] = useState<string | null>(null);
   const [selectedOption, setSelectedOption] = useState<number | null>(1);
+
+  if (!hasSeenOnboarding) {
+    return <Redirect href={"/onboarding" as any} />;
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.deepIndigo }}>
