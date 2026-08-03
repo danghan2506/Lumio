@@ -3,3 +3,102 @@
 @import "tailwindcss/utilities.css";
 
 @import "nativewind/theme";
+
+@layer theme {
+  @theme {
+    /* Color tokens */
+    --color-deep-indigo: #241B4A;
+    --color-canvas-dark-end: #4B3FA8;
+    --color-lumio-coral: #FF6B57;
+    --color-daylight-amber: #FFB74D;
+    --color-mint: #35D0A0;
+    --color-lavender-mist: #EAE6FF;
+    --color-cream: #FFFBF4;
+    --color-slate: #5E5A80;
+
+    /* Font tokens */
+    --font-display: Fredoka_700Bold, Fredoka, sans-serif;
+    --font-sans: PlusJakartaSans_500Medium, PlusJakartaSans, sans-serif;
+    --font-mono: JetBrainsMono_500Medium, monospace;
+  }
+}
+
+@layer utilities {
+  /* Gradients */
+  .bg-canvas-gradient {
+    background-color: #241B4A;
+  }
+  
+  .bg-ember-gradient {
+    background-color: #FF6B57;
+  }
+
+  /* Tactile Buttons */
+  .btn-primary {
+    background-color: #FF6B57;
+    color: #FFFBF4;
+    border-radius: 9999px;
+    min-height: 48px;
+    padding-left: 24px;
+    padding-right: 24px;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .btn-secondary {
+    background-color: #241B4A;
+    border-width: 1.5px;
+    border-color: #5E5A80;
+    color: #FFFBF4;
+    border-radius: 9999px;
+    min-height: 48px;
+    padding-left: 24px;
+    padding-right: 24px;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .btn-ghost {
+    background-color: transparent;
+    color: #5E5A80;
+    border-radius: 9999px;
+    min-height: 48px;
+    padding-left: 16px;
+    padding-right: 16px;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* Card Squircles */
+  .card-squircle {
+    border-radius: 24px;
+    background-color: #EAE6FF;
+    padding: 20px;
+  }
+
+  .card-dark {
+    border-radius: 24px;
+    background-color: #241B4A;
+    border-width: 1px;
+    border-color: #5E5A80;
+    padding: 20px;
+  }
+
+  .card-chip {
+    border-radius: 12px;
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .focus-ring-coral {
+    border-width: 2px;
+    border-color: #FF6B57;
+  }
+
+  .min-target-floor {
+    min-height: 48px;
+    min-width: 48px;
+  }
+}
