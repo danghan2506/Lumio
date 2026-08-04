@@ -90,9 +90,9 @@ export default function OnboardingScreen() {
   const renderSlideGraphic = (slideId: string) => {
     switch (slideId) {
       case '1':
-        // Slide 1: Lumi Mascot & Floating Multilingual Speech Bubbles (EN, ES, FR)
+        // Slide 1: Lumi Mascot & Organic Floating Speech Bubbles (EN, ES, FR, JP)
         return (
-          <View style={{ width: 320, height: 240, justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ width: 340, height: 260, justifyContent: 'center', alignItems: 'center' }}>
             {/* Lumi Mascot Image */}
             <View
               style={{
@@ -116,15 +116,16 @@ export default function OnboardingScreen() {
               />
             </View>
 
-            {/* Speech Bubble 1 (English) - Top Left */}
+            {/* Bubble 1 (English) - Top Left, -6 deg tilt */}
             <View
               style={{
                 position: 'absolute',
-                top: 0,
-                left: 0,
+                top: 5,
+                left: 2,
+                transform: [{ rotate: '-6deg' }],
                 backgroundColor: '#FFFBF4',
                 paddingHorizontal: 12,
-                paddingVertical: 8,
+                paddingVertical: 7,
                 borderRadius: 16,
                 borderBottomRightRadius: 4,
                 shadowColor: '#000',
@@ -149,15 +150,16 @@ export default function OnboardingScreen() {
               </Text>
             </View>
 
-            {/* Speech Bubble 2 (Spanish) - Top Right */}
+            {/* Bubble 2 (Spanish) - Top Right Staggered, +5 deg tilt */}
             <View
               style={{
                 position: 'absolute',
-                top: 0,
+                top: 22,
                 right: 0,
+                transform: [{ rotate: '5deg' }],
                 backgroundColor: colors.lumioCoral,
                 paddingHorizontal: 12,
-                paddingVertical: 8,
+                paddingVertical: 7,
                 borderRadius: 16,
                 borderBottomLeftRadius: 4,
                 shadowColor: colors.lumioCoral,
@@ -182,16 +184,18 @@ export default function OnboardingScreen() {
               </Text>
             </View>
 
-            {/* Speech Bubble 3 (French) - Bottom Center */}
+            {/* Bubble 3 (French) - Bottom Left Staggered, -4 deg tilt */}
             <View
               style={{
                 position: 'absolute',
-                bottom: 0,
+                bottom: 15,
+                left: 0,
+                transform: [{ rotate: '-4deg' }],
                 backgroundColor: '#31265E',
-                borderWidth: 1,
+                borderWidth: 1.5,
                 borderColor: colors.daylightAmber,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
+                paddingHorizontal: 12,
+                paddingVertical: 7,
                 borderRadius: 18,
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 4 },
@@ -212,6 +216,41 @@ export default function OnboardingScreen() {
                 }}
               >
                 Bonjour! Enchanté ✨
+              </Text>
+            </View>
+
+            {/* Bubble 4 (Japanese) - Bottom Right Staggered, +7 deg tilt */}
+            <View
+              style={{
+                position: 'absolute',
+                bottom: 5,
+                right: 8,
+                transform: [{ rotate: '7deg' }],
+                backgroundColor: 'rgba(53, 208, 160, 0.15)',
+                borderWidth: 1,
+                borderColor: colors.mint,
+                paddingHorizontal: 12,
+                paddingVertical: 7,
+                borderRadius: 16,
+                shadowColor: colors.mint,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 4,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <Text style={{ fontSize: 13 }}>🇯🇵</Text>
+              <Text
+                style={{
+                  fontFamily: 'PlusJakartaSans_700Bold',
+                  fontSize: 13,
+                  color: colors.mint,
+                }}
+              >
+                こんにちは!
               </Text>
             </View>
           </View>
