@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,14 +7,16 @@ import {
   Pressable,
   FlatList,
   Dimensions,
+  Image,
   NativeSyntheticEvent,
   NativeScrollEvent,
-} from "react-native";
-import { useRouter } from "expo-router";
-import { colors } from "@/theme/colors";
-import { useOnboardingStore } from "@/store/useOnboardingStore";
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { colors } from '@/theme/colors';
+import { images } from '@/constants/images';
+import { useOnboardingStore } from '@/store/useOnboardingStore';
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface SlideData {
   id: string;
@@ -23,39 +25,32 @@ interface SlideData {
   badgeColor: string;
   title: string;
   subtitle: string;
-  iconSymbol: string;
 }
 
 const SLIDES: SlideData[] = [
   {
-    id: "1",
-    badge: "AI VOICE TUTOR",
-    badgeBg: "rgba(255, 107, 87, 0.15)",
+    id: '1',
+    badge: 'AI VOICE TUTOR',
+    badgeBg: 'rgba(255, 107, 87, 0.15)',
     badgeColor: colors.lumioCoral,
-    title: "Học giao tiếp cùng Lumi",
-    subtitle:
-      "Luyện phản xạ nói tiếng Anh/Tây Ban Nha tự nhiên 24/7 với Trợ lý AI thông minh.",
-    iconSymbol: "🔥",
+    title: 'Học giao tiếp cùng Lumi',
+    subtitle: 'Luyện phản xạ nói tiếng Anh/Tây Ban Nha tự nhiên 24/7 với Trợ lý AI thông minh.',
   },
   {
-    id: "2",
-    badge: "SPACED REPETITION",
-    badgeBg: "rgba(53, 208, 160, 0.15)",
+    id: '2',
+    badge: 'SPACED REPETITION',
+    badgeBg: 'rgba(53, 208, 160, 0.15)',
     badgeColor: colors.mint,
-    title: "Học từ vựng thông minh",
-    subtitle:
-      "Ghi nhớ từ vựng lâu hơn gấp 5 lần nhờ phương pháp lặp lại ngắt quãng khoa học.",
-    iconSymbol: "🧠",
+    title: 'Học từ vựng thông minh',
+    subtitle: 'Ghi nhớ từ vựng lâu hơn gấp 5 lần nhờ phương pháp lặp lại ngắt quãng khoa học.',
   },
   {
-    id: "3",
-    badge: "STREAKS & REWARDS",
-    badgeBg: "rgba(255, 183, 77, 0.15)",
+    id: '3',
+    badge: 'STREAKS & REWARDS',
+    badgeBg: 'rgba(255, 183, 77, 0.15)',
     badgeColor: colors.daylightAmber,
-    title: "Duy trì thói quen & Streak",
-    subtitle:
-      "Tích lũy điểm thưởng, giữ vững thói quen và cảm nhận sự tiến bộ mỗi ngày.",
-    iconSymbol: "⚡",
+    title: 'Duy trì thói quen & Streak',
+    subtitle: 'Tích lũy điểm thưởng, giữ vững thói quen và cảm nhận sự tiến bộ mỗi ngày.',
   },
 ];
 
@@ -67,7 +62,7 @@ export default function OnboardingScreen() {
 
   const handleComplete = () => {
     finishOnboarding();
-    router.replace("/");
+    router.replace('/');
   };
 
   const handleNext = () => {
@@ -92,6 +87,320 @@ export default function OnboardingScreen() {
     }
   };
 
+  const renderSlideGraphic = (slideId: string) => {
+    switch (slideId) {
+      case '1':
+        // Slide 1: Lumi Mascot & Multilingual Speech Bubbles (EN, ES, FR)
+        return (
+          <View style={{ width: 300, height: 260, justifyContent: 'center', alignItems: 'center' }}>
+            {/* Ambient Background Glow */}
+            <View
+              style={{
+                position: 'absolute',
+                width: 180,
+                height: 180,
+                borderRadius: 90,
+                backgroundColor: 'rgba(255, 107, 87, 0.12)',
+              }}
+            />
+
+            {/* Lumi Mascot Image */}
+            <View
+              style={{
+                width: 130,
+                height: 130,
+                borderRadius: 65,
+                overflow: 'hidden',
+                borderWidth: 3,
+                borderColor: colors.lumioCoral,
+                shadowColor: colors.lumioCoral,
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.35,
+                shadowRadius: 16,
+                elevation: 8,
+              }}
+            >
+              <Image
+                source={images.mascot}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode="cover"
+              />
+            </View>
+
+            {/* Speech Bubble 1 (English) - Top Left */}
+            <View
+              style={{
+                position: 'absolute',
+                top: 10,
+                left: 10,
+                backgroundColor: '#FFFBF4',
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 16,
+                borderBottomRightRadius: 4,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 4,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <Text style={{ fontSize: 13 }}>🇬🇧</Text>
+              <Text
+                style={{
+                  fontFamily: 'PlusJakartaSans_700Bold',
+                  fontSize: 13,
+                  color: colors.deepIndigo,
+                }}
+              >
+                Hello! Ready?
+              </Text>
+            </View>
+
+            {/* Speech Bubble 2 (Spanish) - Top Right */}
+            <View
+              style={{
+                position: 'absolute',
+                top: 25,
+                right: 5,
+                backgroundColor: colors.lumioCoral,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 16,
+                borderBottomLeftRadius: 4,
+                shadowColor: colors.lumioCoral,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+                elevation: 4,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <Text style={{ fontSize: 13 }}>🇪🇸</Text>
+              <Text
+                style={{
+                  fontFamily: 'PlusJakartaSans_700Bold',
+                  fontSize: 13,
+                  color: colors.cream,
+                }}
+              >
+                ¡Hola! ¿Qué tal?
+              </Text>
+            </View>
+
+            {/* Speech Bubble 3 (French) - Bottom Center */}
+            <View
+              style={{
+                position: 'absolute',
+                bottom: 12,
+                backgroundColor: '#31265E',
+                borderWidth: 1,
+                borderColor: colors.daylightAmber,
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 18,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 4,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <Text style={{ fontSize: 13 }}>🇫🇷</Text>
+              <Text
+                style={{
+                  fontFamily: 'PlusJakartaSans_600SemiBold',
+                  fontSize: 13,
+                  color: colors.daylightAmber,
+                }}
+              >
+                Bonjour! Enchanté ✨
+              </Text>
+            </View>
+          </View>
+        );
+
+      case '2':
+        // Slide 2: Spaced Repetition Vocabulary Cards
+        return (
+          <View style={{ width: 280, height: 240, justifyContent: 'center', alignItems: 'center', gap: 12 }}>
+            {/* Top Main Vocabulary Card */}
+            <View
+              style={{
+                width: '100%',
+                backgroundColor: '#31265E',
+                borderRadius: 20,
+                padding: 16,
+                borderWidth: 1.5,
+                borderColor: colors.mint,
+                shadowColor: colors.mint,
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.25,
+                shadowRadius: 12,
+                elevation: 6,
+                gap: 8,
+              }}
+            >
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text
+                  style={{
+                    fontFamily: 'Fredoka_700Bold',
+                    fontSize: 20,
+                    color: colors.cream,
+                  }}
+                >
+                  El libro
+                </Text>
+                <View
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 12,
+                    backgroundColor: colors.mint,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: colors.deepIndigo }}>
+                    ✓
+                  </Text>
+                </View>
+              </View>
+              <Text
+                style={{
+                  fontFamily: 'PlusJakartaSans_500Medium',
+                  fontSize: 14,
+                  color: colors.lavenderMist,
+                }}
+              >
+                "The book" — Noun (masculine)
+              </Text>
+
+              {/* Progress retention bar */}
+              <View style={{ gap: 4, marginTop: 4 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 11, color: colors.mint }}>
+                    98% Memory Retention
+                  </Text>
+                  <Text style={{ fontFamily: 'JetBrainsMono_500Medium', fontSize: 11, color: colors.slate }}>
+                    Review in 7d
+                  </Text>
+                </View>
+                <View style={{ height: 6, width: '100%', backgroundColor: 'rgba(234, 230, 255, 0.1)', borderRadius: 3 }}>
+                  <View style={{ height: 6, width: '98%', backgroundColor: colors.mint, borderRadius: 3 }} />
+                </View>
+              </View>
+            </View>
+
+            {/* Stacked Sub Card */}
+            <View
+              style={{
+                width: '92%',
+                backgroundColor: 'rgba(49, 38, 94, 0.6)',
+                borderRadius: 16,
+                padding: 12,
+                borderWidth: 1,
+                borderColor: 'rgba(234, 230, 255, 0.15)',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 15, color: colors.lavenderMist }}>
+                La manzana
+              </Text>
+              <Text style={{ fontFamily: 'JetBrainsMono_500Medium', fontSize: 12, color: colors.daylightAmber }}>
+                Next: 3d
+              </Text>
+            </View>
+          </View>
+        );
+
+      case '3':
+        // Slide 3: Gamified Streak & XP Rewards
+        return (
+          <View style={{ width: 280, height: 240, justifyContent: 'center', alignItems: 'center', gap: 16 }}>
+            {/* Streak Card */}
+            <View
+              style={{
+                width: '100%',
+                backgroundColor: '#31265E',
+                borderRadius: 24,
+                padding: 20,
+                alignItems: 'center',
+                gap: 12,
+                borderWidth: 1.5,
+                borderColor: colors.daylightAmber,
+                shadowColor: colors.daylightAmber,
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.3,
+                shadowRadius: 16,
+                elevation: 8,
+              }}
+            >
+              {/* Flame Badge */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={{ fontSize: 36 }}>⚡</Text>
+                <View>
+                  <Text
+                    style={{
+                      fontFamily: 'Fredoka_700Bold',
+                      fontSize: 24,
+                      color: colors.daylightAmber,
+                    }}
+                  >
+                    7 DAY STREAK
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: 'PlusJakartaSans_500Medium',
+                      fontSize: 13,
+                      color: colors.lavenderMist,
+                    }}
+                  >
+                    You're on a roll! Keep it up!
+                  </Text>
+                </View>
+              </View>
+
+              {/* XP Pill */}
+              <View
+                style={{
+                  backgroundColor: 'rgba(255, 183, 77, 0.15)',
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  borderRadius: 9999,
+                  borderWidth: 1,
+                  borderColor: colors.daylightAmber,
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: 'JetBrainsMono_500Medium',
+                    fontSize: 15,
+                    color: colors.daylightAmber,
+                  }}
+                >
+                  +250 XP EARNED TODAY
+                </Text>
+              </View>
+            </View>
+          </View>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.deepIndigo }}>
       <StatusBar barStyle="light-content" />
@@ -101,15 +410,15 @@ export default function OnboardingScreen() {
         style={{
           height: 48,
           paddingHorizontal: 24,
-          justifyContent: "center",
-          alignItems: "flex-end",
+          justifyContent: 'center',
+          alignItems: 'flex-end',
         }}
       >
         {activeIndex < SLIDES.length - 1 ? (
           <Pressable onPress={handleComplete} hitSlop={12}>
             <Text
               style={{
-                fontFamily: "PlusJakartaSans_600SemiBold",
+                fontFamily: 'PlusJakartaSans_600SemiBold',
                 fontSize: 15,
                 color: colors.slate,
               }}
@@ -135,44 +444,16 @@ export default function OnboardingScreen() {
           <View
             style={{
               width: SCREEN_WIDTH,
-              paddingHorizontal: 32,
-              justifyContent: "center",
-              alignItems: "center",
-              gap: 24,
+              paddingHorizontal: 28,
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 20,
             }}
           >
-            {/* Visual Card Artwork Container */}
-            <View
-              style={{
-                width: 220,
-                height: 220,
-                borderRadius: 110,
-                backgroundColor: "rgba(234, 230, 255, 0.05)",
-                borderWidth: 1,
-                borderColor: "rgba(234, 230, 255, 0.12)",
-                justifyContent: "center",
-                alignItems: "center",
-                shadowColor: colors.lumioCoral,
-                shadowOffset: { width: 0, height: 10 },
-                shadowOpacity: 0.15,
-                shadowRadius: 20,
-              }}
-            >
-              <View
-                style={{
-                  width: 140,
-                  height: 140,
-                  borderRadius: 70,
-                  backgroundColor: colors.lavenderMist,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Text style={{ fontSize: 64 }}>{item.iconSymbol}</Text>
-              </View>
-            </View>
+            {/* Visual Graphic Component */}
+            {renderSlideGraphic(item.id)}
 
-            {/* Badge */}
+            {/* Category Badge */}
             <View
               style={{
                 backgroundColor: item.badgeBg,
@@ -183,7 +464,7 @@ export default function OnboardingScreen() {
             >
               <Text
                 style={{
-                  fontFamily: "PlusJakartaSans_700Bold",
+                  fontFamily: 'PlusJakartaSans_700Bold',
                   fontSize: 11,
                   color: item.badgeColor,
                   letterSpacing: 1.2,
@@ -194,14 +475,14 @@ export default function OnboardingScreen() {
             </View>
 
             {/* Content Text */}
-            <View style={{ gap: 12, alignItems: "center" }}>
+            <View style={{ gap: 10, alignItems: 'center' }}>
               <Text
                 style={{
-                  fontFamily: "Fredoka_700Bold",
-                  fontSize: 28,
-                  lineHeight: 34,
+                  fontFamily: 'Fredoka_700Bold',
+                  fontSize: 26,
+                  lineHeight: 32,
                   color: colors.cream,
-                  textAlign: "center",
+                  textAlign: 'center',
                   letterSpacing: 0.5,
                 }}
               >
@@ -209,11 +490,12 @@ export default function OnboardingScreen() {
               </Text>
               <Text
                 style={{
-                  fontFamily: "PlusJakartaSans_400Regular",
-                  fontSize: 16,
-                  lineHeight: 24,
+                  fontFamily: 'PlusJakartaSans_400Regular',
+                  fontSize: 15,
+                  lineHeight: 22,
                   color: colors.lavenderMist,
-                  textAlign: "center",
+                  textAlign: 'center',
+                  paddingHorizontal: 12,
                 }}
               >
                 {item.subtitle}
@@ -224,13 +506,13 @@ export default function OnboardingScreen() {
       />
 
       {/* Pagination & Bottom Action Bar */}
-      <View style={{ paddingHorizontal: 24, paddingBottom: 24, gap: 24 }}>
+      <View style={{ paddingHorizontal: 24, paddingBottom: 24, gap: 20 }}>
         {/* Pagination Dots */}
         <View
           style={{
-            flexDirection: "row",
-            justifyContent: "center",
-            alignItems: "center",
+            flexDirection: 'row',
+            justifyContent: 'center',
+            alignItems: 'center',
             gap: 8,
           }}
         >
@@ -247,7 +529,7 @@ export default function OnboardingScreen() {
                     ? index === 2
                       ? colors.daylightAmber
                       : colors.lumioCoral
-                    : "rgba(234, 230, 255, 0.25)",
+                    : 'rgba(234, 230, 255, 0.25)',
                 }}
               />
             );
@@ -262,13 +544,13 @@ export default function OnboardingScreen() {
               backgroundColor: colors.lumioCoral,
               borderRadius: 9999,
               minHeight: 52,
-              justifyContent: "center",
-              alignItems: "center",
+              justifyContent: 'center',
+              alignItems: 'center',
             }}
           >
             <Text
               style={{
-                fontFamily: "PlusJakartaSans_700Bold",
+                fontFamily: 'PlusJakartaSans_700Bold',
                 fontSize: 16,
                 color: colors.cream,
               }}
@@ -277,20 +559,20 @@ export default function OnboardingScreen() {
             </Text>
           </Pressable>
         ) : (
-          <View style={{ gap: 12 }}>
+          <View style={{ gap: 10 }}>
             <Pressable
               onPress={handleComplete}
               style={{
                 backgroundColor: colors.lumioCoral,
                 borderRadius: 9999,
                 minHeight: 52,
-                justifyContent: "center",
-                alignItems: "center",
+                justifyContent: 'center',
+                alignItems: 'center',
               }}
             >
               <Text
                 style={{
-                  fontFamily: "PlusJakartaSans_700Bold",
+                  fontFamily: 'PlusJakartaSans_700Bold',
                   fontSize: 16,
                   color: colors.cream,
                 }}
@@ -301,18 +583,18 @@ export default function OnboardingScreen() {
             <Pressable
               onPress={handleComplete}
               style={{
-                backgroundColor: "transparent",
+                backgroundColor: 'transparent',
                 borderWidth: 1.5,
                 borderColor: colors.slate,
                 borderRadius: 9999,
                 minHeight: 48,
-                justifyContent: "center",
-                alignItems: "center",
+                justifyContent: 'center',
+                alignItems: 'center',
               }}
             >
               <Text
                 style={{
-                  fontFamily: "PlusJakartaSans_600SemiBold",
+                  fontFamily: 'PlusJakartaSans_600SemiBold',
                   fontSize: 15,
                   color: colors.cream,
                 }}
