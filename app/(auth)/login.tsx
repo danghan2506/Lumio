@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, SafeAreaView, StatusBar, Image, ScrollView, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Href } from 'expo-router';
 import { colors } from '@/theme/colors';
 import { images } from '@/constants/images';
 import { LoginForm } from '@/components/auth/LoginForm';
@@ -43,7 +43,7 @@ export default function LoginScreen() {
             marginBottom: 20,
           }}
         >
-          <LoginForm onSuccess={() => router.replace('/' as any)} />
+          <LoginForm onSuccess={() => router.replace('/')} />
           <SocialAuthGroup />
         </View>
 
@@ -52,7 +52,7 @@ export default function LoginScreen() {
           <Text style={{ fontSize: 14, fontFamily: 'PlusJakartaSans_500Medium', color: colors.slate }}>
             Chưa có tài khoản?{' '}
           </Text>
-          <Pressable onPress={() => router.push('/(auth)/login' as any)}>
+          <Pressable onPress={() => router.push('/(auth)/login' as Href)}>
             <Text style={{ fontSize: 14, fontFamily: 'PlusJakartaSans_700Bold', color: colors.lumioCoral }}>
               Đăng ký ngay
             </Text>
