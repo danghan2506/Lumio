@@ -90,20 +90,9 @@ export default function OnboardingScreen() {
   const renderSlideGraphic = (slideId: string) => {
     switch (slideId) {
       case '1':
-        // Slide 1: Lumi Mascot & Multilingual Speech Bubbles (EN, ES, FR)
+        // Slide 1: Lumi Mascot & Floating Multilingual Speech Bubbles (EN, ES, FR)
         return (
-          <View style={{ width: 300, height: 260, justifyContent: 'center', alignItems: 'center' }}>
-            {/* Ambient Background Glow */}
-            <View
-              style={{
-                position: 'absolute',
-                width: 180,
-                height: 180,
-                borderRadius: 90,
-                backgroundColor: 'rgba(255, 107, 87, 0.12)',
-              }}
-            />
-
+          <View style={{ width: 320, height: 240, justifyContent: 'center', alignItems: 'center' }}>
             {/* Lumi Mascot Image */}
             <View
               style={{
@@ -131,8 +120,8 @@ export default function OnboardingScreen() {
             <View
               style={{
                 position: 'absolute',
-                top: 10,
-                left: 10,
+                top: 0,
+                left: 0,
                 backgroundColor: '#FFFBF4',
                 paddingHorizontal: 12,
                 paddingVertical: 8,
@@ -164,8 +153,8 @@ export default function OnboardingScreen() {
             <View
               style={{
                 position: 'absolute',
-                top: 25,
-                right: 5,
+                top: 0,
+                right: 0,
                 backgroundColor: colors.lumioCoral,
                 paddingHorizontal: 12,
                 paddingVertical: 8,
@@ -197,7 +186,7 @@ export default function OnboardingScreen() {
             <View
               style={{
                 position: 'absolute',
-                bottom: 12,
+                bottom: 0,
                 backgroundColor: '#31265E',
                 borderWidth: 1,
                 borderColor: colors.daylightAmber,
