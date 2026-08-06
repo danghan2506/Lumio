@@ -1,15 +1,26 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# dependencies
+# ─── Dependencies ────────────────────────────────────────────────────────────
 node_modules/
 
-# Expo
+# ─── Expo ─────────────────────────────────────────────────────────────────────
 .expo/
 dist/
 web-build/
 expo-env.d.ts
 
-# Native
+# ─── Generated native folders (Expo managed workflow) ─────────────────────────
+# Regenerated on every `npx expo run:android` / `npx expo run:ios`
+/ios/
+/android/
+
+# ─── Metro bundler ────────────────────────────────────────────────────────────
+.metro-health-check*
+
+# ─── TypeScript ───────────────────────────────────────────────────────────────
+*.tsbuildinfo
+
+# ─── Native signing / certificates (NEVER commit these) ──────────────────────
 .kotlin/
 *.orig.*
 *.jks
@@ -17,27 +28,48 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
+*.pem
+*.cer
+*.der
+*.crt
 
-# Metro
-.metro-health-check*
+# ─── Environment & secrets ────────────────────────────────────────────────────
+# .env.local, .env.production.local, etc. — contain real API keys
+.env*.local
+# Also ignore plain .env (in case someone creates one by mistake)
+.env
 
-# debug
+# ─── Debug logs ───────────────────────────────────────────────────────────────
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+*.log
 
-# macOS
+# ─── OS artifacts ─────────────────────────────────────────────────────────────
 .DS_Store
-*.pem
+Thumbs.db
+desktop.ini
 
-# local env files
-.env*.local
+# ─── Editor / IDE ─────────────────────────────────────────────────────────────
+# Keep .vscode/extensions.json & settings.json IF your team shares them.
+# Ignore personal/machine-specific state only.
+.vscode/.react/
+.idea/
+*.swp
+*.swo
 
-# typescript
-*.tsbuildinfo
+# ─── AI agent runtime state ───────────────────────────────────────────────────
+# .superpowers/ contains agent session state — not project source
+.superpowers/
+# .claude/ contains local Claude Code config (machine-specific)
+.claude/
+# .agents/ contains local skill configs — keep if you want to share with team,
+# but ignore the cache/lock artefacts
+skills-lock.json
 
-app-example
+# ─── Test artefacts ───────────────────────────────────────────────────────────
+coverage/
+.jest-cache/
 
-# generated native folders
-/ios
-/android
+# ─── Misc leftovers ───────────────────────────────────────────────────────────
+app-example/
