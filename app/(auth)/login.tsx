@@ -52,7 +52,7 @@ export default function LoginScreen() {
           <Text style={{ fontSize: 14, fontFamily: 'PlusJakartaSans_500Medium', color: colors.slate }}>
             Chưa có tài khoản?{' '}
           </Text>
-          <Pressable onPress={() => router.push('/(auth)/login' as Href)}>
+          <Pressable onPress={() => router.push('/(auth)/register' as Href)}>
             <Text style={{ fontSize: 14, fontFamily: 'PlusJakartaSans_700Bold', color: colors.lumioCoral }}>
               Đăng ký ngay
             </Text>

@@ -1,19 +1,57 @@
-import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Pressable, ActivityIndicator, Alert } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import { colors } from '@/theme/colors';
 import { supabase } from '@/lib/supabase';
 
+// Required for OAuth flow to complete on mobile
+WebBrowser.maybeCompleteAuthSession();
+
 export function SocialAuthGroup() {
+  const [loading, setLoading] = useState(false);
+
   const handleGoogleLogin = async () => {
+    setLoading(true);
     try {
-      await supabase.auth.signInWithOAuth({
+      const redirectTo = Linking.createURL('auth/callback');
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'lumio://auth/callback',
+          redirectTo,
+          skipBrowserRedirect: true,
         },
       });
+
+      if (error) {
+        Alert.alert('Lỗi đăng nhập', error.message);
+        return;
+      }
+
+      if (data?.url) {
+        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+
+        if (result.type === 'success' && result.url) {
+          // Extract tokens from callback URL and set session
+          const url = new URL(result.url);
+          const params = new URLSearchParams(url.hash.slice(1));
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+
+          if (accessToken && refreshToken) {
+            await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+          }
+        }
+      }
     } catch (err) {
       console.error('Google Auth Error:', err);
+      Alert.alert('Lỗi', 'Đăng nhập bằng Google thất bại. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -31,6 +69,7 @@ export function SocialAuthGroup() {
       {/* Google Button */}
       <Pressable
         onPress={handleGoogleLogin}
+        disabled={loading}
         style={{
           width: '100%',
           backgroundColor: colors.cream,
@@ -40,12 +79,19 @@ export function SocialAuthGroup() {
           justifyContent: 'center',
           alignItems: 'center',
           paddingHorizontal: 16,
+          opacity: loading ? 0.7 : 1,
         }}
       >
-        <Text style={{ fontSize: 18, marginRight: 10 }}>🌐</Text>
-        <Text style={{ fontSize: 15, fontFamily: 'PlusJakartaSans_700Bold', color: colors.deepIndigo }}>
-          Đăng nhập bằng Google
-        </Text>
+        {loading ? (
+          <ActivityIndicator color={colors.deepIndigo} />
+        ) : (
+          <>
+            <Text style={{ fontSize: 18, marginRight: 10 }}>🌐</Text>
+            <Text style={{ fontSize: 15, fontFamily: 'PlusJakartaSans_700Bold', color: colors.deepIndigo }}>
+              Đăng nhập bằng Google
+            </Text>
+          </>
+        )}
       </Pressable>
     </View>
   );
