@@ -8,6 +8,8 @@ export interface Language {
   nativeName: string;
   flag: string;
   learnerLanguage: 'vi';
+  badge?: string;
+  learnerCount?: string;
 }
 
 // ─── Unit ──────────────────────────────────────────────────────────────────

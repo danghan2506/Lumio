@@ -7,20 +7,8 @@ export const languages: Language[] = [
     nativeName: 'English',
     flag: '🇬🇧',
     learnerLanguage: 'vi',
-  },
-  {
-    id: 'ko',
-    name: 'Korean',
-    nativeName: '한국어',
-    flag: '🇰🇷',
-    learnerLanguage: 'vi',
-  },
-  {
-    id: 'fr',
-    name: 'French',
-    nativeName: 'Français',
-    flag: '🇫🇷',
-    learnerLanguage: 'vi',
+    badge: 'POPULAR',
+    learnerCount: '1.2M Learners',
   },
   {
     id: 'es',
@@ -28,6 +16,24 @@ export const languages: Language[] = [
     nativeName: 'Español',
     flag: '🇪🇸',
     learnerLanguage: 'vi',
+    learnerCount: '850K Learners',
+  },
+  {
+    id: 'ko',
+    name: 'Korean',
+    nativeName: '한국어',
+    flag: '🇰🇷',
+    learnerLanguage: 'vi',
+    badge: 'POPULAR',
+    learnerCount: '620K Learners',
+  },
+  {
+    id: 'fr',
+    name: 'French',
+    nativeName: 'Français',
+    flag: '🇫🇷',
+    learnerLanguage: 'vi',
+    learnerCount: '450K Learners',
   },
 ];
 
