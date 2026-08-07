@@ -47,18 +47,19 @@ export default function RootLayout() {
   useEffect(() => {
     if (!loaded && !error) return;
 
-    const hasSelectedLanguage = useLanguageStore.getState().hasSelectedLanguage;
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event: string, session: Session | null) => {
         const inAuthGroup = segments[0] === "(auth)";
+        const hasSelectedLanguage = useLanguageStore.getState().hasSelectedLanguage;
 
-        if (session && inAuthGroup) {
+        if (session) {
           if (!hasSelectedLanguage) {
-            // First time: go to language selection
-            router.replace("/(auth)/select-language");
-          } else {
-            // Returning user: go straight to app
+            // First time: go to language selection (if not already there)
+            if (segments[1] !== "select-language") {
+              router.replace("/(auth)/select-language");
+            }
+          } else if (inAuthGroup) {
+            // Returning user still on auth screen: go to app
             router.replace("/");
           }
         } else if (!session && !inAuthGroup) {
