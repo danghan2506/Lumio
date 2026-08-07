@@ -74,6 +74,12 @@ export const units: Unit[] = [
   },
 ];
 
+/**
+ * Retrieves the learning units for a language in ascending order.
+ *
+ * @param languageId - The language whose units to retrieve
+ * @returns The matching learning units sorted by order
+ */
 export function getUnitsByLanguage(languageId: LanguageId): Unit[] {
   return units
     .filter((u) => u.languageId === languageId)

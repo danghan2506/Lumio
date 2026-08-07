@@ -1210,7 +1210,12 @@ export const lessons: Lesson[] = [
   },
 ];
 
-// ─── Helper functions ───────────────────────────────────────────────────────
+/**
+ * Retrieves the lessons for a unit in ascending lesson order.
+ *
+ * @param unitId - The identifier of the unit whose lessons to retrieve
+ * @returns The matching lessons sorted by ascending order
+ */
 
 export function getLessonsByUnit(unitId: string): Lesson[] {
   return lessons
@@ -1218,6 +1223,12 @@ export function getLessonsByUnit(unitId: string): Lesson[] {
     .sort((a, b) => a.order - b.order);
 }
 
+/**
+ * Finds a lesson by its unique identifier.
+ *
+ * @param lessonId - The lesson identifier to search for
+ * @returns The matching lesson, or `undefined` if no lesson has that identifier
+ */
 export function getLessonById(lessonId: string): Lesson | undefined {
   return lessons.find((l) => l.id === lessonId);
 }
