@@ -1,0 +1,91 @@
+// ─── Language ──────────────────────────────────────────────────────────────
+
+export type LanguageId = 'en' | 'ko' | 'fr' | 'es';
+
+export interface Language {
+  id: LanguageId;
+  name: string;
+  nativeName: string;
+  flag: string;
+  learnerLanguage: 'vi';
+}
+
+// ─── Unit ──────────────────────────────────────────────────────────────────
+
+export interface Unit {
+  id: string;
+  languageId: LanguageId;
+  order: number;
+  title: string;
+  description: string;
+  iconEmoji: string;
+}
+
+// ─── Vocabulary ────────────────────────────────────────────────────────────
+
+export interface VocabularyItem {
+  word: string;
+  translation: string;
+  pronunciation: string;
+  exampleSentence: string;
+  exampleTranslation: string;
+}
+
+// ─── Activities ────────────────────────────────────────────────────────────
+
+export type ActivityType =
+  | 'multiple_choice'
+  | 'translation'
+  | 'vocabulary_match'
+  | 'ai_conversation';
+
+interface BaseActivity {
+  id: string;
+  type: ActivityType;
+  instruction: string;
+}
+
+export interface MultipleChoiceActivity extends BaseActivity {
+  type: 'multiple_choice';
+  question: string;
+  options: [string, string, string, string];
+  correctIndex: 0 | 1 | 2 | 3;
+}
+
+export interface TranslationActivity extends BaseActivity {
+  type: 'translation';
+  sourceText: string;
+  targetText: string;
+  acceptedVariants: string[];
+}
+
+export interface VocabularyMatchActivity extends BaseActivity {
+  type: 'vocabulary_match';
+  pairs: Array<{ word: string; match: string }>;
+}
+
+export interface AiConversationActivity extends BaseActivity {
+  type: 'ai_conversation';
+  scenario: string;
+  suggestedPhrases: string[];
+}
+
+export type Activity =
+  | MultipleChoiceActivity
+  | TranslationActivity
+  | VocabularyMatchActivity
+  | AiConversationActivity;
+
+// ─── Lesson ────────────────────────────────────────────────────────────────
+
+export interface Lesson {
+  id: string;
+  unitId: string;
+  order: number;
+  title: string;
+  xpReward: number;
+  estimatedMinutes: number;
+  vocabulary: VocabularyItem[];
+  activities: Activity[];
+  aiTeacherPrompt: string;
+}
