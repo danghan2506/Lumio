@@ -43,7 +43,7 @@ export default function LoginScreen() {
             marginBottom: 20,
           }}
         >
-          <LoginForm onSuccess={() => router.replace('/')} />
+          <LoginForm onSuccess={() => {}} />
           <SocialAuthGroup />
         </View>
 

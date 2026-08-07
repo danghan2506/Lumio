@@ -13,14 +13,22 @@ import { colors } from '@/theme/colors';
 import { languages } from '@/data/languages';
 import { LanguageCard } from '@/components/ui/LanguageCard';
 import { images } from '@/constants/images';
+import { useLanguageStore } from '@/store/useLanguageStore';
 import type { LanguageId } from '@/types/learning';
 
 export default function SelectLanguageScreen() {
   const router = useRouter();
+  const setSelectedLanguage = useLanguageStore((s) => s.setSelectedLanguage);
   const [selectedLang, setSelectedLang] = useState<LanguageId>('en');
 
   const handleContinue = () => {
-    router.replace('/(auth)/login');
+    setSelectedLanguage(selectedLang);
+    router.replace('/');
+  };
+
+  const handleSkip = () => {
+    setSelectedLanguage('en');
+    router.replace('/');
   };
 
   return (
@@ -58,7 +66,7 @@ export default function SelectLanguageScreen() {
           </Text>
         </View>
 
-        <Pressable onPress={() => router.replace('/(auth)/login')} hitSlop={12}>
+        <Pressable onPress={handleSkip} hitSlop={12}>
           <Text
             style={{
               fontFamily: 'PlusJakartaSans_600SemiBold',

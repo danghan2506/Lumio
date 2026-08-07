@@ -63,7 +63,7 @@ export default function RegisterScreen() {
             marginBottom: 20,
           }}
         >
-          <RegisterForm onSuccess={() => router.replace('/')} />
+          <RegisterForm onSuccess={() => {}} />
         </View>
 
         {/* Footer */}

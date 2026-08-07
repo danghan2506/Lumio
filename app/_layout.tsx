@@ -15,6 +15,7 @@ import {
 } from "@expo-google-fonts/plus-jakarta-sans";
 import { JetBrainsMono_500Medium } from "@expo-google-fonts/jetbrains-mono";
 import { supabase } from "@/lib/supabase";
+import { useLanguageStore } from "@/store/useLanguageStore";
 import type { Session } from "@supabase/supabase-js";
 
 import "../global.css";
@@ -46,13 +47,20 @@ export default function RootLayout() {
   useEffect(() => {
     if (!loaded && !error) return;
 
+    const hasSelectedLanguage = useLanguageStore.getState().hasSelectedLanguage;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event: string, session: Session | null) => {
         const inAuthGroup = segments[0] === "(auth)";
 
         if (session && inAuthGroup) {
-          // Logged in but still on auth screen → go to app
-          router.replace("/");
+          if (!hasSelectedLanguage) {
+            // First time: go to language selection
+            router.replace("/(auth)/select-language");
+          } else {
+            // Returning user: go straight to app
+            router.replace("/");
+          }
         } else if (!session && !inAuthGroup) {
           // Not logged in and not on auth screen → go to login
           router.replace("/(auth)/login");
