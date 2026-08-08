@@ -26,6 +26,7 @@ export interface Unit {
 // ─── Vocabulary ────────────────────────────────────────────────────────────
 
 export interface VocabularyItem {
+  id: string;
   word: string;
   translation: string;
   pronunciation: string;

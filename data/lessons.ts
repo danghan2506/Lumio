@@ -21,6 +21,7 @@ export const lessons: Lesson[] = [
     estimatedMinutes: 5,
     vocabulary: [
       {
+        id: 'en-vocab-hello',
         word: 'Hello',
         translation: 'Xin chào',
         pronunciation: '/həˈloʊ/',
@@ -28,6 +29,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Xin chào, tôi tên là Lumi.',
       },
       {
+        id: 'en-vocab-goodbye',
         word: 'Goodbye',
         translation: 'Tạm biệt',
         pronunciation: '/ˌɡʊdˈbaɪ/',
@@ -35,6 +37,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Tạm biệt, hẹn gặp lại ngày mai!',
       },
       {
+        id: 'en-vocab-good-morning',
         word: 'Good morning',
         translation: 'Chào buổi sáng',
         pronunciation: '/ɡʊd ˈmɔːrnɪŋ/',
@@ -42,6 +45,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Chào buổi sáng! Bạn có khoẻ không?',
       },
       {
+        id: 'en-vocab-good-night',
         word: 'Good night',
         translation: 'Chúc ngủ ngon',
         pronunciation: '/ɡʊd naɪt/',
@@ -96,6 +100,7 @@ export const lessons: Lesson[] = [
     estimatedMinutes: 10,
     vocabulary: [
       {
+        id: 'en-vocab-my-name-is',
         word: 'My name is',
         translation: 'Tên tôi là',
         pronunciation: '/maɪ neɪm ɪz/',
@@ -103,6 +108,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Tên tôi là Anna.',
       },
       {
+        id: 'en-vocab-i-am-from',
         word: 'I am from',
         translation: 'Tôi đến từ',
         pronunciation: '/aɪ æm frɒm/',
@@ -110,6 +116,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Tôi đến từ Việt Nam.',
       },
       {
+        id: 'en-vocab-nice-to-meet-you',
         word: 'Nice to meet you',
         translation: 'Rất vui được gặp bạn',
         pronunciation: '/naɪs tə miːt juː/',
@@ -117,6 +124,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Rất vui được gặp bạn, Tom!',
       },
       {
+        id: 'en-vocab-how-are-you',
         word: 'How are you?',
         translation: 'Bạn có khoẻ không?',
         pronunciation: '/haʊ ɑːr juː/',
@@ -124,6 +132,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Xin chào! Bạn có khoẻ không?',
       },
       {
+        id: 'en-vocab-i-am-fine',
         word: 'I am fine',
         translation: 'Tôi khoẻ',
         pronunciation: '/aɪ æm faɪn/',
@@ -174,6 +183,7 @@ export const lessons: Lesson[] = [
     estimatedMinutes: 5,
     vocabulary: [
       {
+        id: 'en-vocab-one',
         word: 'One',
         translation: 'Một',
         pronunciation: '/wʌn/',
@@ -181,6 +191,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Tôi có một con mèo.',
       },
       {
+        id: 'en-vocab-two',
         word: 'Two',
         translation: 'Hai',
         pronunciation: '/tuː/',
@@ -188,6 +199,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Cô ấy có hai người chị.',
       },
       {
+        id: 'en-vocab-three',
         word: 'Three',
         translation: 'Ba',
         pronunciation: '/θriː/',
@@ -195,6 +207,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Có ba quyển sách.',
       },
       {
+        id: 'en-vocab-five',
         word: 'Five',
         translation: 'Năm',
         pronunciation: '/faɪv/',
@@ -202,6 +215,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Tôi năm tuổi.',
       },
       {
+        id: 'en-vocab-ten',
         word: 'Ten',
         translation: 'Mười',
         pronunciation: '/ten/',
@@ -255,6 +269,7 @@ export const lessons: Lesson[] = [
     estimatedMinutes: 10,
     vocabulary: [
       {
+        id: 'en-vocab-red',
         word: 'Red',
         translation: 'Đỏ',
         pronunciation: '/red/',
@@ -262,6 +277,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Quả táo màu đỏ.',
       },
       {
+        id: 'en-vocab-blue',
         word: 'Blue',
         translation: 'Xanh dương',
         pronunciation: '/bluː/',
@@ -269,6 +285,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Bầu trời màu xanh dương.',
       },
       {
+        id: 'en-vocab-green',
         word: 'Green',
         translation: 'Xanh lá',
         pronunciation: '/ɡriːn/',
@@ -276,6 +293,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Cái cây màu xanh lá.',
       },
       {
+        id: 'en-vocab-yellow',
         word: 'Yellow',
         translation: 'Vàng',
         pronunciation: '/ˈjeloʊ/',
@@ -329,6 +347,7 @@ export const lessons: Lesson[] = [
     estimatedMinutes: 5,
     vocabulary: [
       {
+        id: 'ko-vocab-hello',
         word: '안녕하세요',
         translation: 'Xin chào (trang trọng)',
         pronunciation: 'an-nyeong-ha-se-yo',
@@ -336,6 +355,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Xin chào! Rất vui được gặp bạn.',
       },
       {
+        id: 'ko-vocab-hello-casual',
         word: '안녕',
         translation: 'Chào (thân mật)',
         pronunciation: 'an-nyeong',
@@ -343,6 +363,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Chào! Bạn có khoẻ không?',
       },
       {
+        id: 'ko-vocab-thank-you',
         word: '감사합니다',
         translation: 'Cảm ơn',
         pronunciation: 'gam-sa-ham-ni-da',
@@ -350,6 +371,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Cảm ơn bạn đã giúp đỡ.',
       },
       {
+        id: 'ko-vocab-sorry',
         word: '죄송합니다',
         translation: 'Xin lỗi',
         pronunciation: 'joe-song-ham-ni-da',
@@ -403,6 +425,7 @@ export const lessons: Lesson[] = [
     estimatedMinutes: 10,
     vocabulary: [
       {
+        id: 'ko-vocab-my-name-is',
         word: '저는 ~입니다',
         translation: 'Tôi là ~',
         pronunciation: 'jeo-neun ~im-ni-da',
@@ -410,6 +433,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Tôi là học sinh.',
       },
       {
+        id: 'ko-vocab-what-is-your-name',
         word: '이름이 뭐예요?',
         translation: 'Tên bạn là gì?',
         pronunciation: 'i-reum-i mwo-ye-yo',
@@ -417,6 +441,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Tên bạn là gì? Tôi là Lumi.',
       },
       {
+        id: 'ko-vocab-nice-to-meet-you',
         word: '반갑습니다',
         translation: 'Rất vui được gặp bạn',
         pronunciation: 'ban-gap-seum-ni-da',
@@ -424,6 +449,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Lần đầu gặp. Rất vui được gặp bạn!',
       },
       {
+        id: 'ko-vocab-where-are-you-from',
         word: '어디서 왔어요?',
         translation: 'Bạn đến từ đâu?',
         pronunciation: 'eo-di-seo wa-sseo-yo',
@@ -473,6 +499,7 @@ export const lessons: Lesson[] = [
     estimatedMinutes: 5,
     vocabulary: [
       {
+        id: 'ko-vocab-one',
         word: '일 (一)',
         translation: 'Một',
         pronunciation: 'il',
@@ -480,6 +507,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Một cộng một bằng hai.',
       },
       {
+        id: 'ko-vocab-two',
         word: '이 (二)',
         translation: 'Hai',
         pronunciation: 'i',
@@ -487,6 +515,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Có hai quả táo.',
       },
       {
+        id: 'ko-vocab-three',
         word: '삼 (三)',
         translation: 'Ba',
         pronunciation: 'sam',
@@ -494,6 +523,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Tôi đã học ba ngày.',
       },
       {
+        id: 'ko-vocab-five',
         word: '오 (五)',
         translation: 'Năm',
         pronunciation: 'o',
@@ -501,6 +531,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Xin đợi năm phút.',
       },
       {
+        id: 'ko-vocab-ten',
         word: '십 (十)',
         translation: 'Mười',
         pronunciation: 'sip',
@@ -553,6 +584,7 @@ export const lessons: Lesson[] = [
     estimatedMinutes: 10,
     vocabulary: [
       {
+        id: 'ko-vocab-red',
         word: '빨간색',
         translation: 'Màu đỏ',
         pronunciation: 'ppal-gan-saek',
@@ -560,6 +592,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Quả táo màu đỏ.',
       },
       {
+        id: 'ko-vocab-blue',
         word: '파란색',
         translation: 'Màu xanh dương',
         pronunciation: 'pa-ran-saek',
@@ -567,6 +600,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Bầu trời màu xanh dương.',
       },
       {
+        id: 'ko-vocab-green',
         word: '초록색',
         translation: 'Màu xanh lá',
         pronunciation: 'cho-rok-saek',
@@ -574,6 +608,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Lá cây màu xanh lá.',
       },
       {
+        id: 'ko-vocab-yellow',
         word: '노란색',
         translation: 'Màu vàng',
         pronunciation: 'no-ran-saek',
@@ -627,6 +662,7 @@ export const lessons: Lesson[] = [
     estimatedMinutes: 5,
     vocabulary: [
       {
+        id: 'fr-vocab-bonjour',
         word: 'Bonjour',
         translation: 'Xin chào / Chào buổi sáng',
         pronunciation: '/bɔ̃.ʒuʁ/',
@@ -634,6 +670,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Xin chào, bạn tên là gì?',
       },
       {
+        id: 'fr-vocab-bonsoir',
         word: 'Bonsoir',
         translation: 'Chào buổi tối',
         pronunciation: '/bɔ̃.swaʁ/',
@@ -641,6 +678,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Chào buổi tối! Bạn có một ngày tốt không?',
       },
       {
+        id: 'fr-vocab-au-revoir',
         word: 'Au revoir',
         translation: 'Tạm biệt',
         pronunciation: '/o ʁə.vwaʁ/',
@@ -648,6 +686,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Tạm biệt, hẹn gặp lại ngày mai!',
       },
       {
+        id: 'fr-vocab-merci',
         word: 'Merci',
         translation: 'Cảm ơn',
         pronunciation: '/mɛʁ.si/',
@@ -701,6 +740,7 @@ export const lessons: Lesson[] = [
     estimatedMinutes: 10,
     vocabulary: [
       {
+        id: 'fr-vocab-je-mappelle',
         word: "Je m'appelle",
         translation: 'Tôi tên là',
         pronunciation: '/ʒə ma.pɛl/',
@@ -708,6 +748,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Tôi tên là Marie.',
       },
       {
+        id: 'fr-vocab-je-viens-de',
         word: 'Je viens de',
         translation: 'Tôi đến từ',
         pronunciation: '/ʒə vjɛ̃ də/',
@@ -715,6 +756,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Tôi đến từ Việt Nam.',
       },
       {
+        id: 'fr-vocab-enchante',
         word: 'Enchanté(e)',
         translation: 'Rất vui được gặp bạn',
         pronunciation: '/ɑ̃.ʃɑ̃.te/',
@@ -722,6 +764,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Xin chào! Rất vui được gặp bạn!',
       },
       {
+        id: 'fr-vocab-comment-allez-vous',
         word: 'Comment allez-vous?',
         translation: 'Bạn có khoẻ không?',
         pronunciation: '/kɔ.mɑ̃ ta.le vu/',
@@ -771,6 +814,7 @@ export const lessons: Lesson[] = [
     estimatedMinutes: 5,
     vocabulary: [
       {
+        id: 'fr-vocab-un',
         word: 'Un / Une',
         translation: 'Một',
         pronunciation: '/œ̃/ /yn/',
@@ -778,6 +822,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Tôi có một con mèo.',
       },
       {
+        id: 'fr-vocab-deux',
         word: 'Deux',
         translation: 'Hai',
         pronunciation: '/dø/',
@@ -785,6 +830,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Anh ấy có hai người anh.',
       },
       {
+        id: 'fr-vocab-trois',
         word: 'Trois',
         translation: 'Ba',
         pronunciation: '/tʁwa/',
@@ -792,6 +838,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Có ba quyển sách.',
       },
       {
+        id: 'fr-vocab-cinq',
         word: 'Cinq',
         translation: 'Năm',
         pronunciation: '/sɛ̃k/',
@@ -799,6 +846,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Tôi năm tuổi.',
       },
       {
+        id: 'fr-vocab-dix',
         word: 'Dix',
         translation: 'Mười',
         pronunciation: '/dis/',
@@ -851,6 +899,7 @@ export const lessons: Lesson[] = [
     estimatedMinutes: 10,
     vocabulary: [
       {
+        id: 'fr-vocab-rouge',
         word: 'Rouge',
         translation: 'Màu đỏ',
         pronunciation: '/ʁuʒ/',
@@ -858,6 +907,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Quả táo màu đỏ.',
       },
       {
+        id: 'fr-vocab-bleu',
         word: 'Bleu / Bleue',
         translation: 'Màu xanh dương',
         pronunciation: '/blø/',
@@ -865,6 +915,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Bầu trời màu xanh dương.',
       },
       {
+        id: 'fr-vocab-vert',
         word: 'Vert / Verte',
         translation: 'Màu xanh lá',
         pronunciation: '/vɛʁ/',
@@ -872,6 +923,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Cái cây màu xanh lá.',
       },
       {
+        id: 'fr-vocab-jaune',
         word: 'Jaune',
         translation: 'Màu vàng',
         pronunciation: '/ʒon/',
@@ -925,6 +977,7 @@ export const lessons: Lesson[] = [
     estimatedMinutes: 5,
     vocabulary: [
       {
+        id: 'es-vocab-hola',
         word: 'Hola',
         translation: 'Xin chào',
         pronunciation: '/ˈo.la/',
@@ -932,6 +985,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Xin chào! Bạn tên là gì?',
       },
       {
+        id: 'es-vocab-buenos-dias',
         word: 'Buenos días',
         translation: 'Chào buổi sáng',
         pronunciation: '/ˈbwe.nos ˈdi.as/',
@@ -939,6 +993,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Chào buổi sáng! Bạn có khoẻ không?',
       },
       {
+        id: 'es-vocab-adios',
         word: 'Adiós',
         translation: 'Tạm biệt',
         pronunciation: '/a.ˈðjos/',
@@ -946,6 +1001,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Tạm biệt! Hẹn gặp lại ngày mai!',
       },
       {
+        id: 'es-vocab-gracias',
         word: 'Gracias',
         translation: 'Cảm ơn',
         pronunciation: '/ˈɡɾa.θjas/',
@@ -999,6 +1055,7 @@ export const lessons: Lesson[] = [
     estimatedMinutes: 10,
     vocabulary: [
       {
+        id: 'es-vocab-me-llamo',
         word: 'Me llamo',
         translation: 'Tôi tên là',
         pronunciation: '/me ˈʎa.mo/',
@@ -1006,6 +1063,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Tôi tên là Carlos.',
       },
       {
+        id: 'es-vocab-soy-de',
         word: 'Soy de',
         translation: 'Tôi đến từ',
         pronunciation: '/soi ðe/',
@@ -1013,6 +1071,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Tôi đến từ Việt Nam.',
       },
       {
+        id: 'es-vocab-mucho-gusto',
         word: 'Mucho gusto',
         translation: 'Rất vui được gặp bạn',
         pronunciation: '/ˈmu.tʃo ˈɡus.to/',
@@ -1020,6 +1079,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Xin chào! Rất vui được gặp bạn!',
       },
       {
+        id: 'es-vocab-como-estas',
         word: '¿Cómo estás?',
         translation: 'Bạn có khoẻ không?',
         pronunciation: '/ˈko.mo esˈtas/',
@@ -1069,6 +1129,7 @@ export const lessons: Lesson[] = [
     estimatedMinutes: 5,
     vocabulary: [
       {
+        id: 'es-vocab-uno',
         word: 'Uno',
         translation: 'Một',
         pronunciation: '/ˈu.no/',
@@ -1076,6 +1137,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Tôi có một con mèo.',
       },
       {
+        id: 'es-vocab-dos',
         word: 'Dos',
         translation: 'Hai',
         pronunciation: '/dos/',
@@ -1083,6 +1145,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Cô ấy có hai người chị.',
       },
       {
+        id: 'es-vocab-tres',
         word: 'Tres',
         translation: 'Ba',
         pronunciation: '/tɾes/',
@@ -1090,6 +1153,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Có ba quyển sách.',
       },
       {
+        id: 'es-vocab-cinco',
         word: 'Cinco',
         translation: 'Năm',
         pronunciation: '/ˈθin.ko/',
@@ -1097,6 +1161,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Tôi năm tuổi.',
       },
       {
+        id: 'es-vocab-diez',
         word: 'Diez',
         translation: 'Mười',
         pronunciation: '/ˈdjeθ/',
@@ -1149,6 +1214,7 @@ export const lessons: Lesson[] = [
     estimatedMinutes: 10,
     vocabulary: [
       {
+        id: 'es-vocab-rojo',
         word: 'Rojo',
         translation: 'Màu đỏ',
         pronunciation: '/ˈro.xo/',
@@ -1156,6 +1222,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Quả táo màu đỏ.',
       },
       {
+        id: 'es-vocab-azul',
         word: 'Azul',
         translation: 'Màu xanh dương',
         pronunciation: '/aˈθul/',
@@ -1163,6 +1230,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Bầu trời màu xanh dương.',
       },
       {
+        id: 'es-vocab-verde',
         word: 'Verde',
         translation: 'Màu xanh lá',
         pronunciation: '/ˈbeɾ.ðe/',
@@ -1170,6 +1238,7 @@ export const lessons: Lesson[] = [
         exampleTranslation: 'Cái cây màu xanh lá.',
       },
       {
+        id: 'es-vocab-amarillo',
         word: 'Amarillo',
         translation: 'Màu vàng',
         pronunciation: '/a.maˈɾi.ʎo/',
@@ -1232,3 +1301,5 @@ export function getLessonsByUnit(unitId: string): Lesson[] {
 export function getLessonById(lessonId: string): Lesson | undefined {
   return lessons.find((l) => l.id === lessonId);
 }
+
+export const LESSONS = lessons;
