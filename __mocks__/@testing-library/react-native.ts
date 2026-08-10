@@ -89,6 +89,11 @@ export function render(element: React.ReactElement) {
       if (!match) throw new Error(`Could not find placeholder: ${placeholder}`);
       return match;
     },
+    getByTestId: (testID: string) => {
+      const match = findInTree(tree, (n) => n?.props?.testID === testID);
+      if (!match) throw new Error(`Could not find testID: ${testID}`);
+      return match;
+    },
   };
 }
 
