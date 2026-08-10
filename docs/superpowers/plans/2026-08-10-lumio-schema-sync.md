@@ -87,11 +87,12 @@ Use `supabase_apply_migration` with `project_id: skxilcwlgsppmihcahlc`, `name: l
 
 ```sql
 DROP TABLE IF EXISTS public.profiles CASCADE;
-DELETE FROM supabase_migrations.schema_migrations
-WHERE version = '20260806135004';
+DELETE FROM supabase_migrations.schema_migrations;
 ```
 
-Expected: success; `list_migrations` then shows zero prior `create_profiles_and_auth_setup` entries.
+Clears stale migration history. The repo version `20260808000000` (`init_lumio_schema`) is already recorded as the baseline in the remote `schema_migrations`, so it must not be deleted here.
+
+Expected: success; `list_migrations` then shows only the `lumio_schema_reset`, `reapply_init_lumio_schema`, and baseline `20260808000000` entries.
 
 - [ ] **Step 2: Re-apply the full canonical migration via MCP**
 
