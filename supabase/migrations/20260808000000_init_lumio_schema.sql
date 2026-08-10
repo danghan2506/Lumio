@@ -20,6 +20,7 @@ $$;
 
 CREATE TABLE public.profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email text NULL,
   display_name text NULL,
   avatar_url text NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -45,9 +46,10 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 BEGIN
-  INSERT INTO public.profiles (id, display_name, avatar_url)
+  INSERT INTO public.profiles (id, email, display_name, avatar_url)
   VALUES (
     new.id,
+    new.email,
     new.raw_user_meta_data->>'display_name',
     new.raw_user_meta_data->>'avatar_url'
   );
