@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Stack, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter, useSegments, type Href } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import {
   useFonts,
@@ -60,7 +60,7 @@ export default function RootLayout() {
             }
           } else if (inAuthGroup) {
             // Returning user still on auth screen: go to app
-            router.replace("/");
+            router.replace("/(tabs)" as Href);
           }
         } else if (!session && !inAuthGroup) {
           // Not logged in and not on auth screen → go to login
@@ -85,6 +85,7 @@ export default function RootLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="onboarding" />
       <Stack.Screen name="(auth)" />
+      <Stack.Screen name="(tabs)" />
     </Stack>
   );
 }
