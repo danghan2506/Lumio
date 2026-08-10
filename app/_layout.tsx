@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Stack, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter, useSegments, type Href } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import {
   useFonts,
@@ -15,6 +15,7 @@ import {
 } from "@expo-google-fonts/plus-jakarta-sans";
 import { JetBrainsMono_500Medium } from "@expo-google-fonts/jetbrains-mono";
 import { supabase } from "@/lib/supabase";
+import { useLanguageStore } from "@/store/useLanguageStore";
 import type { Session } from "@supabase/supabase-js";
 
 import "../global.css";
@@ -49,10 +50,18 @@ export default function RootLayout() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event: string, session: Session | null) => {
         const inAuthGroup = segments[0] === "(auth)";
+        const hasSelectedLanguage = useLanguageStore.getState().hasSelectedLanguage;
 
-        if (session && inAuthGroup) {
-          // Logged in but still on auth screen → go to app
-          router.replace("/");
+        if (session) {
+          if (!hasSelectedLanguage) {
+            // First time: go to language selection (if not already there)
+            if (segments[1] !== "select-language") {
+              router.replace("/(auth)/select-language");
+            }
+          } else if (inAuthGroup) {
+            // Returning user still on auth screen: go to app
+            router.replace("/(tabs)" as Href);
+          }
         } else if (!session && !inAuthGroup) {
           // Not logged in and not on auth screen → go to login
           router.replace("/(auth)/login");
@@ -76,6 +85,7 @@ export default function RootLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="onboarding" />
       <Stack.Screen name="(auth)" />
+      <Stack.Screen name="(tabs)" />
     </Stack>
   );
 }

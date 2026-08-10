@@ -8,6 +8,8 @@ export interface Language {
   nativeName: string;
   flag: string;
   learnerLanguage: 'vi';
+  badge?: string;
+  learnerCount?: string;
 }
 
 // ─── Unit ──────────────────────────────────────────────────────────────────
@@ -24,6 +26,7 @@ export interface Unit {
 // ─── Vocabulary ────────────────────────────────────────────────────────────
 
 export interface VocabularyItem {
+  id: string;
   word: string;
   translation: string;
   pronunciation: string;
