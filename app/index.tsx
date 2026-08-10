@@ -210,7 +210,7 @@ export default function DesignSystemShowcase() {
                   color: colors.lavenderMist,
                 }}
               >
-                Choose the correct translation for "the book".
+                Choose the correct translation for &quot;the book&quot;.
               </Text>
             </View>
 

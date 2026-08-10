@@ -70,11 +70,6 @@ export default function OnboardingScreen() {
     router.replace("/(auth)/login");
   };
 
-  const handleLogin = () => {
-    finishOnboarding();
-    router.replace("/(auth)/login");
-  };
-
   const handleNext = () => {
     if (activeIndex < SLIDES.length - 1) {
       flatListRef.current?.scrollToIndex({
@@ -346,7 +341,7 @@ export default function OnboardingScreen() {
                   color: colors.lavenderMist,
                 }}
               >
-                "The book" — Noun (masculine)
+                &quot;The book&quot; — Noun (masculine)
               </Text>
 
               {/* Progress retention bar */}
@@ -484,7 +479,7 @@ export default function OnboardingScreen() {
                       color: colors.lavenderMist,
                     }}
                   >
-                    You're on a roll! Keep it up!
+                    You&apos;re on a roll! Keep it up!
                   </Text>
                 </View>
               </View>

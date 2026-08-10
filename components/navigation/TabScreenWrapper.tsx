@@ -20,7 +20,7 @@ export function TabScreenWrapper({ children, style }: TabScreenWrapperProps) {
   useEffect(() => {
     opacity.value = withTiming(1, { duration: 250, easing: Easing.out(Easing.quad) });
     scale.value = withSpring(1, { damping: 18, stiffness: 120 });
-  }, []);
+  }, [opacity, scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,

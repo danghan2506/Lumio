@@ -22,7 +22,7 @@ export function TabBarIcon({ name, color, focused, size = 22 }: TabBarIconProps)
     } else {
       scale.value = withSpring(1.0, { damping: 14, stiffness: 140 });
     }
-  }, [focused]);
+  }, [focused, scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
