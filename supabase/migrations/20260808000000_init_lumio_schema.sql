@@ -34,7 +34,7 @@ CREATE POLICY "profiles_insert" ON public.profiles FOR INSERT TO authenticated W
 CREATE POLICY "profiles_update" ON public.profiles FOR UPDATE TO authenticated USING ((select auth.uid()) = id) WITH CHECK ((select auth.uid()) = id);
 CREATE POLICY "profiles_delete" ON public.profiles FOR DELETE TO authenticated USING ((select auth.uid()) = id);
 
-CREATE OR REPLACE TRIGGER set_profiles_updated_at
+CREATE TRIGGER set_profiles_updated_at
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
@@ -83,7 +83,7 @@ CREATE POLICY "user_languages_insert" ON public.user_languages FOR INSERT TO aut
 CREATE POLICY "user_languages_update" ON public.user_languages FOR UPDATE TO authenticated USING ((select auth.uid()) = user_id) WITH CHECK ((select auth.uid()) = user_id);
 CREATE POLICY "user_languages_delete" ON public.user_languages FOR DELETE TO authenticated USING ((select auth.uid()) = user_id);
 
-CREATE OR REPLACE TRIGGER set_user_languages_updated_at
+CREATE TRIGGER set_user_languages_updated_at
   BEFORE UPDATE ON public.user_languages
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
@@ -109,7 +109,7 @@ CREATE POLICY "lesson_progress_insert" ON public.lesson_progress FOR INSERT TO a
 CREATE POLICY "lesson_progress_update" ON public.lesson_progress FOR UPDATE TO authenticated USING ((select auth.uid()) = user_id) WITH CHECK ((select auth.uid()) = user_id);
 CREATE POLICY "lesson_progress_delete" ON public.lesson_progress FOR DELETE TO authenticated USING ((select auth.uid()) = user_id);
 
-CREATE OR REPLACE TRIGGER set_lesson_progress_updated_at
+CREATE TRIGGER set_lesson_progress_updated_at
   BEFORE UPDATE ON public.lesson_progress
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
@@ -141,7 +141,7 @@ CREATE POLICY "vocabulary_progress_insert" ON public.vocabulary_progress FOR INS
 CREATE POLICY "vocabulary_progress_update" ON public.vocabulary_progress FOR UPDATE TO authenticated USING ((select auth.uid()) = user_id) WITH CHECK ((select auth.uid()) = user_id);
 CREATE POLICY "vocabulary_progress_delete" ON public.vocabulary_progress FOR DELETE TO authenticated USING ((select auth.uid()) = user_id);
 
-CREATE OR REPLACE TRIGGER set_vocabulary_progress_updated_at
+CREATE TRIGGER set_vocabulary_progress_updated_at
   BEFORE UPDATE ON public.vocabulary_progress
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
@@ -166,7 +166,7 @@ CREATE POLICY "daily_activity_insert" ON public.daily_activity FOR INSERT TO aut
 CREATE POLICY "daily_activity_update" ON public.daily_activity FOR UPDATE TO authenticated USING ((select auth.uid()) = user_id) WITH CHECK ((select auth.uid()) = user_id);
 CREATE POLICY "daily_activity_delete" ON public.daily_activity FOR DELETE TO authenticated USING ((select auth.uid()) = user_id);
 
-CREATE OR REPLACE TRIGGER set_daily_activity_updated_at
+CREATE TRIGGER set_daily_activity_updated_at
   BEFORE UPDATE ON public.daily_activity
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
