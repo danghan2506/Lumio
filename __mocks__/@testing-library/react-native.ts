@@ -2,6 +2,8 @@ import React from 'react';
 
 declare const jest: any;
 
+const parentMap = new WeakMap<object, any>();
+
 export function render(element: React.ReactElement) {
   let tree: any;
 
@@ -47,17 +49,24 @@ export function render(element: React.ReactElement) {
     tree = element;
   }
 
-  function findInTree(node: any, predicate: (n: any) => boolean): any {
+  function findInTree(node: any, predicate: (n: any) => boolean, parent: any = null): any {
     if (!node) return null;
+    if (typeof node === 'object' && parent) {
+      parentMap.set(node, parent);
+    }
     if (predicate(node)) return node;
     const children = node.props?.children;
     if (!children) return null;
     const childArray = Array.isArray(children) ? children : [children];
     for (const child of childArray) {
       if (typeof child === 'string' || typeof child === 'number') {
-        if (predicate(child)) return child;
+        if (predicate(child)) {
+          const wrapper = { text: child, props: node.props };
+          if (node) parentMap.set(wrapper, node);
+          return wrapper;
+        }
       } else if (child && typeof child === 'object') {
-        const found = findInTree(child, predicate);
+        const found = findInTree(child, predicate, node);
         if (found) return found;
       }
     }
@@ -82,3 +91,27 @@ export function render(element: React.ReactElement) {
     },
   };
 }
+
+function triggerPress(node: any): void {
+  let curr = node;
+  while (curr) {
+    if (typeof curr.props?.onPress === 'function') {
+      curr.props.onPress();
+      return;
+    }
+    curr = parentMap.get(curr);
+  }
+}
+
+export const fireEvent = Object.assign(
+  (node: any, eventName: string) => {
+    if (eventName === 'press') {
+      triggerPress(node);
+    }
+  },
+  {
+    press: (node: any) => {
+      triggerPress(node);
+    },
+  }
+);
