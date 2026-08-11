@@ -61,6 +61,8 @@ desktop.ini
 # ─── AI agent runtime state ───────────────────────────────────────────────────
 # .superpowers/ contains agent session state — not project source
 .superpowers/
+# Git worktrees (project-local, never commit their contents)
+.worktrees/
 # .claude/ contains local Claude Code config (machine-specific)
 .claude/
 # .agents/ contains local skill configs — keep if you want to share with team,
