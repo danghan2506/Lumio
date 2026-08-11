@@ -10,7 +10,11 @@ export const AiVideoHighlightCard: React.FC<AiVideoHighlightCardProps> = ({
   onStartCall,
 }) => {
   return (
-    <View className="mx-6 my-3 bg-[#35D0A0]/15 rounded-3xl p-5 border border-[#35D0A0]/30 flex-row items-center justify-between shadow-sm">
+    <Pressable
+      onPress={onStartCall}
+      testID="start-call-card"
+      className="mx-6 my-3 bg-[#35D0A0]/15 rounded-3xl p-5 border border-[#35D0A0]/30 flex-row items-center justify-between shadow-sm active:opacity-90"
+    >
       {/* Text Info */}
       <View className="flex-1 mr-3">
         <Text className="text-[#237A5F] font-bold text-xs uppercase tracking-wider mb-1">
@@ -25,16 +29,12 @@ export const AiVideoHighlightCard: React.FC<AiVideoHighlightCardProps> = ({
       </View>
 
       {/* Circular Call Button */}
-      <Pressable
-        onPress={onStartCall}
+      <View
         testID="start-call-button"
-        className="w-14 h-14 rounded-full bg-[#35D0A0] items-center justify-center shadow-md active:opacity-80"
-        style={({ pressed }) => ({
-          opacity: pressed ? 0.85 : 1,
-        })}
+        className="w-14 h-14 rounded-full bg-[#35D0A0] items-center justify-center shadow-md"
       >
         <Ionicons name="videocam" size={26} color="#FFFFFF" />
-      </Pressable>
-    </View>
+      </View>
+    </Pressable>
   );
 };
