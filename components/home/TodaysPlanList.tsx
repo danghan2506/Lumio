@@ -49,7 +49,7 @@ export const TodaysPlanList: React.FC<TodaysPlanListProps> = ({
     <View className="mx-6 my-3">
       {/* Header */}
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-[#241B4A] font-bold text-lg">Today's plan</Text>
+        <Text className="text-[#241B4A] font-bold text-lg">Today&apos;s plan</Text>
         {onViewAll && (
           <Pressable onPress={onViewAll} className="active:opacity-70">
             <Text className="text-[#4B3FA8] font-semibold text-sm">View all</Text>
