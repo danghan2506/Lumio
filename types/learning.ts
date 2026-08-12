@@ -64,7 +64,7 @@ export interface TranslationActivity extends BaseActivity {
 
 export interface VocabularyMatchActivity extends BaseActivity {
   type: 'vocabulary_match';
-  pairs: Array<{ word: string; match: string }>;
+  pairs: { word: string; match: string }[];
 }
 
 export interface AiConversationActivity extends BaseActivity {

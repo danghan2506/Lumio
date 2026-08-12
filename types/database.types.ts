@@ -183,6 +183,201 @@ export type Database = {
         };
         Relationships: [];
       };
+      languages: {
+        Row: {
+          id: string;
+          name: string;
+          native_name: string;
+          flag: string;
+          learner_language: string;
+          badge: string | null;
+          learner_count: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          name: string;
+          native_name: string;
+          flag: string;
+          learner_language?: string;
+          badge?: string | null;
+          learner_count?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          native_name?: string;
+          flag?: string;
+          learner_language?: string;
+          badge?: string | null;
+          learner_count?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      units: {
+        Row: {
+          id: string;
+          language_id: string;
+          order: number;
+          title: string;
+          description: string;
+          icon_emoji: string;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          language_id: string;
+          order: number;
+          title: string;
+          description: string;
+          icon_emoji: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          language_id?: string;
+          order?: number;
+          title?: string;
+          description?: string;
+          icon_emoji?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "units_language_id_fkey";
+            columns: ["language_id"];
+            isOneToOne: false;
+            referencedRelation: "languages";
+            referencedSchema: "public";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      lessons: {
+        Row: {
+          id: string;
+          unit_id: string;
+          order: number;
+          title: string;
+          xp_reward: number;
+          estimated_minutes: number;
+          ai_teacher_prompt: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          unit_id: string;
+          order: number;
+          title: string;
+          xp_reward?: number;
+          estimated_minutes?: number;
+          ai_teacher_prompt?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          unit_id?: string;
+          order?: number;
+          title?: string;
+          xp_reward?: number;
+          estimated_minutes?: number;
+          ai_teacher_prompt?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "lessons_unit_id_fkey";
+            columns: ["unit_id"];
+            isOneToOne: false;
+            referencedRelation: "units";
+            referencedSchema: "public";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      vocabularies: {
+        Row: {
+          id: string;
+          lesson_id: string;
+          word: string;
+          translation: string;
+          pronunciation: string;
+          example_sentence: string;
+          example_translation: string;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          lesson_id: string;
+          word: string;
+          translation: string;
+          pronunciation: string;
+          example_sentence: string;
+          example_translation: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          lesson_id?: string;
+          word?: string;
+          translation?: string;
+          pronunciation?: string;
+          example_sentence?: string;
+          example_translation?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "vocabularies_lesson_id_fkey";
+            columns: ["lesson_id"];
+            isOneToOne: false;
+            referencedRelation: "lessons";
+            referencedSchema: "public";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      activities: {
+        Row: {
+          id: string;
+          lesson_id: string;
+          order: number;
+          type: string;
+          instruction: string;
+          data: Json;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          lesson_id: string;
+          order: number;
+          type: string;
+          instruction: string;
+          data: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          lesson_id?: string;
+          order?: number;
+          type?: string;
+          instruction?: string;
+          data?: Json;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "activities_lesson_id_fkey";
+            columns: ["lesson_id"];
+            isOneToOne: false;
+            referencedRelation: "lessons";
+            referencedSchema: "public";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -239,3 +434,11 @@ export type UserLanguage = Tables<'user_languages'>;
 export type LessonProgress = Tables<'lesson_progress'>;
 export type VocabularyProgress = Tables<'vocabulary_progress'>;
 export type DailyActivity = Tables<'daily_activity'>;
+
+export type LanguageRow = Tables<'languages'>;
+export type UnitRow = Tables<'units'>;
+export type LessonRow = Tables<'lessons'>;
+export type VocabularyRow = Tables<'vocabularies'>;
+export type ActivityRow = Tables<'activities'>;
+export type LessonProgressStatus = 'not_started' | 'in_progress' | 'completed';
+

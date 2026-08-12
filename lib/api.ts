@@ -6,6 +6,9 @@ import {
   LessonProgress,
   VocabularyProgress,
   DailyActivity,
+  UnitRow,
+  LessonRow,
+  LessonProgressStatus,
 } from '../types/database.types';
 
 export async function setActiveLanguage(languageId: LanguageId): Promise<void> {
@@ -170,3 +173,75 @@ export async function getDailyActivity(
   }
   return data ?? [];
 }
+
+export interface LessonWithProgress extends LessonRow {
+  status: LessonProgressStatus;
+}
+
+function normalizeLessonProgressStatus(status: string | null | undefined): LessonProgressStatus {
+  if (status === 'completed' || status === 'in_progress') {
+    return status;
+  }
+  return 'not_started';
+}
+
+export async function getUnitsFromDB(languageId: LanguageId): Promise<UnitRow[]> {
+  const { data, error } = await supabase
+    .from('units')
+    .select('*')
+    .eq('language_id', languageId)
+    .order('order', { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data ?? [];
+}
+
+export async function getLessonsFromDB(unitId: string): Promise<LessonRow[]> {
+  const { data, error } = await supabase
+    .from('lessons')
+    .select('*')
+    .eq('unit_id', unitId)
+    .order('order', { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data ?? [];
+}
+
+export async function getLessonProgressForLessons(
+  lessonIds: string[]
+): Promise<LessonProgress[]> {
+  if (lessonIds.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from('lesson_progress')
+    .select('*')
+    .in('lesson_id', lessonIds);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data ?? [];
+}
+
+export async function getLessonsWithProgress(unitId: string): Promise<LessonWithProgress[]> {
+  const lessons = await getLessonsFromDB(unitId);
+  const progressList = await getLessonProgressForLessons(lessons.map((lesson) => lesson.id));
+  const progressMap = new Map(
+    progressList.map((progress) => [
+      progress.lesson_id,
+      normalizeLessonProgressStatus(progress.status),
+    ])
+  );
+
+  return lessons.map((lesson) => ({
+    ...lesson,
+    status: progressMap.get(lesson.id) ?? 'not_started',
+  }));
+}
+

@@ -9,6 +9,10 @@ import {
   getAllLessonProgress,
   getDueVocabulary,
   getDailyActivity,
+  getUnitsFromDB,
+  getLessonsFromDB,
+  getLessonProgressForLessons,
+  getLessonsWithProgress,
 } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
 
@@ -353,4 +357,235 @@ describe('lib/api database helpers', () => {
       await expect(getDailyActivity()).rejects.toThrow('Activity error');
     });
   });
+
+  describe('getUnitsFromDB', () => {
+    it('fetches units for a language ordered by order asc', async () => {
+      const orderMock = jest.fn().mockResolvedValueOnce({
+        data: [
+          {
+            id: 'en-unit-1',
+            language_id: 'en',
+            order: 1,
+            title: 'Greetings & Introductions',
+            description: 'Desc',
+            icon_emoji: '👋',
+            created_at: '2026-08-11T00:00:00Z',
+          },
+        ],
+        error: null,
+      });
+      const eqMock = jest.fn().mockReturnValue({ order: orderMock });
+      const selectMock = jest.fn().mockReturnValue({ eq: eqMock });
+      (supabase.from as jest.Mock).mockReturnValue({ select: selectMock });
+
+      const units = await getUnitsFromDB('en');
+
+      expect(units).toHaveLength(1);
+      expect(units[0].title).toBe('Greetings & Introductions');
+      expect(supabase.from).toHaveBeenCalledWith('units');
+      expect(eqMock).toHaveBeenCalledWith('language_id', 'en');
+      expect(orderMock).toHaveBeenCalledWith('order', { ascending: true });
+    });
+
+    it('throws error when supabase query fails', async () => {
+      const orderMock = jest.fn().mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Failed to fetch units' },
+      });
+      const eqMock = jest.fn().mockReturnValue({ order: orderMock });
+      const selectMock = jest.fn().mockReturnValue({ eq: eqMock });
+      (supabase.from as jest.Mock).mockReturnValue({ select: selectMock });
+
+      await expect(getUnitsFromDB('en')).rejects.toThrow('Failed to fetch units');
+    });
+  });
+
+  describe('getLessonsFromDB', () => {
+    it('fetches lessons for a unit ordered by order asc', async () => {
+      const mockLessons = [
+        {
+          id: 'en-unit-1-lesson-1',
+          unit_id: 'en-unit-1',
+          order: 1,
+          title: 'Hello & Goodbye',
+          xp_reward: 10,
+          estimated_minutes: 5,
+          ai_teacher_prompt: 'Prompt',
+          created_at: '2026-08-11T00:00:00Z',
+        },
+      ];
+      const orderMock = jest.fn().mockResolvedValueOnce({
+        data: mockLessons,
+        error: null,
+      });
+      const eqMock = jest.fn().mockReturnValue({ order: orderMock });
+      const selectMock = jest.fn().mockReturnValue({ eq: eqMock });
+      (supabase.from as jest.Mock).mockReturnValue({ select: selectMock });
+
+      const lessons = await getLessonsFromDB('en-unit-1');
+
+      expect(lessons).toEqual(mockLessons);
+      expect(supabase.from).toHaveBeenCalledWith('lessons');
+      expect(eqMock).toHaveBeenCalledWith('unit_id', 'en-unit-1');
+      expect(orderMock).toHaveBeenCalledWith('order', { ascending: true });
+    });
+
+    it('throws error when fetching lessons fails', async () => {
+      const orderMock = jest.fn().mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Lessons query error' },
+      });
+      const eqMock = jest.fn().mockReturnValue({ order: orderMock });
+      const selectMock = jest.fn().mockReturnValue({ eq: eqMock });
+      (supabase.from as jest.Mock).mockReturnValue({ select: selectMock });
+
+      await expect(getLessonsFromDB('en-unit-1')).rejects.toThrow('Lessons query error');
+    });
+  });
+
+  describe('getLessonProgressForLessons', () => {
+    it('fetches lesson progress for given lesson ids using in operator', async () => {
+      const mockProgress = [
+        {
+          user_id: 'u1',
+          lesson_id: 'l1',
+          status: 'completed',
+          current_activity: 3,
+          attempts: 1,
+          xp_earned: 10,
+          started_at: '2026-08-11T00:00:00Z',
+          completed_at: '2026-08-11T00:05:00Z',
+          updated_at: '2026-08-11T00:05:00Z',
+        },
+      ];
+      const inMock = jest.fn().mockResolvedValueOnce({
+        data: mockProgress,
+        error: null,
+      });
+      const selectMock = jest.fn().mockReturnValue({ in: inMock });
+      (supabase.from as jest.Mock).mockReturnValue({ select: selectMock });
+
+      const res = await getLessonProgressForLessons(['l1', 'l2']);
+
+      expect(res).toEqual(mockProgress);
+      expect(supabase.from).toHaveBeenCalledWith('lesson_progress');
+      expect(inMock).toHaveBeenCalledWith('lesson_id', ['l1', 'l2']);
+    });
+
+    it('returns empty array directly when lessonIds is empty without querying DB', async () => {
+      const res = await getLessonProgressForLessons([]);
+
+      expect(res).toEqual([]);
+      expect(supabase.from).not.toHaveBeenCalled();
+    });
+
+    it('throws error when progress query fails', async () => {
+      const inMock = jest.fn().mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Progress query error' },
+      });
+      const selectMock = jest.fn().mockReturnValue({ in: inMock });
+      (supabase.from as jest.Mock).mockReturnValue({ select: selectMock });
+
+      await expect(getLessonProgressForLessons(['l1'])).rejects.toThrow('Progress query error');
+    });
+  });
+
+  describe('getLessonsWithProgress', () => {
+    it('merges fetched lessons with fetched progress and normalizes missing/unknown statuses to not_started', async () => {
+      const mockLessons = [
+        {
+          id: 'l1',
+          unit_id: 'en-unit-1',
+          order: 1,
+          title: 'Lesson 1',
+          xp_reward: 10,
+          estimated_minutes: 5,
+          ai_teacher_prompt: null,
+          created_at: '2026-08-11T00:00:00Z',
+        },
+        {
+          id: 'l2',
+          unit_id: 'en-unit-1',
+          order: 2,
+          title: 'Lesson 2',
+          xp_reward: 20,
+          estimated_minutes: 10,
+          ai_teacher_prompt: null,
+          created_at: '2026-08-11T00:00:00Z',
+        },
+        {
+          id: 'l3',
+          unit_id: 'en-unit-1',
+          order: 3,
+          title: 'Lesson 3',
+          xp_reward: 15,
+          estimated_minutes: 7,
+          ai_teacher_prompt: null,
+          created_at: '2026-08-11T00:00:00Z',
+        },
+      ];
+
+      const mockProgress = [
+        {
+          user_id: 'u1',
+          lesson_id: 'l1',
+          status: 'completed',
+          current_activity: 3,
+          attempts: 1,
+          xp_earned: 10,
+          started_at: '2026-08-11T00:00:00Z',
+          completed_at: '2026-08-11T00:05:00Z',
+          updated_at: '2026-08-11T00:05:00Z',
+        },
+        {
+          user_id: 'u1',
+          lesson_id: 'l2',
+          status: 'invalid_status_xyz',
+          current_activity: 1,
+          attempts: 1,
+          xp_earned: 5,
+          started_at: '2026-08-11T00:00:00Z',
+          completed_at: null,
+          updated_at: '2026-08-11T00:05:00Z',
+        },
+      ];
+
+      // Mock lessons query
+      const lessonsOrderMock = jest.fn().mockResolvedValueOnce({
+        data: mockLessons,
+        error: null,
+      });
+      const lessonsEqMock = jest.fn().mockReturnValue({ order: lessonsOrderMock });
+
+      // Mock progress query using .in()
+      const progressInMock = jest.fn().mockResolvedValueOnce({
+        data: mockProgress,
+        error: null,
+      });
+
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'lessons') {
+          return { select: jest.fn().mockReturnValue({ eq: lessonsEqMock }) };
+        }
+        if (table === 'lesson_progress') {
+          return { select: jest.fn().mockReturnValue({ in: progressInMock }) };
+        }
+        return {};
+      });
+
+      const lessonsWithProgress = await getLessonsWithProgress('en-unit-1');
+
+      expect(lessonsWithProgress).toEqual([
+        { ...mockLessons[0], status: 'completed' },
+        { ...mockLessons[1], status: 'not_started' },
+        { ...mockLessons[2], status: 'not_started' },
+      ]);
+
+      expect(supabase.from).toHaveBeenCalledWith('lessons');
+      expect(supabase.from).toHaveBeenCalledWith('lesson_progress');
+      expect(progressInMock).toHaveBeenCalledWith('lesson_id', ['l1', 'l2', 'l3']);
+    });
+  });
 });
+
