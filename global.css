@@ -12,6 +12,7 @@
     --color-lumio-coral: #FF6B57;
     --color-daylight-amber: #FFB74D;
     --color-mint: #35D0A0;
+    --color-mint-soft: #E6F9F3;
     --color-lavender-mist: #EAE6FF;
     --color-cream: #FFFBF4;
     --color-slate: #5E5A80;
@@ -100,5 +101,13 @@
   .min-target-floor {
     min-height: 48px;
     min-width: 48px;
+  }
+
+  .micro-label {
+    text-transform: uppercase;
+    letter-spacing: 0.44px;
+    font-family: PlusJakartaSans_600SemiBold;
+    font-size: 11px;
+    line-height: 16px;
   }
 }
