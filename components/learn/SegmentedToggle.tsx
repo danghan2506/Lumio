@@ -8,7 +8,7 @@ export interface SegmentedToggleProps {
 }
 
 export function SegmentedToggle({ activeTab, onTabChange }: SegmentedToggleProps) {
-  const tabs: Array<{ key: 'lessons' | 'practice'; label: string }> = [
+  const tabs: { key: 'lessons' | 'practice'; label: string }[] = [
     { key: 'lessons', label: 'Lessons' },
     { key: 'practice', label: 'Practice' },
   ];
