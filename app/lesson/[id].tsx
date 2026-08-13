@@ -6,7 +6,8 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
-  Animated,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -24,7 +25,8 @@ export default function AudioLessonScreen() {
   const [isMuted, setIsMuted] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(true);
   const [isPlayingSound, setIsPlayingSound] = useState(false);
-  const [showSummary, setShowSummary] = useState(false); // To be fully connected in Task 5
+  const [showSummary, setShowSummary] = useState(false);
+  const [userFeedback, setUserFeedback] = useState('');
   
   // Conversation simulation state
   const [tutorMessage, setTutorMessage] = useState<string>('');
@@ -63,8 +65,8 @@ export default function AudioLessonScreen() {
       // Randomly update feedback metrics slightly to feel dynamic
       const performanceRatings = ['Excellent', 'Great', 'Good'];
       setFeedback({
-        speaking: performanceRatings[Math.floor(Math.random() * 2)],
-        pronunciation: performanceRatings[Math.floor(Math.random() * 2)],
+        speaking: performanceRatings[Math.floor(Math.random() * 3)],
+        pronunciation: performanceRatings[Math.floor(Math.random() * 3)],
         grammar: performanceRatings[Math.floor(Math.random() * 3)],
       });
     }, 1500);
@@ -305,6 +307,68 @@ export default function AudioLessonScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Summary Modal Sheet */}
+      <Modal visible={showSummary} animationType="slide" transparent={true}>
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-slate-900 rounded-t-[32px] p-6 border-t border-slate-800">
+            {/* Mascot header */}
+            <View className="items-center -mt-16 mb-4">
+              <View className="w-24 h-24 rounded-full bg-slate-900 border-4 border-slate-800 items-center justify-center p-2">
+                <Image source={images.lumiCelebration} className="w-20 h-20 rounded-full" resizeMode="contain" />
+              </View>
+            </View>
+
+            <Text style={{ fontFamily: 'Fredoka_700Bold', color: colors.cream }} className="text-2xl text-center mb-1">
+              Lesson Completed!
+            </Text>
+            <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.lavenderMist }} className="text-sm text-center mb-6 opacity-75">
+              Awesome job practicing your spoken language today.
+            </Text>
+
+            {/* XP Reward card */}
+            <View className="bg-slate-800/50 border border-slate-700/30 p-4 rounded-2xl items-center mb-6">
+              <View style={{ backgroundColor: colors.daylightAmber }} className="px-4 py-2 rounded-full mb-1">
+                <Text style={{ fontFamily: 'Fredoka_700Bold', color: colors.deepIndigo }} className="text-sm">
+                  +{lesson.xp_reward} XP
+                </Text>
+              </View>
+              <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.cream }} className="text-xs opacity-90 mt-1">
+                Daylight Amber reward ignition claimed!
+              </Text>
+            </View>
+
+            {/* User Feedback form */}
+            <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.lavenderMist }} className="text-xs uppercase tracking-wide mb-2 opacity-80">
+              Leave Lesson Feedback (Optional)
+            </Text>
+            <TextInput
+              placeholder="How did you find this lesson? (e.g. pronunciation feedback, speech speed...)"
+              placeholderTextColor={colors.slate}
+              value={userFeedback}
+              onChangeText={setUserFeedback}
+              style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.cream, backgroundColor: 'rgba(255,255,255,0.03)' }}
+              className="p-4 rounded-xl border border-slate-800/80 mb-6 text-sm"
+              multiline={true}
+              numberOfLines={3}
+            />
+
+            {/* Claim Reward Button */}
+            <TouchableOpacity
+              onPress={() => {
+                setShowSummary(false);
+                router.replace('/(tabs)/learn');
+              }}
+              style={{ backgroundColor: colors.lumioCoral }}
+              className="py-4 rounded-full items-center justify-center mb-2"
+            >
+              <Text style={{ fontFamily: 'Fredoka_700Bold', color: colors.cream }} className="text-base">
+                Claim Rewards
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
