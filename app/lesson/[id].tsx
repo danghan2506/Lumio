@@ -24,6 +24,7 @@ export default function AudioLessonScreen() {
   const [isMuted, setIsMuted] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(true);
   const [isPlayingSound, setIsPlayingSound] = useState(false);
+  const [showSummary, setShowSummary] = useState(false); // To be fully connected in Task 5
   
   // Conversation simulation state
   const [tutorMessage, setTutorMessage] = useState<string>('');
@@ -204,8 +205,105 @@ export default function AudioLessonScreen() {
           </View>
         )}
 
-        {/* Placeholder for Task 4 features */}
-        <View className="h-64" />
+        {/* Interactive Phrases selection */}
+        <View className="px-6 mt-6">
+          <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', color: colors.lavenderMist }} className="text-xs uppercase tracking-wider mb-3 opacity-60">
+            Tap phrase to speak
+          </Text>
+          
+          <View className="flex-row flex-wrap gap-2.5">
+            {vocabularies.map((vocab) => (
+              <TouchableOpacity
+                key={vocab.id}
+                onPress={() => handlePhrasePress(vocab.word, vocab.translation)}
+                disabled={isListening || isMuted}
+                style={{ backgroundColor: colors.deepIndigo, borderColor: colors.slate }}
+                className="px-4 py-3 rounded-2xl border border-slate-700/50 flex-row items-center"
+              >
+                <Ionicons name="mic-outline" size={16} color={colors.lumioCoral} className="mr-1.5" />
+                <View>
+                  <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.cream }} className="text-sm">
+                    {vocab.word}
+                  </Text>
+                  <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.slate }} className="text-xs mt-0.5">
+                    {vocab.pronunciation}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Call Controls and Feedback card */}
+        <View className="mt-8 px-6 pb-6">
+          {/* Feedback Card */}
+          <View className="flex-row items-center justify-between p-4 mb-6 rounded-3xl bg-slate-800/40 border border-slate-700/30">
+            <View className="flex-1 items-center border-r border-slate-700/40">
+              <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.slate }} className="text-xs">
+                Speaking
+              </Text>
+              <Text style={{ fontFamily: 'Fredoka_700Bold', color: colors.mint }} className="text-sm mt-1">
+                {feedback.speaking}
+              </Text>
+            </View>
+            <View className="flex-1 items-center border-r border-slate-700/40">
+              <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.slate }} className="text-xs">
+                Pronunciation
+              </Text>
+              <Text style={{ fontFamily: 'Fredoka_700Bold', color: '#63B3ED' }} className="text-sm mt-1">
+                {feedback.pronunciation}
+              </Text>
+            </View>
+            <View className="flex-1 items-center">
+              <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.slate }} className="text-xs">
+                Grammar
+              </Text>
+              <Text style={{ fontFamily: 'Fredoka_700Bold', color: '#B9F5FF' }} className="text-sm mt-1">
+                {feedback.grammar}
+              </Text>
+            </View>
+          </View>
+
+          {/* Buttons Control Row */}
+          <View className="flex-row justify-center items-center gap-6">
+            {/* Mic toggle */}
+            <TouchableOpacity
+              onPress={() => setIsMuted(!isMuted)}
+              style={{
+                minWidth: 56,
+                minHeight: 56,
+                backgroundColor: isMuted ? colors.deepIndigo : '#FFFBF4',
+                borderColor: isMuted ? colors.lumioCoral : 'transparent',
+              }}
+              className="w-14 h-14 rounded-full justify-center items-center border-2"
+            >
+              <Ionicons name={isMuted ? 'mic-off-outline' : 'mic-outline'} size={24} color={isMuted ? colors.lumioCoral : colors.deepIndigo} />
+            </TouchableOpacity>
+
+            {/* End Call Button */}
+            <TouchableOpacity
+              onPress={() => setShowSummary(true)}
+              style={{ minWidth: 64, minHeight: 64 }}
+              className="w-16 h-16 rounded-full bg-red-500 justify-center items-center shadow-lg"
+            >
+              <Ionicons name="call-outline" size={28} color="#FFFBF4" style={{ transform: [{ rotate: '135deg' }] }} />
+            </TouchableOpacity>
+
+            {/* Subtitles Toggle */}
+            <TouchableOpacity
+              onPress={() => setShowSubtitles(!showSubtitles)}
+              style={{
+                minWidth: 56,
+                minHeight: 56,
+                backgroundColor: showSubtitles ? '#FFFBF4' : colors.deepIndigo,
+                borderColor: showSubtitles ? 'transparent' : colors.slate,
+              }}
+              className="w-14 h-14 rounded-full justify-center items-center border-2"
+            >
+              <Ionicons name="chatbox-ellipses-outline" size={24} color={showSubtitles ? colors.deepIndigo : colors.cream} />
+            </TouchableOpacity>
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
