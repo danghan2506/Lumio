@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -19,9 +20,59 @@ export default function AudioLessonScreen() {
   const router = useRouter();
   const { lesson, unit, language, vocabularies, loading, error } = useLessonAudioDetails(id || '');
 
-  // State placeholders
+  // State Variables
   const [isMuted, setIsMuted] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(true);
+  const [isPlayingSound, setIsPlayingSound] = useState(false);
+  
+  // Conversation simulation state
+  const [tutorMessage, setTutorMessage] = useState<string>('');
+  const [tutorTranslation, setTutorTranslation] = useState<string>('');
+  const [userMessage, setUserMessage] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
+
+  // Feedback metrics
+  const [feedback, setFeedback] = useState({
+    speaking: 'Excellent',
+    pronunciation: 'Great',
+    grammar: 'Good',
+  });
+
+  // Initialize tutor message from lesson data
+  React.useEffect(() => {
+    if (lesson) {
+      setTutorMessage(lesson.ai_teacher_prompt || `Hello! Let's practice ${language?.name || 'language'} greetings today. Tap any phrase below to talk to me.`);
+      setTutorTranslation('Xin chào! Chúng ta hãy cùng luyện tập giao tiếp hôm nay. Nhấp vào bất kỳ cụm từ nào bên dưới để trò chuyện cùng tôi.');
+    }
+  }, [lesson, language]);
+
+  const handlePhrasePress = (phraseWord: string, phraseTranslation: string) => {
+    if (isListening || isMuted) return;
+
+    // 1. Show user message and set listening state
+    setUserMessage(phraseWord);
+    setIsListening(true);
+
+    // 2. Simulate AI response after 1.5 seconds
+    setTimeout(() => {
+      setIsListening(false);
+      setTutorMessage(`Perfect! Your pronunciation of "${phraseWord}" was spot on. Let's keep going!`);
+      setTutorTranslation(`Hoàn hảo! Phát âm cụm từ "${phraseTranslation}" của bạn rất chuẩn xác. Hãy tiếp tục nào!`);
+      
+      // Randomly update feedback metrics slightly to feel dynamic
+      const performanceRatings = ['Excellent', 'Great', 'Good'];
+      setFeedback({
+        speaking: performanceRatings[Math.floor(Math.random() * 2)],
+        pronunciation: performanceRatings[Math.floor(Math.random() * 2)],
+        grammar: performanceRatings[Math.floor(Math.random() * 3)],
+      });
+    }, 1500);
+  };
+
+  const triggerPlaySound = () => {
+    setIsPlayingSound(true);
+    setTimeout(() => setIsPlayingSound(false), 1200);
+  };
 
   if (loading) {
     return (
@@ -52,7 +103,7 @@ export default function AudioLessonScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.deepIndigo }}>
-      {/* Header */}
+      {/* Header Block */}
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-800/40">
         <TouchableOpacity onPress={() => router.back()} style={{ minWidth: 48, minHeight: 48 }} className="items-center justify-center rounded-full bg-slate-800/20">
           <Ionicons name="chevron-back" size={24} color={colors.cream} />
@@ -63,7 +114,7 @@ export default function AudioLessonScreen() {
             AI Teacher
           </Text>
           <View className="flex-row items-center mt-0.5">
-            <View className="w-2 h-2 rounded-full bg-[#35D0A0] mr-1.5 animate-pulse" />
+            <View className="w-2 h-2 rounded-full bg-[#35D0A0] mr-1.5" />
             <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.mint }} className="text-xs">
               Online
             </Text>
@@ -96,9 +147,66 @@ export default function AudioLessonScreen() {
           </Text>
         </View>
       </View>
-      
-      {/* Placeholder spacer */}
-      <View className="flex-1" />
+
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+        {/* Mascot Section */}
+        <View className="items-center mt-6">
+          <View className="relative w-48 h-48 justify-center items-center">
+            {/* Pulsing visual circles representing audio waves */}
+            {(isPlayingSound || isListening) && (
+              <View className="absolute inset-0 bg-[#FF6B57]/10 border-2 border-[#FF6B57]/20 rounded-full scale-125 animate-ping" />
+            )}
+            <Image
+              source={images.lumiTutor}
+              className="w-40 h-40 rounded-full border-4 border-slate-700/40"
+              resizeMode="cover"
+            />
+          </View>
+        </View>
+
+        {/* Teacher Speech Bubble */}
+        <View className="px-6 mt-4">
+          <View className="relative bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+            <View className="flex-row justify-between items-start">
+              <View className="flex-1 pr-3">
+                <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.deepIndigo }} className="text-base leading-6">
+                  {tutorMessage}
+                </Text>
+                {showSubtitles && (
+                  <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.slate }} className="text-sm leading-5 mt-2 opacity-80 border-t border-slate-100 pt-2">
+                    {tutorTranslation}
+                  </Text>
+                )}
+              </View>
+              <TouchableOpacity onPress={triggerPlaySound} style={{ minWidth: 48, minHeight: 48 }} className="items-center justify-center bg-[#FF6B57]/10 rounded-full">
+                <Ionicons name={isPlayingSound ? 'volume-high' : 'volume-medium'} size={24} color={colors.lumioCoral} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        {/* User Spoken Bubble */}
+        {userMessage && (
+          <View className="px-6 mt-4 items-end">
+            <View style={{ backgroundColor: colors.lumioCoral }} className="p-4 rounded-3xl max-w-[80%]">
+              <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.cream }} className="text-base">
+                {userMessage}
+              </Text>
+              {isListening && (
+                <View className="flex-row items-center mt-1">
+                  <ActivityIndicator size="small" color={colors.cream} className="mr-1" />
+                  <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.cream }} className="text-xs opacity-80">
+                    Listening...
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* Placeholder for Task 4 features */}
+        <View className="h-64" />
+      </ScrollView>
     </SafeAreaView>
   );
 }

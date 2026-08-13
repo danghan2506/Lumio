@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DailyPlanItem, PlanItemType } from '@/types/home';
+import { colors } from '@/theme/colors';
 
 export interface TodaysPlanListProps {
   items: DailyPlanItem[];
@@ -17,13 +18,13 @@ export const TodaysPlanList: React.FC<TodaysPlanListProps> = ({
   const renderItemIcon = (type: PlanItemType) => {
     switch (type) {
       case 'lesson':
-        return <Ionicons name="book-outline" size={22} color="#4B3FA8" />;
+        return <Ionicons name="book-outline" size={22} color={colors.deepIndigo} />;
       case 'ai_conversation':
-        return <Ionicons name="headset-outline" size={22} color="#FF6B57" />;
+        return <Ionicons name="headset-outline" size={22} color={colors.lumioCoral} />;
       case 'vocabulary':
-        return <Ionicons name="chatbox-ellipses-outline" size={22} color="#35D0A0" />;
+        return <Ionicons name="chatbox-ellipses-outline" size={22} color={colors.mint} />;
       default:
-        return <Ionicons name="book-outline" size={22} color="#4B3FA8" />;
+        return <Ionicons name="book-outline" size={22} color={colors.deepIndigo} />;
     }
   };
 
@@ -42,17 +43,27 @@ export const TodaysPlanList: React.FC<TodaysPlanListProps> = ({
         </View>
       );
     }
-    return <View className="w-7 h-7 rounded-full border border-slate-300" />;
+    return <View className="w-7 h-7 rounded-full border border-[#5E5A80]/40" />;
   };
 
   return (
     <View className="mx-6 my-3">
       {/* Header */}
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-[#241B4A] font-bold text-lg">{"Today's plan"}</Text>
+        <Text
+          style={{ fontFamily: 'Fredoka_700Bold' }}
+          className="text-[#241B4A] text-lg"
+        >
+          {"Today's plan"}
+        </Text>
         {onViewAll && (
           <Pressable onPress={onViewAll} className="active:opacity-70">
-            <Text className="text-[#4B3FA8] font-semibold text-sm">View all</Text>
+            <Text
+              style={{ fontFamily: 'PlusJakartaSans_600SemiBold' }}
+              className="text-[#FF6B57] text-sm"
+            >
+              View all
+            </Text>
           </Pressable>
         )}
       </View>
@@ -63,21 +74,28 @@ export const TodaysPlanList: React.FC<TodaysPlanListProps> = ({
           <Pressable
             key={item.id}
             onPress={() => onItemPress?.(item)}
-            className="bg-white rounded-2xl p-4 border border-[#EAE6FF] flex-row items-center justify-between active:opacity-90 shadow-sm mb-3"
+            className="bg-[#EAE6FF]/40 rounded-2xl p-4 border border-[#EAE6FF] flex-row items-center justify-between active:opacity-90 shadow-sm mb-3"
             style={({ pressed }) => ({
               opacity: pressed ? 0.9 : 1,
             })}
           >
             {/* Left Icon & Text */}
             <View className="flex-row items-center flex-1 mr-3">
-              <View className="w-12 h-12 rounded-xl bg-[#EAE6FF]/50 items-center justify-center mr-3">
+              <View className="w-12 h-12 rounded-xl bg-[#EAE6FF] items-center justify-center mr-3 border border-[#5E5A80]/10">
                 {renderItemIcon(item.type)}
               </View>
               <View className="flex-1">
-                <Text className="text-[#241B4A] font-bold text-base mb-0.5">
+                <Text
+                  style={{ fontFamily: 'PlusJakartaSans_700Bold' }}
+                  className="text-[#241B4A] text-base mb-0.5"
+                >
                   {item.title}
                 </Text>
-                <Text className="text-[#5E5A80] text-xs" numberOfLines={1}>
+                <Text
+                  style={{ fontFamily: 'PlusJakartaSans_500Medium' }}
+                  className="text-[#5E5A80] text-xs"
+                  numberOfLines={1}
+                >
                   {item.subtitle}
                 </Text>
               </View>
@@ -91,3 +109,4 @@ export const TodaysPlanList: React.FC<TodaysPlanListProps> = ({
     </View>
   );
 };
+

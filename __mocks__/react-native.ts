@@ -14,3 +14,6 @@ export const Pressable = (props: any) =>
 
 export const ActivityIndicator = (props: any) =>
   React.createElement('ActivityIndicator', props, props.children);
+
+export const Ionicons = (props: any) =>
+  React.createElement('Ionicons', props, props.children);

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from '@/theme/colors';
 
 export interface HeaderBarProps {
   userName: string;
@@ -43,29 +44,40 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
       {/* Language Badge & User Greeting */}
       <Pressable
         onPress={onLanguagePress}
-        className="flex-row items-center space-x-2"
+        className="flex-row items-center space-x-2 active:opacity-80"
       >
         <Text className="text-2xl mr-1">{languageFlag}</Text>
-        <Text className="text-[#241B4A] font-bold text-xl">{greeting}</Text>
+        <Text
+          style={{ fontFamily: 'Fredoka_700Bold' }}
+          className="text-[#241B4A] text-xl"
+        >
+          {greeting}
+        </Text>
       </Pressable>
 
       {/* Right Controls */}
       <View className="flex-row items-center space-x-3">
-        {/* Streak Flame Badge */}
+        {/* Streak Flame Badge (Daylight Amber reward token) */}
         <View className="flex-row items-center bg-[#FFB74D]/20 px-3 py-1.5 rounded-full border border-[#FFB74D]/40">
-          <Ionicons name="flame" size={18} color="#FFB74D" />
-          <Text className="text-[#241B4A] font-bold text-sm ml-1">{String(streak)}</Text>
+          <Ionicons name="flame" size={18} color={colors.daylightAmber} />
+          <Text
+            style={{ fontFamily: 'PlusJakartaSans_700Bold' }}
+            className="text-[#241B4A] text-sm ml-1"
+          >
+            {String(streak)}
+          </Text>
         </View>
 
         {/* Notification Bell */}
         <Pressable
           onPress={onNotificationPress}
-          className="w-10 h-10 rounded-full bg-[#EAE6FF]/60 items-center justify-center border border-[#5E5A80]/15"
+          className="w-10 h-10 rounded-full bg-[#EAE6FF]/60 items-center justify-center border border-[#5E5A80]/20 active:opacity-80"
           testID="notification-button"
         >
-          <Ionicons name="notifications-outline" size={20} color="#241B4A" />
+          <Ionicons name="notifications-outline" size={20} color={colors.deepIndigo} />
         </Pressable>
       </View>
     </View>
   );
 };
+
