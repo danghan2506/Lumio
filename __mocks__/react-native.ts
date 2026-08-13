@@ -17,3 +17,6 @@ export const ActivityIndicator = (props: any) =>
 
 export const Ionicons = (props: any) =>
   React.createElement('Ionicons', props, props.children);
+
+export const FontAwesome5 = (props: any) =>
+  React.createElement('FontAwesome5', props, props.children);

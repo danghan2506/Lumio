@@ -24,7 +24,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const router = useRouter();
-  const segments = useSegments();
+  const segments = useSegments() as readonly string[];
 
   const [loaded, error] = useFonts({
     Fredoka_500Medium,

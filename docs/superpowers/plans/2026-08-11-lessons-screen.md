@@ -4,7 +4,7 @@
 
 **Goal:** Implement the Lumio Lessons tab screen matching `06-lesson-screen.png` with Supabase database integration for units, lessons, and lesson progress, Lumi mascot artwork, and the Lumio Design System.
 
-**Architecture:** Fetch active language from Zustand (`useLanguageStore`), load ordered units and the active unit's lessons with user progress from Supabase PostgreSQL (`units`, `lessons`, `lesson_progress`), and render a modular screen with `UnitHeader`, `SegmentedToggle`, and `LessonCard` components. For this iteration, the active unit is the first unit returned by `units.order ASC`; later iterations can add unit switching without changing the card/header components.
+**Architecture:** Fetch active language from Zustand (`useLanguageStore`), load units & lessons with user progress from Supabase PostgreSQL (`units`, `lessons`, `lesson_progress`), and render a modular screen with UnitHeader, SegmentedToggle, and LessonCard components.
 
 **Tech Stack:** React Native, Expo Router, NativeWind / Tailwind, Zustand, Supabase (`@supabase/supabase-js`), Jest.
 
@@ -15,22 +15,6 @@
 - Images: Centralize imports in `constants/images.ts`. Never import directly in components.
 - NativeWind styling: Use `className` for styling except `SafeAreaView` (which uses inline styles).
 - Strict TypeScript: No `any` types.
-- Screens compose components and call hooks only. Supabase fetching, loading state, refresh state, and error handling must live in `hooks/useLessonsData.ts`, not directly inside `app/(tabs)/learn.tsx`.
-
-## Database & Supabase Guardrails
-
-Use `supabase-postgres-best-practices` for any schema or query changes. For this plan, the content schema already exists in `supabase/migrations/20260811000000_add_content_tables_and_seed.sql`; do **not** create another migration unless verification finds a real schema gap.
-
-- Sync TypeScript row types with the existing migration fields exactly:
-  - `languages`: `id`, `name`, `native_name`, `flag`, `learner_language`, `badge`, `learner_count`, `created_at`
-  - `units`: `id`, `language_id`, `order`, `title`, `description`, `icon_emoji`, `created_at`
-  - `lessons`: `id`, `unit_id`, `order`, `title`, `xp_reward`, `estimated_minutes`, `ai_teacher_prompt`, `created_at`
-  - `vocabularies`: `id`, `lesson_id`, `word`, `translation`, `pronunciation`, `example_sentence`, `example_translation`, `created_at`
-  - `activities`: `id`, `lesson_id`, `order`, `type`, `instruction`, `data`, `created_at`
-- Preserve RLS. Public content tables allow authenticated `SELECT`; user-owned progress stays isolated by the existing `lesson_progress` RLS policies.
-- Avoid N+1 database reads. Fetch lessons once per active unit, then fetch progress once with `.in('lesson_id', lessonIds)` instead of calling `getLessonProgress()` per lesson.
-- Keep queries aligned with indexes from the migration: `units(language_id, order)`, `lessons(unit_id, order)`, and scoped progress reads by `lesson_id`.
-- If a DB field is missing from `types/database.types.ts`, update the generated/manual type definition only; do not invent optional app-only fields in DB row types.
 
 ---
 
@@ -39,61 +23,36 @@ Use `supabase-postgres-best-practices` for any schema or query changes. For this
 **Files:**
 - Modify: `types/database.types.ts`
 - Modify: `lib/api.ts`
-- Modify: `__tests__/lib/api.test.ts`
+- Create: `__tests__/lib/api.test.ts`
 
 **Interfaces:**
 - Consumes: Supabase Client from `lib/supabase.ts`
-- Produces: `getUnitsFromDB(languageId: LanguageId)`, `getLessonsFromDB(unitId: string)`, `getLessonProgressForLessons(lessonIds: string[])`, `getLessonsWithProgress(unitId: string)` in `lib/api.ts`, plus updated `Database` table types for `languages`, `units`, `lessons`, `vocabularies`, and `activities`.
+- Produces: `getUnitsFromDB(languageId: string)`, `getLessonsFromDB(unitId: string)`, `getLessonsWithProgress(languageId: string)` in `lib/api.ts`, plus updated `Database` table types for `units`, `lessons`, `languages`.
 
-- [ ] **Step 1: Append failing tests for `getUnitsFromDB`, `getLessonsFromDB`, `getLessonProgressForLessons`, and `getLessonsWithProgress`**
-
-Append to the existing `__tests__/lib/api.test.ts`; do not replace the current RPC and progress tests.
+- [ ] **Step 1: Write failing test for `getUnitsFromDB` and `getLessonsWithProgress`**
 
 ```ts
 // __tests__/lib/api.test.ts
-import {
-  getUnitsFromDB,
-  getLessonsFromDB,
-  getLessonProgressForLessons,
-  getLessonsWithProgress,
-} from '../../lib/api';
+import { getUnitsFromDB, getLessonsWithProgress } from '@/lib/api';
+
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: jest.fn(() => ({
+      select: jest.fn(() => ({
+        eq: jest.fn(() => ({
+          order: jest.fn(() => Promise.resolve({ data: [{ id: 'en-unit-1', language_id: 'en', order: 1, title: 'Greetings & Introductions', description: 'Desc', icon_emoji: '👋' }], error: null })),
+        })),
+      })),
+    })),
+  },
+}));
 
 describe('lib/api DB functions', () => {
   it('fetches units for a language ordered by order asc', async () => {
-    const orderMock = jest.fn().mockResolvedValueOnce({
-      data: [
-        {
-          id: 'en-unit-1',
-          language_id: 'en',
-          order: 1,
-          title: 'Greetings & Introductions',
-          description: 'Desc',
-          icon_emoji: 'wave',
-          created_at: '2026-08-11T00:00:00Z',
-        },
-      ],
-      error: null,
-    });
-    const eqMock = jest.fn().mockReturnValue({ order: orderMock });
-    const selectMock = jest.fn().mockReturnValue({ eq: eqMock });
-    (supabase.from as jest.Mock).mockReturnValue({ select: selectMock });
-
     const units = await getUnitsFromDB('en');
-
     expect(units).toHaveLength(1);
     expect(units[0].title).toBe('Greetings & Introductions');
-    expect(supabase.from).toHaveBeenCalledWith('units');
-    expect(eqMock).toHaveBeenCalledWith('language_id', 'en');
-    expect(orderMock).toHaveBeenCalledWith('order', { ascending: true });
   });
-
-  // Add three more concrete tests, with assertions:
-  // 1. getLessonsFromDB('en-unit-1') calls from('lessons'), eq('unit_id', 'en-unit-1'),
-  //    and order('order', { ascending: true }).
-  // 2. getLessonProgressForLessons(['l1', 'l2']) calls from('lesson_progress') and
-  //    in('lesson_id', ['l1', 'l2']); getLessonProgressForLessons([]) returns [] without querying.
-  // 3. getLessonsWithProgress('en-unit-1') merges fetched lessons with fetched progress, normalizes
-  //    unknown/missing statuses to 'not_started', and never calls getAllLessonProgress().
 });
 ```
 
@@ -104,48 +63,37 @@ Expected: FAIL (`getUnitsFromDB` is not defined)
 
 - [ ] **Step 3: Update `types/database.types.ts` with `units`, `lessons`, and `languages` tables**
 
-Update `types/database.types.ts` to mirror `supabase/migrations/20260811000000_add_content_tables_and_seed.sql`. Include `Row`, `Insert`, `Update`, and basic `Relationships` entries for:
-
-- `languages`
-- `units`
-- `lessons`
-- `vocabularies`
-- `activities`
-
-Also export convenient aliases:
-
-```ts
-export type LanguageRow = Tables<'languages'>;
-export type UnitRow = Tables<'units'>;
-export type LessonRow = Tables<'lessons'>;
-export type VocabularyRow = Tables<'vocabularies'>;
-export type ActivityRow = Tables<'activities'>;
-export type LessonProgressStatus = 'not_started' | 'in_progress' | 'completed';
-```
+Update `types/database.types.ts` to add schema definitions for `units`, `lessons`, `languages`, `vocabularies`, `activities`.
 
 - [ ] **Step 4: Update `lib/api.ts` with DB helper functions**
 
 ```ts
-import type { LanguageId } from '@/types/learning';
-import type {
-  LessonProgress,
-  LessonProgressStatus,
-  LessonRow,
-  UnitRow,
-} from '@/types/database.types';
+export interface UnitRow {
+  id: string;
+  language_id: string;
+  order: number;
+  title: string;
+  description: string;
+  icon_emoji: string;
+  created_at: string;
+}
+
+export interface LessonRow {
+  id: string;
+  unit_id: string;
+  order: number;
+  title: string;
+  xp_reward: number;
+  estimated_minutes: number;
+  ai_teacher_prompt: string | null;
+  created_at: string;
+}
 
 export interface LessonWithProgress extends LessonRow {
-  status: LessonProgressStatus;
+  status: 'completed' | 'in_progress' | 'not_started';
 }
 
-function normalizeLessonProgressStatus(status: string | null | undefined): LessonProgressStatus {
-  if (status === 'completed' || status === 'in_progress') {
-    return status;
-  }
-  return 'not_started';
-}
-
-export async function getUnitsFromDB(languageId: LanguageId): Promise<UnitRow[]> {
+export async function getUnitsFromDB(languageId: string): Promise<UnitRow[]> {
   const { data, error } = await supabase
     .from('units')
     .select('*')
@@ -167,35 +115,14 @@ export async function getLessonsFromDB(unitId: string): Promise<LessonRow[]> {
   return data ?? [];
 }
 
-export async function getLessonProgressForLessons(
-  lessonIds: string[]
-): Promise<LessonProgress[]> {
-  if (lessonIds.length === 0) {
-    return [];
-  }
-
-  const { data, error } = await supabase
-    .from('lesson_progress')
-    .select('*')
-    .in('lesson_id', lessonIds);
-
-  if (error) throw new Error(error.message);
-  return data ?? [];
-}
-
 export async function getLessonsWithProgress(unitId: string): Promise<LessonWithProgress[]> {
   const lessons = await getLessonsFromDB(unitId);
-  const progressList = await getLessonProgressForLessons(lessons.map((lesson) => lesson.id));
-  const progressMap = new Map(
-    progressList.map((progress) => [
-      progress.lesson_id,
-      normalizeLessonProgressStatus(progress.status),
-    ])
-  );
+  const progressList = await getAllLessonProgress();
+  const progressMap = new Map(progressList.map((p) => [p.lesson_id, p.status as 'completed' | 'in_progress' | 'not_started']));
 
   return lessons.map((lesson) => ({
     ...lesson,
-    status: progressMap.get(lesson.id) ?? 'not_started',
+    status: progressMap.get(lesson.id) || 'not_started',
   }));
 }
 ```
@@ -656,128 +583,17 @@ git commit -m "feat(components): add LessonCard component with dynamic progress 
 
 ---
 
-### Task 6: Lessons Data Hook
-
-**Files:**
-- Create: `hooks/useLessonsData.ts`
-- Create: `__tests__/hooks/useLessonsData.test.ts`
-
-**Interfaces:**
-- Consumes: `useLanguageStore`, `getUnitsFromDB`, `getLessonsWithProgress`.
-- Produces: `useLessonsData()` hook with `selectedLanguage`, `activeUnit`, `lessons`, `completedCount`, `loading`, `refreshing`, `error`, and `refresh()`.
-
-- [ ] **Step 1: Write failing tests for hook helper behavior**
-
-Because the repo currently uses a lightweight local mock for `@testing-library/react-native`, keep hook tests focused on exported pure helpers where possible:
-
-- `getInitialActiveUnit(units)` returns the first ordered unit or `null`.
-- `getCompletedLessonCount(lessons)` counts only `completed`.
-- `getFriendlyErrorMessage(error)` accepts `unknown` and returns a user-safe message.
-
-Then add one integration-style test for `useLessonsData` only if the current Jest setup supports hook rendering without changing test infrastructure.
-
-- [ ] **Step 2: Implement `hooks/useLessonsData.ts`**
-
-```tsx
-import { useCallback, useEffect, useState } from 'react';
-import { getLessonsWithProgress, getUnitsFromDB, type LessonWithProgress } from '@/lib/api';
-import { useLanguageStore } from '@/store/useLanguageStore';
-import type { LanguageId } from '@/types/learning';
-import type { UnitRow } from '@/types/database.types';
-
-const DEFAULT_LANGUAGE: LanguageId = 'en';
-const LOAD_ERROR_MESSAGE = 'We could not load lessons right now. Pull down to try again.';
-
-export function getInitialActiveUnit(units: UnitRow[]): UnitRow | null {
-  return units[0] ?? null;
-}
-
-export function getCompletedLessonCount(lessons: LessonWithProgress[]): number {
-  return lessons.filter((lesson) => lesson.status === 'completed').length;
-}
-
-export function getFriendlyErrorMessage(error: unknown): string {
-  return error instanceof Error && error.message.length > 0
-    ? error.message
-    : LOAD_ERROR_MESSAGE;
-}
-
-export function useLessonsData() {
-  const selectedLanguage = useLanguageStore((state) => state.selectedLanguage) ?? DEFAULT_LANGUAGE;
-  const [units, setUnits] = useState<UnitRow[]>([]);
-  const [lessons, setLessons] = useState<LessonWithProgress[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadLessons = useCallback(async (isRefreshing = false) => {
-    if (isRefreshing) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-
-    try {
-      setError(null);
-      const fetchedUnits = await getUnitsFromDB(selectedLanguage);
-      const activeUnit = getInitialActiveUnit(fetchedUnits);
-      const fetchedLessons = activeUnit ? await getLessonsWithProgress(activeUnit.id) : [];
-
-      setUnits(fetchedUnits);
-      setLessons(fetchedLessons);
-    } catch (loadError: unknown) {
-      setError(getFriendlyErrorMessage(loadError));
-      setLessons([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [selectedLanguage]);
-
-  useEffect(() => {
-    void loadLessons(false);
-  }, [loadLessons]);
-
-  return {
-    selectedLanguage,
-    activeUnit: getInitialActiveUnit(units),
-    lessons,
-    completedCount: getCompletedLessonCount(lessons),
-    loading,
-    refreshing,
-    error,
-    refresh: () => loadLessons(true),
-  };
-}
-```
-
-- [ ] **Step 3: Run hook tests**
-
-Run: `npm test __tests__/hooks/useLessonsData.test.ts`
-Expected: PASS
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add hooks/useLessonsData.ts __tests__/hooks/useLessonsData.test.ts
-git commit -m "feat(hooks): add lessons data loading hook"
-```
-
----
-
-### Task 7: Assemble Lessons Screen in `app/(tabs)/learn.tsx`
+### Task 6: Assemble Lessons Screen in `app/(tabs)/learn.tsx`
 
 **Files:**
 - Modify: `app/(tabs)/learn.tsx`
 - Create: `__tests__/screens/learn.test.tsx`
 
 **Interfaces:**
-- Consumes: `useLessonsData`, `UnitHeader`, `SegmentedToggle`, `LessonCard`.
+- Consumes: `useLanguageStore` (Zustand), `getUnitsFromDB`, `getLessonsWithProgress` (Supabase API), `UnitHeader`, `SegmentedToggle`, `LessonCard`.
 - Produces: Complete functional Lessons screen in `app/(tabs)/learn.tsx`.
 
 - [ ] **Step 1: Write failing test for `LearnScreen`**
-
-Mock `useLessonsData` directly so the screen test stays synchronous and compatible with the current local testing mock.
 
 ```tsx
 // __tests__/screens/learn.test.tsx
@@ -785,44 +601,30 @@ import React from 'react';
 import { render } from '@testing-library/react-native';
 import LearnScreen from '@/app/(tabs)/learn';
 
-jest.mock('@/hooks/useLessonsData', () => ({
-  useLessonsData: () => ({
+jest.mock('@/store/useLanguageStore', () => ({
+  useLanguageStore: () => ({
     selectedLanguage: 'en',
-    activeUnit: {
-      id: 'en-unit-1',
-      language_id: 'en',
-      order: 1,
-      title: 'Greetings & Introductions',
-      description: 'Desc',
-      icon_emoji: 'wave',
-      created_at: '2026-08-11T00:00:00Z',
-    },
-    lessons: [
-      {
-        id: 'en-unit-1-lesson-1',
-        unit_id: 'en-unit-1',
-        order: 1,
-        title: 'Hello & Goodbye',
-        xp_reward: 10,
-        estimated_minutes: 5,
-        ai_teacher_prompt: null,
-        created_at: '2026-08-11T00:00:00Z',
-        status: 'completed',
-      },
-    ],
-    completedCount: 1,
-    loading: false,
-    refreshing: false,
-    error: null,
-    refresh: jest.fn(),
   }),
 }));
 
+jest.mock('@/lib/api', () => ({
+  getUnitsFromDB: jest.fn(() =>
+    Promise.resolve([
+      { id: 'en-unit-1', language_id: 'en', order: 1, title: 'Greetings & Introductions', description: 'Desc', icon_emoji: '👋' },
+    ])
+  ),
+  getLessonsWithProgress: jest.fn(() =>
+    Promise.resolve([
+      { id: 'en-unit-1-lesson-1', unit_id: 'en-unit-1', order: 1, title: 'Hello & Goodbye', xp_reward: 10, estimated_minutes: 5, status: 'completed' },
+    ])
+  ),
+}));
+
 describe('LearnScreen', () => {
-  it('renders active unit and lesson content correctly', () => {
-    const { getByText } = render(<LearnScreen />);
-    expect(getByText('Greetings & Introductions')).toBeTruthy();
-    expect(getByText('Hello & Goodbye')).toBeTruthy();
+  it('renders unit and lesson content correctly', async () => {
+    const { findByText } = render(<LearnScreen />);
+    expect(await findByText('Greetings & Introductions')).toBeTruthy();
+    expect(await findByText('Hello & Goodbye')).toBeTruthy();
   });
 });
 ```
@@ -835,29 +637,66 @@ Expected: FAIL (LearnScreen currently displays static text)
 - [ ] **Step 3: Update `app/(tabs)/learn.tsx`**
 
 ```tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { type Href, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { TabScreenWrapper } from '@/components/navigation/TabScreenWrapper';
 import { UnitHeader } from '@/components/learn/UnitHeader';
 import { SegmentedToggle } from '@/components/learn/SegmentedToggle';
 import { LessonCard } from '@/components/learn/LessonCard';
-import { useLessonsData } from '@/hooks/useLessonsData';
+import { useLanguageStore } from '@/store/useLanguageStore';
+import { getUnitsFromDB, getLessonsWithProgress, UnitRow, LessonWithProgress } from '@/lib/api';
 import { colors } from '@/theme/colors';
 
 export default function LearnScreen() {
   const router = useRouter();
+  const selectedLanguage = useLanguageStore((state) => state.selectedLanguage) || 'en';
+
   const [activeTab, setActiveTab] = useState<'lessons' | 'practice'>('lessons');
-  const { activeUnit, lessons, completedCount, loading, refreshing, error, refresh } =
-    useLessonsData();
+  const [units, setUnits] = useState<UnitRow[]>([]);
+  const [lessons, setLessons] = useState<LessonWithProgress[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setError(null);
+      const fetchedUnits = await getUnitsFromDB(selectedLanguage);
+      setUnits(fetchedUnits);
+
+      if (fetchedUnits.length > 0) {
+        const activeUnitId = fetchedUnits[0].id;
+        const fetchedLessons = await getLessonsWithProgress(activeUnitId);
+        setLessons(fetchedLessons);
+      } else {
+        setLessons([]);
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load lessons from database.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [selectedLanguage]);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchData();
+  }, [fetchData]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchData();
+  };
 
   const handleLessonClick = (lessonId: string) => {
-    router.push({
-      pathname: '/lesson/[id]',
-      params: { id: lessonId },
-    } as Href);
+    router.push(`/lesson/${lessonId}` as any);
   };
+
+  const activeUnit = units[0];
+  const completedCount = lessons.filter((l) => l.status === 'completed').length;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.deepIndigo }}>
@@ -867,7 +706,7 @@ export default function LearnScreen() {
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              onRefresh={refresh}
+              onRefresh={onRefresh}
               tintColor={colors.lumioCoral}
             />
           }
@@ -932,17 +771,15 @@ export default function LearnScreen() {
 }
 ```
 
-Before shipping, verify whether `app/lesson/[id].tsx` exists. If it does not exist, keep the typed `Href` navigation but note in the final implementation summary that lesson detail routing is a dependency for the next lesson-flow plan.
-
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npm test __tests__/screens/learn.test.tsx`
 Expected: PASS
 
-- [ ] **Step 5: Run lint, typecheck, and full test suite**
+- [ ] **Step 5: Run full test suite and type check**
 
-Run: `npm run lint && npm run typecheck && npm test`
-Expected: 0 lint errors, 0 typecheck errors, and all tests passing.
+Run: `npm run typecheck && npm test`
+Expected: 0 typecheck errors and all tests passing.
 
 - [ ] **Step 6: Commit**
 

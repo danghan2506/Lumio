@@ -40,38 +40,28 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   const greeting = `${getGreetingPrefix(languageName)}, ${userName}! 👋`;
 
   return (
-    <View className="flex-row items-center justify-between px-6 py-4 bg-[#FFFBF4]">
+    <View className="flex-row items-center justify-between px-6 py-4 bg-cream">
       {/* Language Badge & User Greeting */}
       <Pressable
         onPress={onLanguagePress}
         className="flex-row items-center space-x-2 active:opacity-80"
       >
         <Text className="text-2xl mr-1">{languageFlag}</Text>
-        <Text
-          style={{ fontFamily: 'Fredoka_700Bold' }}
-          className="text-[#241B4A] text-xl"
-        >
-          {greeting}
-        </Text>
+        <Text className="text-deep-indigo font-display text-xl">{greeting}</Text>
       </Pressable>
 
       {/* Right Controls */}
       <View className="flex-row items-center space-x-3">
-        {/* Streak Flame Badge (Daylight Amber reward token) */}
-        <View className="flex-row items-center bg-[#FFB74D]/20 px-3 py-1.5 rounded-full border border-[#FFB74D]/40">
-          <Ionicons name="flame" size={18} color={colors.daylightAmber} />
-          <Text
-            style={{ fontFamily: 'PlusJakartaSans_700Bold' }}
-            className="text-[#241B4A] text-sm ml-1"
-          >
-            {String(streak)}
-          </Text>
+        {/* Streak Flame Badge */}
+        <View className="flex-row items-center bg-daylight-amber/20 px-3 py-1.5 rounded-full border border-daylight-amber/40">
+          <Ionicons name="flame" size={18} color="#FFB74D" />
+          <Text className="text-deep-indigo font-display text-sm ml-1">{String(streak)}</Text>
         </View>
 
         {/* Notification Bell */}
         <Pressable
           onPress={onNotificationPress}
-          className="w-10 h-10 rounded-full bg-[#EAE6FF]/60 items-center justify-center border border-[#5E5A80]/20 active:opacity-80"
+          className="w-10 h-10 rounded-full bg-lavender-mist/60 items-center justify-center border border-slate/15"
           testID="notification-button"
         >
           <Ionicons name="notifications-outline" size={20} color={colors.deepIndigo} />

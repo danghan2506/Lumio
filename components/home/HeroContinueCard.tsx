@@ -19,25 +19,19 @@ export const HeroContinueCard: React.FC<HeroContinueCardProps> = ({
   const courseTitle = `${language} ${level} • ${unitTitle}`;
 
   return (
-    <View className="mx-6 my-3 bg-[#241B4A] rounded-3xl shadow-md overflow-hidden relative p-6 border border-[#5E5A80]/30">
+    <View className="mx-6 my-3 bg-deep-indigo rounded-3xl shadow-md overflow-hidden relative p-6">
       {/* Decorative Right Accent Block */}
-      <View className="absolute right-0 top-0 bottom-0 w-32 bg-[#4B3FA8]/40 items-center justify-center pointer-events-none">
-        <FontAwesome5 name="landmark" size={48} color="rgba(255, 255, 255, 0.15)" />
+      <View className="absolute right-0 top-0 bottom-0 w-32 bg-canvas-dark-end/40 items-center justify-center pointer-events-none">
+        <FontAwesome5 name="landmark" size={48} color="rgba(255, 255, 255, 0.2)" />
       </View>
 
       {/* Card Content */}
       <View className="flex-1 pr-24 z-10">
-        <Text
-          style={{ fontFamily: 'PlusJakartaSans_700Bold' }}
-          className="text-[#FF6B57] text-xs uppercase tracking-wider mb-1"
-        >
+        <Text className="text-lumio-coral micro-label mb-1">
           CONTINUE LEARNING
         </Text>
 
-        <Text
-          style={{ fontFamily: 'Fredoka_700Bold' }}
-          className="text-[#FFFBF4] text-xl mb-5 leading-tight"
-        >
+        <Text className="text-white font-display text-xl mb-5 leading-tight">
           {courseTitle}
         </Text>
 
@@ -50,12 +44,7 @@ export const HeroContinueCard: React.FC<HeroContinueCardProps> = ({
             transform: [{ translateY: pressed ? 1 : 0 }],
           })}
         >
-          <Text
-            style={{ fontFamily: 'PlusJakartaSans_700Bold' }}
-            className="text-[#FFFBF4] text-sm"
-          >
-            Continue
-          </Text>
+          <Text className="text-deep-indigo font-display text-sm">Continue</Text>
         </Pressable>
       </View>
     </View>

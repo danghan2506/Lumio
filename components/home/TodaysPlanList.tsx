@@ -31,14 +31,14 @@ export const TodaysPlanList: React.FC<TodaysPlanListProps> = ({
   const renderStatusIndicator = (completed: boolean, active: boolean) => {
     if (completed) {
       return (
-        <View className="w-7 h-7 rounded-full bg-[#35D0A0] items-center justify-center">
+        <View className="w-7 h-7 rounded-full bg-mint items-center justify-center">
           <Ionicons name="checkmark" size={16} color="#FFFFFF" />
         </View>
       );
     }
     if (active) {
       return (
-        <View className="w-7 h-7 rounded-full border-2 border-[#FF6B57] items-center justify-center bg-[#FF6B57]/10">
+        <View className="w-7 h-7 rounded-full border-2 border-lumio-coral items-center justify-center bg-lumio-coral/10">
           <Ionicons name="pulse" size={14} color="#FF6B57" />
         </View>
       );
@@ -50,20 +50,10 @@ export const TodaysPlanList: React.FC<TodaysPlanListProps> = ({
     <View className="mx-6 my-3">
       {/* Header */}
       <View className="flex-row items-center justify-between mb-3">
-        <Text
-          style={{ fontFamily: 'Fredoka_700Bold' }}
-          className="text-[#241B4A] text-lg"
-        >
-          {"Today's plan"}
-        </Text>
+        <Text className="text-deep-indigo font-display text-lg">Today&apos;s plan</Text>
         {onViewAll && (
           <Pressable onPress={onViewAll} className="active:opacity-70">
-            <Text
-              style={{ fontFamily: 'PlusJakartaSans_600SemiBold' }}
-              className="text-[#FF6B57] text-sm"
-            >
-              View all
-            </Text>
+            <Text className="text-canvas-dark-end font-sans text-sm">View all</Text>
           </Pressable>
         )}
       </View>
@@ -74,28 +64,21 @@ export const TodaysPlanList: React.FC<TodaysPlanListProps> = ({
           <Pressable
             key={item.id}
             onPress={() => onItemPress?.(item)}
-            className="bg-[#EAE6FF]/40 rounded-2xl p-4 border border-[#EAE6FF] flex-row items-center justify-between active:opacity-90 shadow-sm mb-3"
+            className="bg-white rounded-2xl p-4 border border-lavender-mist flex-row items-center justify-between active:opacity-90 shadow-sm mb-3"
             style={({ pressed }) => ({
               opacity: pressed ? 0.9 : 1,
             })}
           >
             {/* Left Icon & Text */}
             <View className="flex-row items-center flex-1 mr-3">
-              <View className="w-12 h-12 rounded-xl bg-[#EAE6FF] items-center justify-center mr-3 border border-[#5E5A80]/10">
+              <View className="w-12 h-12 rounded-xl bg-lavender-mist/50 items-center justify-center mr-3">
                 {renderItemIcon(item.type)}
               </View>
               <View className="flex-1">
-                <Text
-                  style={{ fontFamily: 'PlusJakartaSans_700Bold' }}
-                  className="text-[#241B4A] text-base mb-0.5"
-                >
+                <Text className="text-deep-indigo font-display text-base mb-0.5">
                   {item.title}
                 </Text>
-                <Text
-                  style={{ fontFamily: 'PlusJakartaSans_500Medium' }}
-                  className="text-[#5E5A80] text-xs"
-                  numberOfLines={1}
-                >
+                <Text className="text-slate font-sans text-xs" numberOfLines={1}>
                   {item.subtitle}
                 </Text>
               </View>
