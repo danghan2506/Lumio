@@ -20,7 +20,10 @@ export function useLessonAudioDetails(lessonId: string) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!lessonId) return;
+    if (!lessonId) {
+      setLoading(false);
+      return;
+    }
 
     async function fetchData() {
       setLoading(true);
@@ -72,8 +75,9 @@ export function useLessonAudioDetails(lessonId: string) {
           language: langData,
           vocabularies: vocabData || [],
         });
-      } catch (err: any) {
-        setError(err.message || 'Failed to fetch lesson details');
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Failed to fetch lesson details';
+        setError(message);
       } finally {
         setLoading(false);
       }

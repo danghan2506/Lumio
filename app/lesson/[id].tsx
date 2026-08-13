@@ -12,9 +12,52 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { colors } from '@/theme/colors';
 import { images } from '@/constants/images';
 import { useLessonAudioDetails } from '@/hooks/useLessonAudioDetails';
+
+interface AnimatedButtonProps {
+  children: React.ReactNode;
+  onPress?: () => void;
+  className?: string;
+  style?: any;
+  disabled?: boolean;
+}
+
+function AnimatedButton({ children, onPress, className, style, disabled }: AnimatedButtonProps) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    if (disabled) return;
+    scale.value = withSpring(0.9, { damping: 10, stiffness: 300 });
+  };
+
+  const handlePressOut = () => {
+    if (disabled) return;
+    scale.value = withSpring(1.0, { damping: 10, stiffness: 300 });
+  };
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      disabled={disabled}
+      activeOpacity={0.8}
+      className={className}
+      style={style}
+    >
+      <Animated.View style={[animatedStyle, { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', flexDirection: 'row' }]}>
+        {children}
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
 
 export default function AudioLessonScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -108,16 +151,16 @@ export default function AudioLessonScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.deepIndigo }}>
       {/* Header Block */}
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-800/40">
-        <TouchableOpacity onPress={() => router.back()} style={{ minWidth: 48, minHeight: 48 }} className="items-center justify-center rounded-full bg-slate-800/20">
+        <AnimatedButton onPress={() => router.back()} style={{ minWidth: 48, minHeight: 48 }} className="items-center justify-center rounded-full bg-slate-800/20">
           <Ionicons name="chevron-back" size={24} color={colors.cream} />
-        </TouchableOpacity>
+        </AnimatedButton>
 
         <View className="items-center">
           <Text style={{ fontFamily: 'Fredoka_700Bold', color: colors.cream }} className="text-lg">
             AI Teacher
           </Text>
           <View className="flex-row items-center mt-0.5">
-            <View className="w-2 h-2 rounded-full bg-[#35D0A0] mr-1.5" />
+            <View style={{ backgroundColor: colors.mint }} className="w-2 h-2 rounded-full mr-1.5" />
             <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.mint }} className="text-xs">
               Online
             </Text>
@@ -157,7 +200,7 @@ export default function AudioLessonScreen() {
           <View className="relative w-48 h-48 justify-center items-center">
             {/* Pulsing visual circles representing audio waves */}
             {(isPlayingSound || isListening) && (
-              <View className="absolute inset-0 bg-[#FF6B57]/10 border-2 border-[#FF6B57]/20 rounded-full scale-125 animate-ping" />
+              <View style={{ backgroundColor: `${colors.lumioCoral}1A`, borderColor: `${colors.lumioCoral}33` }} className="absolute inset-0 border-2 rounded-full scale-125 animate-ping" />
             )}
             <Image
               source={images.lumiTutor}
@@ -181,9 +224,9 @@ export default function AudioLessonScreen() {
                   </Text>
                 )}
               </View>
-              <TouchableOpacity onPress={triggerPlaySound} style={{ minWidth: 48, minHeight: 48 }} className="items-center justify-center bg-[#FF6B57]/10 rounded-full">
+              <AnimatedButton onPress={triggerPlaySound} style={{ minWidth: 48, minHeight: 48, backgroundColor: `${colors.lumioCoral}1A` }} className="items-center justify-center rounded-full">
                 <Ionicons name={isPlayingSound ? 'volume-high' : 'volume-medium'} size={24} color={colors.lumioCoral} />
-              </TouchableOpacity>
+              </AnimatedButton>
             </View>
           </View>
         </View>
@@ -215,11 +258,11 @@ export default function AudioLessonScreen() {
           
           <View className="flex-row flex-wrap gap-2.5">
             {vocabularies.map((vocab) => (
-              <TouchableOpacity
+              <AnimatedButton
                 key={vocab.id}
                 onPress={() => handlePhrasePress(vocab.word, vocab.translation)}
                 disabled={isListening || isMuted}
-                style={{ backgroundColor: colors.deepIndigo, borderColor: colors.slate }}
+                style={{ backgroundColor: colors.deepIndigo, borderColor: colors.slate, minHeight: 48 }}
                 className="px-4 py-3 rounded-2xl border border-slate-700/50 flex-row items-center"
               >
                 <Ionicons name="mic-outline" size={16} color={colors.lumioCoral} className="mr-1.5" />
@@ -231,7 +274,7 @@ export default function AudioLessonScreen() {
                     {vocab.pronunciation}
                   </Text>
                 </View>
-              </TouchableOpacity>
+              </AnimatedButton>
             ))}
           </View>
         </View>
@@ -252,7 +295,7 @@ export default function AudioLessonScreen() {
               <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.slate }} className="text-xs">
                 Pronunciation
               </Text>
-              <Text style={{ fontFamily: 'Fredoka_700Bold', color: '#63B3ED' }} className="text-sm mt-1">
+              <Text style={{ fontFamily: 'Fredoka_700Bold', color: colors.daylightAmber }} className="text-sm mt-1">
                 {feedback.pronunciation}
               </Text>
             </View>
@@ -260,7 +303,7 @@ export default function AudioLessonScreen() {
               <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.slate }} className="text-xs">
                 Grammar
               </Text>
-              <Text style={{ fontFamily: 'Fredoka_700Bold', color: '#B9F5FF' }} className="text-sm mt-1">
+              <Text style={{ fontFamily: 'Fredoka_700Bold', color: colors.lavenderMist }} className="text-sm mt-1">
                 {feedback.grammar}
               </Text>
             </View>
@@ -269,41 +312,41 @@ export default function AudioLessonScreen() {
           {/* Buttons Control Row */}
           <View className="flex-row justify-center items-center gap-6">
             {/* Mic toggle */}
-            <TouchableOpacity
+            <AnimatedButton
               onPress={() => setIsMuted(!isMuted)}
               style={{
                 minWidth: 56,
                 minHeight: 56,
-                backgroundColor: isMuted ? colors.deepIndigo : '#FFFBF4',
+                backgroundColor: isMuted ? colors.deepIndigo : colors.cream,
                 borderColor: isMuted ? colors.lumioCoral : 'transparent',
               }}
               className="w-14 h-14 rounded-full justify-center items-center border-2"
             >
               <Ionicons name={isMuted ? 'mic-off-outline' : 'mic-outline'} size={24} color={isMuted ? colors.lumioCoral : colors.deepIndigo} />
-            </TouchableOpacity>
+            </AnimatedButton>
 
             {/* End Call Button */}
-            <TouchableOpacity
+            <AnimatedButton
               onPress={() => setShowSummary(true)}
               style={{ minWidth: 64, minHeight: 64 }}
               className="w-16 h-16 rounded-full bg-red-500 justify-center items-center shadow-lg"
             >
-              <Ionicons name="call-outline" size={28} color="#FFFBF4" style={{ transform: [{ rotate: '135deg' }] }} />
-            </TouchableOpacity>
+              <Ionicons name="call-outline" size={28} color={colors.cream} style={{ transform: [{ rotate: '135deg' }] }} />
+            </AnimatedButton>
 
             {/* Subtitles Toggle */}
-            <TouchableOpacity
+            <AnimatedButton
               onPress={() => setShowSubtitles(!showSubtitles)}
               style={{
                 minWidth: 56,
                 minHeight: 56,
-                backgroundColor: showSubtitles ? '#FFFBF4' : colors.deepIndigo,
+                backgroundColor: showSubtitles ? colors.cream : colors.deepIndigo,
                 borderColor: showSubtitles ? 'transparent' : colors.slate,
               }}
               className="w-14 h-14 rounded-full justify-center items-center border-2"
             >
               <Ionicons name="chatbox-ellipses-outline" size={24} color={showSubtitles ? colors.deepIndigo : colors.cream} />
-            </TouchableOpacity>
+            </AnimatedButton>
           </View>
         </View>
       </ScrollView>
@@ -354,18 +397,18 @@ export default function AudioLessonScreen() {
             />
 
             {/* Claim Reward Button */}
-            <TouchableOpacity
+            <AnimatedButton
               onPress={() => {
                 setShowSummary(false);
                 router.replace('/(tabs)/learn');
               }}
-              style={{ backgroundColor: colors.lumioCoral }}
+              style={{ backgroundColor: colors.lumioCoral, minHeight: 52 }}
               className="py-4 rounded-full items-center justify-center mb-2"
             >
               <Text style={{ fontFamily: 'Fredoka_700Bold', color: colors.cream }} className="text-base">
                 Claim Rewards
               </Text>
-            </TouchableOpacity>
+            </AnimatedButton>
           </View>
         </View>
       </Modal>
