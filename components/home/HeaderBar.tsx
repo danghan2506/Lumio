@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from '@/theme/colors';
 
 export interface HeaderBarProps {
   userName: string;
@@ -43,7 +44,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
       {/* Language Badge & User Greeting */}
       <Pressable
         onPress={onLanguagePress}
-        className="flex-row items-center space-x-2"
+        className="flex-row items-center space-x-2 active:opacity-80"
       >
         <Text className="text-2xl mr-1">{languageFlag}</Text>
         <Text className="text-deep-indigo font-display text-xl">{greeting}</Text>
@@ -63,9 +64,10 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
           className="w-10 h-10 rounded-full bg-lavender-mist/60 items-center justify-center border border-slate/15"
           testID="notification-button"
         >
-          <Ionicons name="notifications-outline" size={20} color="#241B4A" />
+          <Ionicons name="notifications-outline" size={20} color={colors.deepIndigo} />
         </Pressable>
       </View>
     </View>
   );
 };
+

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from '@/theme/colors';
 
 interface DailyGoalCardProps {
   currentXp: number;
@@ -47,3 +48,4 @@ export const DailyGoalCard: React.FC<DailyGoalCardProps> = ({
     </View>
   );
 };
+

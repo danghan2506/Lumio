@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DailyPlanItem, PlanItemType } from '@/types/home';
+import { colors } from '@/theme/colors';
 
 export interface TodaysPlanListProps {
   items: DailyPlanItem[];
@@ -17,13 +18,13 @@ export const TodaysPlanList: React.FC<TodaysPlanListProps> = ({
   const renderItemIcon = (type: PlanItemType) => {
     switch (type) {
       case 'lesson':
-        return <Ionicons name="book-outline" size={22} color="#4B3FA8" />;
+        return <Ionicons name="book-outline" size={22} color={colors.deepIndigo} />;
       case 'ai_conversation':
-        return <Ionicons name="headset-outline" size={22} color="#FF6B57" />;
+        return <Ionicons name="headset-outline" size={22} color={colors.lumioCoral} />;
       case 'vocabulary':
-        return <Ionicons name="chatbox-ellipses-outline" size={22} color="#35D0A0" />;
+        return <Ionicons name="chatbox-ellipses-outline" size={22} color={colors.mint} />;
       default:
-        return <Ionicons name="book-outline" size={22} color="#4B3FA8" />;
+        return <Ionicons name="book-outline" size={22} color={colors.deepIndigo} />;
     }
   };
 
@@ -42,7 +43,7 @@ export const TodaysPlanList: React.FC<TodaysPlanListProps> = ({
         </View>
       );
     }
-    return <View className="w-7 h-7 rounded-full border border-slate-300" />;
+    return <View className="w-7 h-7 rounded-full border border-[#5E5A80]/40" />;
   };
 
   return (
@@ -91,3 +92,4 @@ export const TodaysPlanList: React.FC<TodaysPlanListProps> = ({
     </View>
   );
 };
+

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from '@/theme/colors';
 
 export interface AiVideoHighlightCardProps {
   onStartCall?: () => void;
@@ -28,13 +29,14 @@ export const AiVideoHighlightCard: React.FC<AiVideoHighlightCardProps> = ({
         </Text>
       </View>
 
-      {/* Circular Call Button */}
+      {/* Circular Call Button (Lumio Coral Primary CTA) */}
       <View
         testID="start-call-button"
         className="w-14 h-14 rounded-full bg-mint items-center justify-center shadow-md"
       >
-        <Ionicons name="videocam" size={26} color="#FFFFFF" />
+        <Ionicons name="videocam" size={26} color={colors.cream} />
       </View>
     </Pressable>
   );
 };
+

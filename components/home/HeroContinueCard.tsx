@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { colors } from '@/theme/colors';
 
 export interface HeroContinueCardProps {
   language: string;
@@ -34,11 +35,13 @@ export const HeroContinueCard: React.FC<HeroContinueCardProps> = ({
           {courseTitle}
         </Text>
 
+        {/* Primary CTA Button (Lumio Coral #FF6B57 fill with Cream #FFFBF4 text per DESIGN.md) */}
         <Pressable
           onPress={onContinue}
-          className="bg-white px-6 py-3 rounded-full self-start active:opacity-80"
+          className="bg-[#FF6B57] px-6 py-3 rounded-full self-start shadow-sm active:bg-[#FF533D]"
           style={({ pressed }) => ({
-            opacity: pressed ? 0.85 : 1,
+            opacity: pressed ? 0.9 : 1,
+            transform: [{ translateY: pressed ? 1 : 0 }],
           })}
         >
           <Text className="text-deep-indigo font-display text-sm">Continue</Text>
@@ -47,3 +50,4 @@ export const HeroContinueCard: React.FC<HeroContinueCardProps> = ({
     </View>
   );
 };
+

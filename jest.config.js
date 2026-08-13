@@ -2,6 +2,7 @@
 module.exports = {
   preset: 'jest-expo',
   testEnvironment: 'node',
+  modulePathIgnorePatterns: ['<rootDir>/.worktrees'],
   moduleNameMapper: {
     '\\.(jpg|jpeg|png|gif|webp|svg)$': '<rootDir>/__mocks__/fileMock.js',
     '^@/(.*)$': '<rootDir>/$1',
