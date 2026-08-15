@@ -861,7 +861,8 @@ Expected: FAIL — module not found.
 ```ts
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Call, CallingState, StreamVideoClient } from '@stream-io/video-react-native-sdk';
-import { createStreamLessonSession, StreamLessonSession } from '@/lib/api';
+import { createStreamLessonSession } from '@/lib/api';
+import type { StreamLessonSession } from '@/types/stream';
 import { getStreamClient, disconnectStreamUser } from '@/lib/stream';
 
 export type StreamCallStatus =
