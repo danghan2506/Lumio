@@ -697,7 +697,7 @@ git commit -m "feat(stream): add client singleton helpers"
   ```ts
   export type StreamCallStatus = 'idle' | 'connecting' | 'joining' | 'joined' | 'ended' | 'error';
   export interface UseStreamLessonCallParams {
-    userId: string; lessonId: string; languageId: string;
+    lessonId: string; languageId: string;
     displayName: string; accessToken: string; enabled: boolean;
   }
   export function useStreamLessonCall(params: UseStreamLessonCallParams): {
@@ -710,6 +710,8 @@ git commit -m "feat(stream): add client singleton helpers"
     leave: () => Promise<void>;
   }
   ```
+
+> **Note (controller ruling):** the hook does NOT take `userId`. `createStreamLessonSession`'s params deliberately exclude it (the server derives the Stream `user_id` from the verified JWT; a client-supplied `userId` on the wire is forbidden by the impersonation guard and by Task 2's type). The hook uses `sessionData.userId` (from the response) for `getStreamClient`. `useAuth`'s `user.id` is not needed inside the hook.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -748,7 +750,6 @@ const createCall = jest.fn((type: string, id: string) => ({
 }));
 
 const baseParams = {
-  userId: 'u1',
   lessonId: 'l1',
   languageId: 'en',
   displayName: 'Alex',
@@ -874,7 +875,6 @@ export type StreamCallStatus =
   | 'error';
 
 export interface UseStreamLessonCallParams {
-  userId: string;
   lessonId: string;
   languageId: string;
   displayName: string;
@@ -883,7 +883,7 @@ export interface UseStreamLessonCallParams {
 }
 
 export function useStreamLessonCall(params: UseStreamLessonCallParams) {
-  const { userId, lessonId, languageId, displayName, accessToken, enabled } = params;
+  const { lessonId, languageId, displayName, accessToken, enabled } = params;
   const [status, setStatus] = useState<StreamCallStatus>('idle');
   const [isMuted, setIsMuted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -903,7 +903,6 @@ export function useStreamLessonCall(params: UseStreamLessonCallParams) {
     let sessionData: StreamLessonSession;
     try {
       sessionData = await createStreamLessonSession({
-        userId,
         lessonId,
         languageId,
         displayName,
@@ -941,7 +940,7 @@ export function useStreamLessonCall(params: UseStreamLessonCallParams) {
       );
       setStatus('error');
     }
-  }, [userId, lessonId, languageId, displayName, accessToken]);
+  }, [lessonId, languageId, displayName, accessToken]);
 
   const retry = useCallback(async () => {
     await join();
@@ -1168,7 +1167,6 @@ Inside `AudioLessonScreen`, add after the lesson-data hook:
 const { user, session } = useAuth();
 const { isMuted, status, errorMessage, join, retry, toggleMute, leave } =
   useStreamLessonCall({
-    userId: user?.id ?? '',
     lessonId: id || '',
     languageId: language?.id ?? '',
     displayName: user?.email ?? 'Learner',
