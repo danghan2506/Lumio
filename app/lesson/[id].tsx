@@ -68,7 +68,7 @@ export default function AudioLessonScreen() {
   const router = useRouter();
   const { lesson, unit, language, vocabularies, loading, error } = useLessonAudioDetails(id || '');
   const { user, session } = useAuth();
-  const { isMuted, status, errorMessage, join, retry, toggleMute, leave } =
+  const { isMuted, status, errorMessage, retry, toggleMute, leave } =
     useStreamLessonCall({
       lessonId: id || '',
       languageId: language?.id ?? '',
@@ -187,7 +187,7 @@ export default function AudioLessonScreen() {
       )}
 
       {status === 'error' && (
-        <View className="mx-6 mt-4 p-4 rounded-3xl bg-r-coral/10 border border-slate-700/40 items-center">
+        <View className="mx-6 mt-4 p-4 rounded-3xl bg-lumio-coral/10 border border-slate-700/40 items-center">
           <Ionicons name="alert-circle-outline" size={28} color={colors.lumioCoral} style={{ marginBottom: 8 }} />
           <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.cream }} className="text-sm text-center mb-1">
             Couldn&apos;t connect to the audio call
