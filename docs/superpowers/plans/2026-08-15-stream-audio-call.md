@@ -833,7 +833,7 @@ describe('useStreamLessonCall', () => {
   });
 
   it('does not double-leave on unmount after manual leave()', async () => {
-    const { result } = renderHook(() => useStreamLessonCall(baseParams));
+    const { result, unmount } = renderHook(() => useStreamLessonCall(baseParams));
     await waitFor(() => expect(result.current.status).toBe('joined'));
 
     const call = createCall.mock.results[createCall.mock.results.length - 1].value;
