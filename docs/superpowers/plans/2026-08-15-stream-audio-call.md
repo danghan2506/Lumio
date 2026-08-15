@@ -1165,7 +1165,7 @@ Inside `AudioLessonScreen`, add after the lesson-data hook:
 
 ```tsx
 const { user, session } = useAuth();
-const { isMuted, status, errorMessage, join, retry, toggleMute, leave } =
+const { isMuted, status, errorMessage, retry, toggleMute, leave } =
   useStreamLessonCall({
     lessonId: id || '',
     languageId: language?.id ?? '',
@@ -1210,7 +1210,7 @@ Add a derived name + connecting overlay before the header block (right after the
 )}
 
 {status === 'error' && (
-  <View className="mx-6 mt-4 p-4 rounded-3xl bg-r-coral/10 border border-slate-700/40 items-center">
+  <View className="mx-6 mt-4 p-4 rounded-3xl bg-lumio-coral/10 border border-slate-700/40 items-center">
     <Ionicons name="alert-circle-outline" size={28} color={colors.lumioCoral} style={{ marginBottom: 8 }} />
     <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.cream }} className="text-sm text-center mb-1">
       Couldn't connect to the audio call
