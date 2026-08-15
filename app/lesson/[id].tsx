@@ -16,6 +16,8 @@ import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-na
 import { colors } from '@/theme/colors';
 import { images } from '@/constants/images';
 import { useLessonAudioDetails } from '@/hooks/useLessonAudioDetails';
+import { useAuth } from '@/hooks/useAuth';
+import { useStreamLessonCall } from '@/hooks/useStreamLessonCall';
 
 interface AnimatedButtonProps {
   children: React.ReactNode;
@@ -23,9 +25,10 @@ interface AnimatedButtonProps {
   className?: string;
   style?: any;
   disabled?: boolean;
+  testID?: string;
 }
 
-function AnimatedButton({ children, onPress, className, style, disabled }: AnimatedButtonProps) {
+function AnimatedButton({ children, onPress, className, style, disabled, testID }: AnimatedButtonProps) {
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -44,6 +47,7 @@ function AnimatedButton({ children, onPress, className, style, disabled }: Anima
 
   return (
     <TouchableOpacity
+      testID={testID}
       onPress={onPress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
@@ -63,9 +67,17 @@ export default function AudioLessonScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { lesson, unit, language, vocabularies, loading, error } = useLessonAudioDetails(id || '');
+  const { user, session } = useAuth();
+  const { isMuted, status, errorMessage, retry, toggleMute, leave } =
+    useStreamLessonCall({
+      lessonId: id || '',
+      languageId: language?.id ?? '',
+      displayName: user?.email ?? 'Learner',
+      accessToken: session?.access_token ?? '',
+      enabled: Boolean(user && session && lesson && language),
+    });
 
   // State Variables
-  const [isMuted, setIsMuted] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(true);
   const [isPlayingSound, setIsPlayingSound] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
@@ -149,6 +161,48 @@ export default function AudioLessonScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.deepIndigo }}>
+      {(status === 'connecting' || status === 'joining') && (
+        <View className="absolute inset-0 z-10 items-center justify-center px-8" style={{ backgroundColor: colors.deepIndigo }}>
+          <ActivityIndicator size="large" color={colors.lumioCoral} />
+          <Text style={{ fontFamily: 'Fredoka_700Bold', color: colors.cream }} className="text-xl mt-6 text-center">
+            {status === 'joining' ? 'Joining call…' : 'Connecting…'}
+          </Text>
+          <View className="flex-row items-center mt-3 rounded-full bg-slate-800/60 px-4 py-2">
+            <View className="w-7 h-7 rounded-full bg-slate-700 items-center justify-center mr-2">
+              <Ionicons name="person" size={16} color={colors.cream} />
+            </View>
+            <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.cream }} className="text-sm">
+              {user?.email ?? 'Learner'}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="mt-6 px-6 py-3 rounded-full border border-slate-700"
+          >
+            <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.lavenderMist }} className="text-xs">
+              Cancel
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {status === 'error' && (
+        <View className="mx-6 mt-4 p-4 rounded-3xl bg-lumio-coral/10 border border-slate-700/40 items-center">
+          <Ionicons name="alert-circle-outline" size={28} color={colors.lumioCoral} style={{ marginBottom: 8 }} />
+          <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.cream }} className="text-sm text-center mb-1">
+            Couldn&apos;t connect to the audio call
+          </Text>
+          <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.lavenderMist }} className="text-xs text-center mb-3 opacity-75">
+            {errorMessage}
+          </Text>
+          <TouchableOpacity onPress={() => void retry()} className="px-5 py-2 rounded-full" style={{ backgroundColor: colors.lumioCoral }}>
+            <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.cream }} className="text-xs">
+              Retry
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Header Block */}
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-800/40">
         <AnimatedButton onPress={() => router.back()} style={{ minWidth: 48, minHeight: 48 }} className="items-center justify-center rounded-full bg-slate-800/20">
@@ -162,7 +216,7 @@ export default function AudioLessonScreen() {
           <View className="flex-row items-center mt-0.5">
             <View style={{ backgroundColor: colors.mint }} className="w-2 h-2 rounded-full mr-1.5" />
             <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.mint }} className="text-xs">
-              Online
+              {status === 'joined' ? `On call · ${user?.email ?? 'Learner'}` : 'Online'}
             </Text>
           </View>
         </View>
@@ -313,7 +367,9 @@ export default function AudioLessonScreen() {
           <View className="flex-row justify-center items-center gap-6">
             {/* Mic toggle */}
             <AnimatedButton
-              onPress={() => setIsMuted(!isMuted)}
+              testID="mic-toggle"
+              onPress={() => void toggleMute()}
+              disabled={status !== 'joined'}
               style={{
                 minWidth: 56,
                 minHeight: 56,
@@ -327,7 +383,11 @@ export default function AudioLessonScreen() {
 
             {/* End Call Button */}
             <AnimatedButton
-              onPress={() => setShowSummary(true)}
+              testID="end-call"
+              onPress={() => {
+                void leave();
+                setShowSummary(true);
+              }}
               style={{ minWidth: 64, minHeight: 64 }}
               className="w-16 h-16 rounded-full bg-red-500 justify-center items-center shadow-lg"
             >
