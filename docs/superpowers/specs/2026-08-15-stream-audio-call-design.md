@@ -59,21 +59,23 @@ Expo Router **API routes require `web.output: "server"`** and files ending in `+
 
 Request:
 ```json
-{ "userId", "lessonId", "languageId", "displayName" }
+{ "lessonId", "languageId", "displayName" }
 ```
 plus `Authorization: Bearer <supabase_access_token>`.
 
+The request **never sends `userId`** — the Stream `user_id` is derived from the authenticated Supabase session, not from a client-supplied identity (impersonation guard per Stream house rules).
+
 Handler steps:
-1. Validate the Supabase session: `supabase.auth.getUser(bearerToken)`; confirm `user.id === userId`. Otherwise `401`.
+1. Validate the Supabase session: `supabase.auth.getUser(bearerToken)`; on error/missing user return `401`. The authoritative Stream `user_id` IS `user.id` from that verified session.
 2. Instantiate `new StreamClient(process.env.STREAM_API_KEY, process.env.STREAM_API_SECRET)`.
-3. Upsert the Stream user: `client.upsertUsers([{ id: userId, name: displayName, role: 'user' }])`.
-4. Build the call ID: `lesson-<lessonId>-<userId>` (reusable per lesson).
+3. Upsert the Stream user: `client.upsertUsers([{ id: user.id, name: displayName, role: 'user' }])`.
+4. Build the call ID: `lesson-<lessonId>-<user.id>` (reusable per lesson).
 5. Create/load the call with audio-only defaults:
    ```ts
    await client.video.call('audio_room', callId).getOrCreate({
      data: {
-       created_by_id: userId,
-       members: [{ user_id: userId }],
+       created_by_id: user.id,
+       members: [{ user_id: user.id }],
        custom: { lesson_id: lessonId, language_id: languageId },
        settings_override: {
          audio: { mic_default_on: true },
@@ -84,11 +86,11 @@ Handler steps:
    ```
 6. Mint a user token (configurable validity, default 4h):
    ```ts
-   const token = client.generateUserToken({ user_id: userId, validity_in_seconds: 4 * 60 * 60 });
+   const token = client.generateUserToken({ user_id: user.id, validity_in_seconds: 4 * 60 * 60 });
    ```
 7. Return `200`:
    ```json
-   { "apiKey": process.env.STREAM_API_KEY, "userId", "token", "callType": "audio_room", "callId" }
+   { "apiKey": process.env.STREAM_API_KEY, "userId": user.id, "token", "callType": "audio_room", "callId" }
    ```
 
 Consistent error responses: `{ error: "message" }` with `400/401/500` as appropriate. Never expose raw SDK errors to the client.
@@ -109,10 +111,11 @@ Consistent error responses: `{ error: "message" }` with `400/401/500` as appropr
 
 ```ts
 createStreamLessonSession(params: {
-  userId, lessonId, languageId, displayName, accessToken,
+  lessonId, languageId, displayName, accessToken,
 }): Promise<StreamLessonSession>
 ```
-- `fetch('/api/stream/session', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify(...) })`.
+- `fetch('/api/stream/session', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ lessonId, languageId, displayName }) })`.
+- The body never includes `userId`; the server derives it from the bearer token (impersonation guard). The response's `userId` is used by the client to address the Stream client user.
 - Relative fetch resolves against the dev server origin in development (Expo Router server output); production origin comes from app config.
 - Parses the response; throws `Error` with the server's `error` message on failure.
 
@@ -133,15 +136,13 @@ Public return:
 Behaviour:
 - `join()`:
   1. `status = connecting`; call `createStreamLessonSession(...)`.
-  2. On response: `getStreamClient(...)`, `const call = client.call('audio_room', callId)`.
-  3. `callManager.start({ audioRole: 'communicator', deviceEndpointType: 'speaker' })` (stop before start).
-  4. `call.camera.disable()`; ensure mic state per `isMuted`.
-  5. `status = joining`; `await call.join({ create: true })`.
-  6. `status = joined`.
-- `toggleMute()`: `await call.microphone.toggle()` and mirror `isMuted` from the hook (`useMicrophoneState` optimistically, or track locally after await).
-- `leave()`: `callManager.stop()`, `await call.leave()`, `disconnectStreamUser()`, `status = ended`.
+  2. On response: `getStreamClient(...)`, `const call = client.call(session.callType, session.callId, { reuseInstance: true })` (singleton per type/id pair).
+  3. `status = joining`; `await call.join()` (call was already created server-side — do **not** pass `create: true`; the SDK auto-starts audio routing as `communicator` and applies mic/camera defaults from `settings_override`).
+  4. `status = joined`.
+- `toggleMute()`: `await call.microphone.enable()/disable()` per the new `isMuted` value and mirror it locally (`useMicrophoneState` read if available).
+- `leave()`: guard `call.state.callingState !== CallingState.LEFT` then `await call.leave()`, `disconnectStreamUser()`, `status = ended`. Never call `callManager.start/stop()` in the standard flow — the SDK manages audio routing on `join()`/`leave()`.
 - Errors set `status = error` with a user-friendly message; `retry()` resets and re-runs `join()`.
-- Cleanup on unmount: leave/disconnect best-effort.
+- Cleanup on unmount: guarded `leave()` + `disconnectStreamUser()` best-effort (survives React 18 strict-mode double effects).
 
 ### 4.4 `app/lesson/[id].tsx` — UI wiring (existing UI preserved)
 
