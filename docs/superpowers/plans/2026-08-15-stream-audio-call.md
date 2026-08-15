@@ -582,14 +582,18 @@ Create `__tests__/lib/stream.test.ts`:
 import { getStreamClient, disconnectStreamUser } from '../../lib/stream';
 import { StreamVideoClient } from '@stream-io/video-react-native-sdk';
 
-const getOrCreateInstance = jest.fn();
-const disconnectUser = jest.fn().mockResolvedValue(undefined);
+const mockGetOrCreateInstance = jest.fn();
+const mockDisconnectUser = jest.fn().mockResolvedValue(undefined);
 
+// babel-jest (jest-expo) hoists jest.mock above the consts; the factory must
+// read jest fns via mock-prefixed getters (jest's /^mock/i hoist allowlist),
+// the same remedy proven in the Task 3 route test. The fake client's
+// disconnectUser is shared via mockReturnValue so the tests that pass/call it
+// still assert against the real jest.fn.
 jest.mock('@stream-io/video-react-native-sdk', () => ({
   StreamVideoClient: {
-    getOrCreateInstance: (...args: unknown[]) => {
-      getOrCreateInstance(...args);
-      return { disconnectUser };
+    get getOrCreateInstance() {
+      return mockGetOrCreateInstance;
     },
   },
 }));
@@ -597,15 +601,16 @@ jest.mock('@stream-io/video-react-native-sdk', () => ({
 describe('lib/stream', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    getOrCreateInstance.mockReset();
-    disconnectUser.mockClear();
+    mockGetOrCreateInstance.mockReset();
+    mockGetOrCreateInstance.mockReturnValue({ disconnectUser: mockDisconnectUser });
+    mockDisconnectUser.mockClear();
   });
 
   it('returns the singleton client connected with given credentials', () => {
     const client = getStreamClient({ apiKey: 'key', userId: 'u1', token: 'tok' });
 
     expect(client).toBeDefined();
-    expect(getOrCreateInstance).toHaveBeenCalledWith({
+    expect(mockGetOrCreateInstance).toHaveBeenCalledWith({
       apiKey: 'key',
       user: { id: 'u1' },
       token: 'tok',
@@ -613,13 +618,13 @@ describe('lib/stream', () => {
   });
 
   it('disconnects the provided client', async () => {
-    const client = { disconnectUser } as never;
+    const client = { disconnectUser: mockDisconnectUser } as never;
     await disconnectStreamUser(client);
-    expect(disconnectUser).toHaveBeenCalledTimes(1);
+    expect(mockDisconnectUser).toHaveBeenCalledTimes(1);
   });
 
   it('does not throw when the singleton is not connected', async () => {
-    getOrCreateInstance.mockImplementationOnce(() => {
+    mockGetOrCreateInstance.mockImplementationOnce(() => {
       throw new Error('not initialized');
     });
     await expect(disconnectStreamUser()).resolves.toBeUndefined();
