@@ -10,6 +10,10 @@ import {
   LessonRow,
   LessonProgressStatus,
 } from '../types/database.types';
+import {
+  CreateStreamLessonSessionParams,
+  StreamLessonSession,
+} from '../types/stream';
 
 export async function setActiveLanguage(languageId: LanguageId): Promise<void> {
   const { error } = await supabase.rpc('set_active_language', {
@@ -243,5 +247,38 @@ export async function getLessonsWithProgress(unitId: string): Promise<LessonWith
     ...lesson,
     status: progressMap.get(lesson.id) ?? 'not_started',
   }));
+}
+
+export async function createStreamLessonSession(
+  params: CreateStreamLessonSessionParams
+): Promise<StreamLessonSession> {
+  const response = await fetch('/api/stream/session', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${params.accessToken}`,
+    },
+    body: JSON.stringify({
+      lessonId: params.lessonId,
+      languageId: params.languageId,
+      displayName: params.displayName,
+    }),
+  });
+
+  const body = (await response.json()) as {
+    error?: string;
+  } & Partial<StreamLessonSession>;
+
+  if (!response.ok || body.error || !body.apiKey || !body.token || !body.callId) {
+    throw new Error(body.error || `Stream session request failed (${response.status})`);
+  }
+
+  return {
+    apiKey: body.apiKey,
+    userId: body.userId as string,
+    token: body.token,
+    callType: body.callType ?? 'audio_room',
+    callId: body.callId,
+  };
 }
 

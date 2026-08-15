@@ -13,6 +13,7 @@ import {
   getLessonsFromDB,
   getLessonProgressForLessons,
   getLessonsWithProgress,
+  createStreamLessonSession,
 } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
 
@@ -585,6 +586,83 @@ describe('lib/api database helpers', () => {
       expect(supabase.from).toHaveBeenCalledWith('lessons');
       expect(supabase.from).toHaveBeenCalledWith('lesson_progress');
       expect(progressInMock).toHaveBeenCalledWith('lesson_id', ['l1', 'l2', 'l3']);
+    });
+  });
+
+  describe('createStreamLessonSession', () => {
+    const params = {
+      lessonId: 'lesson-1',
+      languageId: 'en',
+      displayName: 'Alex',
+      accessToken: 'jwt-token',
+    };
+    const okSession = {
+      apiKey: 'stream-key',
+      userId: 'user-1',
+      token: 'signed-token',
+      callType: 'audio_room',
+      callId: 'lesson-lesson-1-user-1',
+    };
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('POSTs the request and returns the session', async () => {
+      const fetchMock = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => okSession,
+      });
+      global.fetch = fetchMock as unknown as typeof fetch;
+
+      const session = await createStreamLessonSession(params);
+
+      expect(session).toEqual(okSession);
+      const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe('/api/stream/session');
+      expect(init.method).toBe('POST');
+      expect((init.headers as Record<string, string>).Authorization).toBe('Bearer jwt-token');
+      expect(JSON.parse(String(init.body))).toEqual({
+        lessonId: 'lesson-1',
+        languageId: 'en',
+        displayName: 'Alex',
+      });
+    });
+
+    it('never sends the userId in the request body', async () => {
+      const fetchMock = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => okSession,
+      });
+      global.fetch = fetchMock as unknown as typeof fetch;
+
+      await createStreamLessonSession(params);
+
+      const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+      expect(body).not.toHaveProperty('userId');
+    });
+
+    it('throws the server error message on non-2xx', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: 'Unauthorized.' }),
+      }) as unknown as typeof fetch;
+
+      await expect(createStreamLessonSession(params)).rejects.toThrow('Unauthorized.');
+    });
+
+    it('throws when the response is missing required fields', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ apiKey: 'stream-key' }),
+      }) as unknown as typeof fetch;
+
+      await expect(createStreamLessonSession(params)).rejects.toThrow();
     });
   });
 });
