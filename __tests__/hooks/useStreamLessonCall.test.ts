@@ -118,6 +118,15 @@ describe('useStreamLessonCall', () => {
     expect(result.current.status).toBe('ended');
   });
 
+  it('exposes callType and callId from the session after joining', async () => {
+    const { result } = renderHook(() => useStreamLessonCall(baseParams));
+    expect(result.current.callType).toBeNull();
+    expect(result.current.callId).toBeNull();
+    await waitFor(() => expect(result.current.status).toBe('joined'));
+    expect(result.current.callType).toBe('audio_room');
+    expect(result.current.callId).toBe('lesson-l1-u1');
+  });
+
   it('does not double-leave on unmount after manual leave()', async () => {
     const { result, unmount } = renderHook(() => useStreamLessonCall(baseParams));
     await waitFor(() => expect(result.current.status).toBe('joined'));
