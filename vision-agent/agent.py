@@ -46,28 +46,36 @@ def teacher_instructions(language: str) -> str:
     return (
         f"You are an encouraging AI language teacher in a live voice lesson. "
         f"The learner wants to learn {language}.\n"
-        "Rules:\n"
-        "- ALWAYS speak English. You teach the lesson through English.\n"
         f"- Teach {language} vocabulary and short phrases. Give each new word's "
         f"{language} form, its English meaning, and a simple example.\n"
         "- After introducing a new word, prompt the learner to repeat it aloud.\n"
-        "- Keep responses short, conversational and spoken-only. No markdown, "
-        "no lists, no emojis.\n"
-        "- Correct mistakes gently and praise progress.\n"
-        "- If the learner's speech is unclear or inaudible, ask them to repeat."
+        + TEACHER_RULES
     )
+
+
+#: Shared guardrails every lesson follows, whether the base instructions come
+#: from a client-authored prompt or the per-language fallback.
+TEACHER_RULES = (
+    "Rules:\n"
+    "- ALWAYS speak English. You teach the lesson through English.\n"
+    "- Keep responses short, conversational and spoken-only. No markdown, "
+    "no lists, no emojis.\n"
+    "- Correct mistakes gently and praise progress.\n"
+    "- If the learner's speech is unclear or inaudible, ask them to repeat."
+)
 
 
 def build_instructions(custom_data: dict, language: str) -> str:
     """System instructions for the teacher, using the richest lesson payload.
 
-    Prefers the client-authored ``aiTeacherPrompt`` when present and falls
-    back to the generic per-language teacher instructions, augmented with the
-    lesson's drill content (goals, vocabulary, phrases).
+    Prefers the shared guardrails appended to the client-authored
+    ``aiTeacherPrompt`` when present and falls back to the generic per-language
+    teacher instructions, augmented with the lesson's drill content (goals,
+    vocabulary, phrases).
     """
     prompt = custom_data.get("aiTeacherPrompt")
     if isinstance(prompt, str) and prompt.strip():
-        base = prompt.strip()
+        base = f"{prompt.strip()} {TEACHER_RULES}"
     else:
         base = teacher_instructions(language)
 
