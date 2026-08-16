@@ -47,6 +47,15 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
   onAvatarChange,
 }) => {
   const [copied, setCopied] = useState(false);
+  const copyTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const formattedDate = formatJoinedDate(joinedDate);
   const userInitial = displayName ? displayName.charAt(0).toUpperCase() : 'L';
@@ -55,7 +64,10 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
     try {
       await Clipboard.setStringAsync(userId);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+      copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
     } catch {
       // Ignore clipboard write failure
     }
