@@ -1,0 +1,175 @@
+import { POST, DELETE } from '../../app/api/stream/agent+api';
+
+const upsertUsers = jest.fn().mockResolvedValue({});
+const update = jest.fn().mockResolvedValue({});
+const updateCallMembers = jest.fn().mockResolvedValue({});
+const updateUserPermissions = jest.fn().mockResolvedValue({});
+const goLive = jest.fn().mockResolvedValue({});
+const videoCall = jest.fn().mockReturnValue({
+  update,
+  updateCallMembers,
+  updateUserPermissions,
+  goLive,
+});
+const mockStreamClient = jest.fn().mockImplementation(() => ({
+  upsertUsers,
+  video: { call: videoCall },
+}));
+
+jest.mock('@stream-io/node-sdk', () => ({
+  get StreamClient() {
+    return mockStreamClient;
+  },
+}));
+
+jest.mock('@supabase/supabase-js', () => {
+  const getUser = jest.fn();
+  return {
+    createClient: jest.fn(() => ({
+      auth: { getUser },
+      from: jest
+        .fn()
+        .mockReturnValue({
+          select: jest
+            .fn()
+            .mockReturnValue({
+              eq: jest
+                .fn()
+                .mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+                }),
+            }),
+        }),
+    })),
+    __getUser: getUser,
+  };
+});
+
+describe('POST /api/stream/agent (start)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    process.env.STREAM_API_KEY = 'stream-key';
+    process.env.STREAM_API_SECRET = 'stream-secret';
+    process.env.AGENT_SERVER_URL = 'http://localhost:8000';
+  });
+
+  afterAll(() => {
+    delete process.env.STREAM_API_KEY;
+    delete process.env.STREAM_API_SECRET;
+    delete process.env.AGENT_SERVER_URL;
+  });
+
+  function makeRequest(body: Record<string, unknown>, token?: string): Request {
+    return new Request('http://localhost/api/stream/agent', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+  }
+
+  it('returns 401 when no token is provided', async () => {
+    const res = await POST(makeRequest({ lessonId: 'l1', callType: 'audio_room', callId: 'lesson-l1-u1' }));
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 401 when the session user cannot be verified', async () => {
+    const { __getUser } = jest.requireMock('@supabase/supabase-js') as { __getUser: jest.Mock };
+    __getUser.mockResolvedValue({ data: { user: null }, error: { message: 'invalid token' } });
+
+    const res = await POST(makeRequest({ lessonId: 'l1', callType: 'audio_room', callId: 'x' }, 'jwt'));
+    expect(res.status).toBe(401);
+  });
+
+  it('upserts the agent as admin, updates the call, grants permissions, goLive, and proxies to the agent server', async () => {
+    const { __getUser } = jest.requireMock('@supabase/supabase-js') as { __getUser: jest.Mock };
+    __getUser.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null });
+
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: async () => ({ session_id: 'sess-1', call_id: 'lesson-l1-u1', session_started_at: 'now' }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const res = await POST(makeRequest({ lessonId: 'l1', callType: 'audio_room', callId: 'lesson-l1-u1' }, 'jwt'));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body).toEqual({ sessionId: 'sess-1', callId: 'lesson-l1-u1', agentUserId: 'lumi-teacher' });
+
+    expect(upsertUsers).toHaveBeenCalledWith([
+      { id: 'lumi-teacher', role: 'admin', name: 'Lumi the teacher' },
+    ]);
+    expect(videoCall).toHaveBeenCalledWith('audio_room', 'lesson-l1-u1');
+    expect(goLive).toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:8000/calls/lesson-l1-u1/sessions',
+      expect.objectContaining({ method: 'POST' })
+    );
+  });
+});
+
+describe('DELETE /api/stream/agent (stop)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    process.env.STREAM_API_KEY = 'stream-key';
+    process.env.STREAM_API_SECRET = 'stream-secret';
+    process.env.AGENT_SERVER_URL = 'http://localhost:8000';
+  });
+
+  afterAll(() => {
+    delete process.env.STREAM_API_KEY;
+    delete process.env.STREAM_API_SECRET;
+    delete process.env.AGENT_SERVER_URL;
+  });
+
+  function makeRequest(body: Record<string, unknown>, token?: string): Request {
+    return new Request('http://localhost/api/stream/agent', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+  }
+
+  it('returns 401 when no token is provided', async () => {
+    const res = await DELETE(makeRequest({ callId: 'x', sessionId: 'sess-1' }));
+    expect(res.status).toBe(401);
+  });
+
+  it('proxies the delete to the agent server and returns stopped', async () => {
+    const { __getUser } = jest.requireMock('@supabase/supabase-js') as { __getUser: jest.Mock };
+    __getUser.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null });
+
+    const fetchMock = jest.fn().mockResolvedValue({ ok: true, status: 202 });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const res = await DELETE(makeRequest({ callId: 'lesson-l1-u1', sessionId: 'sess-1' }, 'jwt'));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body).toEqual({ stopped: true });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:8000/calls/lesson-l1-u1/sessions/sess-1',
+      expect.objectContaining({ method: 'DELETE' })
+    );
+  });
+
+  it('treats a 404 from the agent server as already-stopped success', async () => {
+    const { __getUser } = jest.requireMock('@supabase/supabase-js') as { __getUser: jest.Mock };
+    __getUser.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null });
+
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 404 }) as unknown as typeof fetch;
+
+    const res = await DELETE(makeRequest({ callId: 'lesson-l1-u1', sessionId: 'sess-1' }, 'jwt'));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body).toEqual({ stopped: true });
+  });
+});
