@@ -25,18 +25,17 @@ jest.mock('@stream-io/node-sdk', () => ({
 jest.mock('@supabase/supabase-js', () => {
   const getUser = jest.fn();
   // Data lives inside the hoisted factory — never reference outer consts here.
+  const ORIGINAL_LESSONS: Record<string, unknown> = {
+    id: 'l1',
+    unit_id: 'u1',
+    order: 1,
+    title: 'Hello & Goodbye',
+    xp_reward: 10,
+    estimated_minutes: 5,
+    ai_teacher_prompt: 'You are a friendly teacher…',
+  };
   const tables: Record<string, unknown[]> = {
-    lessons: [
-      {
-        id: 'l1',
-        unit_id: 'u1',
-        order: 1,
-        title: 'Hello & Goodbye',
-        xp_reward: 10,
-        estimated_minutes: 5,
-        ai_teacher_prompt: 'You are a friendly teacher…',
-      },
-    ],
+    lessons: [ORIGINAL_LESSONS],
     vocabularies: [
       {
         id: 'v1',
@@ -86,6 +85,13 @@ jest.mock('@supabase/supabase-js', () => {
       },
     })),
     __getUser: getUser,
+    // Used by tests to simulate a missing lesson (404) on the route.
+    __setLessons: (rows: unknown[]) => {
+      tables.lessons = rows;
+    },
+    __resetLessons: () => {
+      tables.lessons = [ORIGINAL_LESSONS];
+    },
   };
 });
 
@@ -95,6 +101,13 @@ describe('POST /api/stream/agent (start)', () => {
     process.env.STREAM_API_KEY = 'stream-key';
     process.env.STREAM_API_SECRET = 'stream-secret';
     process.env.AGENT_SERVER_URL = 'http://localhost:8000';
+  });
+
+  afterEach(() => {
+    const { __resetLessons } = jest.requireMock('@supabase/supabase-js') as {
+      __resetLessons: () => void;
+    };
+    __resetLessons();
   });
 
   afterAll(() => {
@@ -138,6 +151,7 @@ describe('POST /api/stream/agent (start)', () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
       status: 201,
+      headers: { get: () => 'application/json' },
       json: async () => ({ session_id: 'sess-1', call_id: 'lesson-l1-u1', session_started_at: 'now' }),
     });
     global.fetch = fetchMock as unknown as typeof fetch;
@@ -166,6 +180,7 @@ describe('POST /api/stream/agent (start)', () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
       status: 201,
+      headers: { get: () => 'application/json' },
       json: async () => ({ session_id: 'sess-1', call_id: 'lesson-l1-u1', session_started_at: 'now' }),
     });
     global.fetch = fetchMock as unknown as typeof fetch;
@@ -193,6 +208,48 @@ describe('POST /api/stream/agent (start)', () => {
         learner: { id: 'u1', displayName: 'alex@example.com' },
       },
     });
+  });
+
+  it('returns 404 for a missing lesson and performs no Stream mutations or agent start', async () => {
+    const { __getUser, __setLessons } = jest.requireMock('@supabase/supabase-js') as {
+      __getUser: jest.Mock;
+      __setLessons: (rows: unknown[]) => void;
+    };
+    __getUser.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null });
+    __setLessons([]);
+
+    const fetchMock = jest.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const res = await POST(makeRequestFor('lesson-l1-u1'));
+    const body = await res.json();
+
+    expect(res.status).toBe(404);
+    expect(body).toEqual({ error: 'Lesson not found.' });
+    // No Stream mutations, no goLive, no agent-server proxy.
+    expect(upsertUsers).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
+    expect(updateCallMembers).not.toHaveBeenCalled();
+    expect(updateUserPermissions).not.toHaveBeenCalled();
+    expect(goLive).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('treats a non-JSON agent-server response as a start failure with a friendly error', async () => {
+    const { __getUser } = jest.requireMock('@supabase/supabase-js') as { __getUser: jest.Mock };
+    __getUser.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null });
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 502,
+      headers: { get: () => 'text/plain' },
+    }) as unknown as typeof fetch;
+
+    const res = await POST(makeRequestFor('lesson-l1-u1'));
+    const body = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(body).toEqual({ error: 'AI teacher could not join the lesson. Please try again.' });
   });
 });
 

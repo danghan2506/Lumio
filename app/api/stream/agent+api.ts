@@ -29,6 +29,17 @@ function json(data: unknown, status = 200): Response {
   });
 }
 
+async function jsonOrNull(response: Response): Promise<unknown | null> {
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) return null;
+  try {
+    return (await response.json()) as unknown;
+  } catch {
+    // Non-JSON or empty body: treat as "no session info".
+    return null;
+  }
+}
+
 interface AuthResult {
   ok: boolean;
   response?: Response;
@@ -62,6 +73,13 @@ async function authenticate(request: Request): Promise<AuthResult> {
   return { ok: true, userId: user.id, accessToken, supabase, userEmail: user.email ?? '' };
 }
 
+class LessonNotFoundError extends Error {
+  constructor(lessonId: string) {
+    super(`Lesson ${lessonId} not found`);
+    this.name = 'LessonNotFoundError';
+  }
+}
+
 interface AgentLessonPayload {
   lesson_id: string;
   language_id: string;
@@ -90,7 +108,8 @@ async function buildLessonPayload(
     .select('*')
     .eq('id', lessonId)
     .maybeSingle()) as { data: LessonRow | null; error: unknown };
-  if (lessonError || !lessonData) throw new Error('Lesson not found');
+  if (lessonError) throw lessonError;
+  if (!lessonData) throw new LessonNotFoundError(lessonId);
   const lesson: LessonRow = lessonData;
 
   const { data: vocabularyData, error: vocabError } = (await supabase
@@ -186,6 +205,25 @@ export async function POST(request: Request): Promise<Response> {
     return auth.response ?? json({ error: 'Unauthorized.' }, 401);
   }
 
+  // Build the authoritative lesson payload first (DB reads only) so a missing
+  // or inaccessible lesson fails fast — before any Stream mutations leave
+  // lumi-teacher residue or attempt to go live.
+  let payload: AgentLessonPayload;
+  try {
+    payload = await buildLessonPayload(
+      auth.supabase,
+      lessonId,
+      auth.userId,
+      auth.userEmail ?? ''
+    );
+  } catch (error) {
+    if (error instanceof LessonNotFoundError) {
+      return json({ error: 'Lesson not found.' }, 404);
+    }
+    console.error('AI teacher payload build failed:', error);
+    return json({ error: 'AI teacher could not join the lesson. Please try again.' }, 500);
+  }
+
   try {
     const client = new StreamClient(apiKey, apiSecret);
 
@@ -197,6 +235,7 @@ export async function POST(request: Request): Promise<Response> {
 
     // Ensure the agent can publish audio in the audio_room: admin member +
     // explicit capabilities + a live room.
+    await call.update({ custom: payload });
     await call.updateCallMembers({
       update_members: [{ user_id: AGENT_USER_ID, role: 'admin' }],
     });
@@ -210,15 +249,6 @@ export async function POST(request: Request): Promise<Response> {
       // The room may already be live; publish rights are granted above.
     }
 
-    const payload = await buildLessonPayload(
-      auth.supabase,
-      lessonId,
-      auth.userId,
-      auth.userEmail ?? ''
-    );
-
-    await call.update({ custom: payload });
-
     const agentServerUrl = process.env.AGENT_SERVER_URL ?? 'http://localhost:8000';
     const agentResponse = await fetch(`${agentServerUrl}/calls/${callId}/sessions`, {
       method: 'POST',
@@ -226,13 +256,16 @@ export async function POST(request: Request): Promise<Response> {
       body: JSON.stringify({ call_type: callType }),
     });
 
-    const agentJson = (await agentResponse.json()) as {
+    const agentJson = (await jsonOrNull(agentResponse)) as {
       session_id?: string;
       detail?: string;
-    };
+    } | null;
 
-    if (!agentResponse.ok || !agentJson.session_id) {
-      console.error('Vision agent start failed:', agentJson.detail ?? agentResponse.status);
+    if (!agentResponse.ok || !agentJson?.session_id) {
+      console.error(
+        'Vision agent start failed:',
+        agentJson?.detail ?? `${agentResponse.status} without a session_id`
+      );
       return json({ error: 'AI teacher could not join the lesson. Please try again.' }, 500);
     }
 
