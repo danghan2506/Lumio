@@ -24,22 +24,66 @@ jest.mock('@stream-io/node-sdk', () => ({
 
 jest.mock('@supabase/supabase-js', () => {
   const getUser = jest.fn();
+  // Data lives inside the hoisted factory — never reference outer consts here.
+  const tables: Record<string, unknown[]> = {
+    lessons: [
+      {
+        id: 'l1',
+        unit_id: 'u1',
+        order: 1,
+        title: 'Hello & Goodbye',
+        xp_reward: 10,
+        estimated_minutes: 5,
+        ai_teacher_prompt: 'You are a friendly teacher…',
+      },
+    ],
+    vocabularies: [
+      {
+        id: 'v1',
+        lesson_id: 'l1',
+        word: 'Hello',
+        translation: 'Xin chào',
+        pronunciation: '/həˈloʊ/',
+        example_sentence: 'Hello, my name is Lumi.',
+        example_translation: 'Xin chào, tôi tên là Lumi.',
+      },
+    ],
+    units: [{ id: 'u1', language_id: 'en', order: 1, title: 'Intro' }],
+    languages: [{ id: 'en', name: 'English', learner_language: 'Vietnamese' }],
+    activities: [
+      {
+        id: 'a1',
+        lesson_id: 'l1',
+        order: 3,
+        type: 'ai_conversation',
+        instruction: 'Luyện tập',
+        data: {
+          scenario: 'Hãy chào AI teacher.',
+          suggestedPhrases: ['Hello!', 'My name is...'],
+        },
+      },
+    ],
+  };
   return {
     createClient: jest.fn(() => ({
       auth: { getUser },
-      from: jest
-        .fn()
-        .mockReturnValue({
-          select: jest
-            .fn()
-            .mockReturnValue({
-              eq: jest
-                .fn()
-                .mockReturnValue({
-                  maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
-                }),
+      from: (table: string) => {
+        const rows = tables[table] ?? [];
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              // List reads (vocabularies, activities) are awaited directly —
+              // resolve to the full row set.
+              then: (resolve: (value: unknown) => void) =>
+                resolve({ data: rows, error: null }),
+              maybeSingle: jest.fn().mockResolvedValue({
+                data: rows[0] ?? null,
+                error: null,
+              }),
             }),
-        }),
+          }),
+        };
+      },
     })),
     __getUser: getUser,
   };
@@ -68,6 +112,10 @@ describe('POST /api/stream/agent (start)', () => {
       },
       body: JSON.stringify(body),
     });
+  }
+
+  function makeRequestFor(callId = 'lesson-l1-u1'): Request {
+    return makeRequest({ lessonId: 'l1', callType: 'audio_room', callId }, 'jwt');
   }
 
   it('returns 401 when no token is provided', async () => {
@@ -109,6 +157,42 @@ describe('POST /api/stream/agent (start)', () => {
       'http://localhost:8000/calls/lesson-l1-u1/sessions',
       expect.objectContaining({ method: 'POST' })
     );
+  });
+
+  it('packs the full lesson payload into the call custom data', async () => {
+    const { __getUser } = jest.requireMock('@supabase/supabase-js') as { __getUser: jest.Mock };
+    __getUser.mockResolvedValue({ data: { user: { id: 'u1', email: 'alex@example.com' } }, error: null });
+
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: async () => ({ session_id: 'sess-1', call_id: 'lesson-l1-u1', session_started_at: 'now' }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const res = await POST(makeRequestFor('lesson-l1-u1'));
+    await res.json();
+
+    expect(update).toHaveBeenCalledWith({
+      custom: {
+        lesson_id: 'l1',
+        language_id: 'en',
+        aiTeacherPrompt: 'You are a friendly teacher…',
+        lesson: { id: 'l1', title: 'Hello & Goodbye', order: 1, xpReward: 10, estimatedMinutes: 5 },
+        language: { id: 'en', name: 'English' },
+        goals: ['Hãy chào AI teacher.'],
+        vocabulary: [
+          {
+            word: 'Hello',
+            translation: 'Xin chào',
+            pronunciation: '/həˈloʊ/',
+            exampleSentence: 'Hello, my name is Lumi.',
+          },
+        ],
+        phrases: ['Hello!', 'My name is...'],
+        learner: { id: 'u1', displayName: 'alex@example.com' },
+      },
+    });
   });
 });
 

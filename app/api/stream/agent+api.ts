@@ -1,5 +1,12 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { StreamClient } from '@stream-io/node-sdk';
+import type {
+  LessonRow,
+  VocabularyRow,
+  UnitRow,
+  LanguageRow,
+  ActivityRow,
+} from '../../../types/database.types';
 
 const AGENT_USER_ID = 'lumi-teacher';
 
@@ -27,6 +34,8 @@ interface AuthResult {
   response?: Response;
   userId?: string;
   accessToken?: string;
+  userEmail?: string;
+  supabase?: SupabaseClient;
 }
 
 async function authenticate(request: Request): Promise<AuthResult> {
@@ -50,7 +59,107 @@ async function authenticate(request: Request): Promise<AuthResult> {
     return { ok: false, response: json({ error: 'Unauthorized.' }, 401) };
   }
 
-  return { ok: true, userId: user.id, accessToken };
+  return { ok: true, userId: user.id, accessToken, supabase, userEmail: user.email ?? '' };
+}
+
+interface AgentLessonPayload {
+  lesson_id: string;
+  language_id: string;
+  aiTeacherPrompt: string | null;
+  lesson: { id: string; title: string; order: number; xpReward: number; estimatedMinutes: number };
+  language: { id: string; name: string } | null;
+  goals: string[];
+  vocabulary: {
+    word: string;
+    translation: string;
+    pronunciation: string;
+    exampleSentence: string;
+  }[];
+  phrases: string[];
+  learner: { id: string; displayName: string };
+}
+
+async function buildLessonPayload(
+  supabase: SupabaseClient,
+  lessonId: string,
+  userId: string,
+  displayName: string
+): Promise<AgentLessonPayload> {
+  const { data: lessonData, error: lessonError } = (await supabase
+    .from('lessons')
+    .select('*')
+    .eq('id', lessonId)
+    .maybeSingle()) as { data: LessonRow | null; error: unknown };
+  if (lessonError || !lessonData) throw new Error('Lesson not found');
+  const lesson: LessonRow = lessonData;
+
+  const { data: vocabularyData, error: vocabError } = (await supabase
+    .from('vocabularies')
+    .select('*')
+    .eq('lesson_id', lessonId)) as { data: VocabularyRow[] | null; error: unknown };
+  if (vocabError) throw vocabError;
+
+  const { data: unitData, error: unitError } = (await supabase
+    .from('units')
+    .select('*')
+    .eq('id', lesson.unit_id)
+    .maybeSingle()) as { data: UnitRow | null; error: unknown };
+  if (unitError) throw unitError;
+
+  let language: { id: string; name: string } | null = null;
+  if (unitData) {
+    const { data: langData, error: langError } = (await supabase
+      .from('languages')
+      .select('*')
+      .eq('id', unitData.language_id)
+      .maybeSingle()) as { data: LanguageRow | null; error: unknown };
+    if (langError) throw langError;
+    if (langData) language = { id: langData.id, name: langData.name };
+  }
+
+  const { data: activitiesData, error: actError } = (await supabase
+    .from('activities')
+    .select('*')
+    .eq('lesson_id', lessonId)) as { data: ActivityRow[] | null; error: unknown };
+  if (actError) throw actError;
+
+  const aiConversations = (activitiesData ?? []).filter(
+    (a) => a.type === 'ai_conversation'
+  );
+  const goals: string[] = aiConversations
+    .map((a) => (a.data as { scenario?: string } | null)?.scenario)
+    .filter((s): s is string => Boolean(s));
+  const phrases: string[] = [
+    ...new Set(
+      aiConversations.flatMap((a) => {
+        const data = a.data as { suggestedPhrases?: string[] } | null;
+        return data?.suggestedPhrases ?? [];
+      })
+    ),
+  ];
+
+  return {
+    lesson_id: lesson.id,
+    language_id: unitData?.language_id ?? '',
+    aiTeacherPrompt: lesson.ai_teacher_prompt,
+    lesson: {
+      id: lesson.id,
+      title: lesson.title,
+      order: lesson.order,
+      xpReward: lesson.xp_reward,
+      estimatedMinutes: lesson.estimated_minutes,
+    },
+    language,
+    goals,
+    vocabulary: (vocabularyData ?? []).map((v) => ({
+      word: v.word,
+      translation: v.translation,
+      pronunciation: v.pronunciation,
+      exampleSentence: v.example_sentence,
+    })),
+    phrases,
+    learner: { id: userId, displayName: displayName || '' },
+  };
 }
 
 export async function POST(request: Request): Promise<Response> {
@@ -73,7 +182,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const auth = await authenticate(request);
-  if (!auth.ok || !auth.userId || !auth.accessToken) {
+  if (!auth.ok || !auth.userId || !auth.accessToken || !auth.supabase) {
     return auth.response ?? json({ error: 'Unauthorized.' }, 401);
   }
 
@@ -101,7 +210,14 @@ export async function POST(request: Request): Promise<Response> {
       // The room may already be live; publish rights are granted above.
     }
 
-    await call.update({ custom: { lesson_id: lessonId, agent_requested: true } });
+    const payload = await buildLessonPayload(
+      auth.supabase,
+      lessonId,
+      auth.userId,
+      auth.userEmail ?? ''
+    );
+
+    await call.update({ custom: payload });
 
     const agentServerUrl = process.env.AGENT_SERVER_URL ?? 'http://localhost:8000';
     const agentResponse = await fetch(`${agentServerUrl}/calls/${callId}/sessions`, {
