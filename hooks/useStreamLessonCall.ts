@@ -25,6 +25,10 @@ export function useStreamLessonCall(params: UseStreamLessonCallParams) {
   const [status, setStatus] = useState<StreamCallStatus>('idle');
   const [isMuted, setIsMuted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [callMeta, setCallMeta] = useState<{
+    callType: string;
+    callId: string;
+  } | null>(null);
   const callRef = useRef<Call | null>(null);
   const clientRef = useRef<StreamVideoClient | null>(null);
 
@@ -45,6 +49,10 @@ export function useStreamLessonCall(params: UseStreamLessonCallParams) {
         languageId,
         displayName,
         accessToken,
+      });
+      setCallMeta({
+        callType: sessionData.callType,
+        callId: sessionData.callId,
       });
     } catch (err) {
       setErrorMessage(
@@ -112,6 +120,7 @@ export function useStreamLessonCall(params: UseStreamLessonCallParams) {
       }
     }
     await disconnect();
+    setCallMeta(null);
     setStatus('ended');
   }, [disconnect]);
 
@@ -129,5 +138,15 @@ export function useStreamLessonCall(params: UseStreamLessonCallParams) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled]);
 
-  return { status, isMuted, errorMessage, join, retry, toggleMute, leave };
+  return {
+    status,
+    isMuted,
+    errorMessage,
+    callType: callMeta?.callType ?? null,
+    callId: callMeta?.callId ?? null,
+    join,
+    retry,
+    toggleMute,
+    leave,
+  };
 }
