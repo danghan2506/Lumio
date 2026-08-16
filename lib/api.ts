@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
-import { LanguageId } from '../types/learning';
+import { Language, LanguageId } from '../types/learning';
+import { languages } from '../data/languages';
 import {
   Profile,
   UserLanguage,
@@ -336,4 +337,158 @@ export async function stopStreamAgent(params: StopStreamAgentParams): Promise<vo
     throw new Error(body?.error || `Agent stop request failed (${response.status})`);
   }
 }
+
+export interface UserProfileStats {
+  totalXp: number;
+  completedLessons: number;
+  masteredWords: number;
+  daysActive: number;
+}
+
+export interface UserProfileOverview {
+  id: string;
+  email: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
+  createdAt: string;
+  activeLanguage: Language | null;
+  stats: UserProfileStats;
+}
+
+export async function getUserProfileOverview(
+  userId: string
+): Promise<UserProfileOverview | null> {
+  const [
+    profileRes,
+    userLanguageRes,
+    lessonProgressRes,
+    vocabProgressRes,
+    dailyActivityRes,
+  ] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
+    supabase
+      .from('user_languages')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .maybeSingle(),
+    supabase
+      .from('lesson_progress')
+      .select('status, xp_earned')
+      .eq('user_id', userId),
+    supabase
+      .from('vocabulary_progress')
+      .select('status')
+      .eq('user_id', userId),
+    supabase
+      .from('daily_activity')
+      .select('activity_date')
+      .eq('user_id', userId),
+  ]);
+
+  if (profileRes.error) {
+    throw new Error(profileRes.error.message);
+  }
+  if (userLanguageRes.error) {
+    throw new Error(userLanguageRes.error.message);
+  }
+  if (lessonProgressRes.error) {
+    throw new Error(lessonProgressRes.error.message);
+  }
+  if (vocabProgressRes.error) {
+    throw new Error(vocabProgressRes.error.message);
+  }
+  if (dailyActivityRes.error) {
+    throw new Error(dailyActivityRes.error.message);
+  }
+
+  if (!profileRes.data) {
+    return null;
+  }
+
+  const profile = profileRes.data;
+  const activeLangRow = userLanguageRes.data;
+  const activeLanguage = activeLangRow
+    ? (languages.find((l) => l.id === activeLangRow.language_id) ?? null)
+    : null;
+
+  const lessonProgressList = lessonProgressRes.data ?? [];
+  const totalXp = lessonProgressList.reduce(
+    (sum, item) => sum + (item.xp_earned || 0),
+    0
+  );
+  const completedLessons = lessonProgressList.filter(
+    (item) => item.status === 'completed'
+  ).length;
+
+  const vocabProgressList = vocabProgressRes.data ?? [];
+  const masteredWords = vocabProgressList.filter(
+    (item) => item.status === 'mastered'
+  ).length;
+
+  const dailyActivities = dailyActivityRes.data ?? [];
+  const daysActive = Math.max(1, dailyActivities.length);
+
+  return {
+    id: profile.id,
+    email: profile.email,
+    displayName: profile.display_name,
+    avatarUrl: profile.avatar_url,
+    createdAt: profile.created_at,
+    activeLanguage,
+    stats: {
+      totalXp,
+      completedLessons,
+      masteredWords,
+      daysActive,
+    },
+  };
+}
+
+export async function uploadUserAvatar(
+  userId: string,
+  imageUri: string
+): Promise<string> {
+  const fileExt = imageUri.split('.').pop()?.split('?')[0]?.toLowerCase() || 'jpg';
+  const filePath = `${userId}/${Date.now()}.${fileExt}`;
+
+  let fileBody: ArrayBuffer | Blob | FormData | string = imageUri;
+  if (typeof fetch !== 'undefined') {
+    try {
+      const response = await fetch(imageUri);
+      fileBody = await response.blob();
+    } catch {
+      fileBody = imageUri;
+    }
+  }
+
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(filePath, fileBody, {
+      contentType: fileExt === 'png' ? 'image/png' : 'image/jpeg',
+      upsert: true,
+    });
+
+  if (uploadError) {
+    throw new Error(uploadError.message);
+  }
+
+  const { data: publicUrlData } = supabase.storage
+    .from('avatars')
+    .getPublicUrl(filePath);
+
+  const avatarUrl = publicUrlData.publicUrl;
+
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({ avatar_url: avatarUrl })
+    .eq('id', userId);
+
+  if (updateError) {
+    throw new Error(updateError.message);
+  }
+
+  return avatarUrl;
+}
+
 
