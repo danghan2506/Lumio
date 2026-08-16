@@ -11,7 +11,10 @@ import {
   LessonProgressStatus,
 } from '../types/database.types';
 import {
+  AgentSessionResponse,
   CreateStreamLessonSessionParams,
+  StartStreamAgentParams,
+  StopStreamAgentParams,
   StreamLessonSession,
 } from '../types/stream';
 
@@ -280,5 +283,57 @@ export async function createStreamLessonSession(
     callType: body.callType ?? 'audio_room',
     callId: body.callId,
   };
+}
+
+export async function startStreamAgent(
+  params: StartStreamAgentParams
+): Promise<AgentSessionResponse> {
+  const response = await fetch('/api/stream/agent', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${params.accessToken}`,
+    },
+    body: JSON.stringify({
+      lessonId: params.lessonId,
+      callType: params.callType,
+      callId: params.callId,
+      displayName: params.displayName,
+    }),
+  });
+
+  const body = (await response.json()) as {
+    error?: string;
+  } & Partial<AgentSessionResponse>;
+
+  if (!response.ok || body.error || !body.sessionId || !body.callId) {
+    throw new Error(body.error || `Agent start request failed (${response.status})`);
+  }
+
+  return {
+    sessionId: body.sessionId,
+    callId: body.callId,
+    agentUserId: body.agentUserId ?? 'lumi-teacher',
+  };
+}
+
+export async function stopStreamAgent(params: StopStreamAgentParams): Promise<void> {
+  const response = await fetch('/api/stream/agent', {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${params.accessToken}`,
+    },
+    body: JSON.stringify({
+      callId: params.callId,
+      sessionId: params.sessionId,
+    }),
+  });
+
+  const body = (await response.json()) as { error?: string } | null;
+
+  if (!response.ok || body?.error) {
+    throw new Error(body?.error || `Agent stop request failed (${response.status})`);
+  }
 }
 

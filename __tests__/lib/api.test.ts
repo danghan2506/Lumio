@@ -14,6 +14,8 @@ import {
   getLessonProgressForLessons,
   getLessonsWithProgress,
   createStreamLessonSession,
+  startStreamAgent,
+  stopStreamAgent,
 } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
 
@@ -663,6 +665,93 @@ describe('lib/api database helpers', () => {
       }) as unknown as typeof fetch;
 
       await expect(createStreamLessonSession(params)).rejects.toThrow();
+    });
+  });
+
+  describe('agent start/stop helpers', () => {
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    const startParams = {
+      lessonId: 'l1',
+      callType: 'audio_room',
+      callId: 'lesson-l1-u1',
+      displayName: 'Alex',
+      accessToken: 'jwt-token',
+    };
+    const okAgent = {
+      sessionId: 'sess-1',
+      callId: 'lesson-l1-u1',
+      agentUserId: 'lumi-teacher',
+    };
+
+    it('startStreamAgent POSTs to /api/stream/agent and returns the session id', async () => {
+      const fetchMock = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => okAgent,
+      });
+      global.fetch = fetchMock as unknown as typeof fetch;
+
+      const agent = await startStreamAgent(startParams);
+
+      expect(agent).toEqual(okAgent);
+      const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe('/api/stream/agent');
+      expect(init.method).toBe('POST');
+      expect((init.headers as Record<string, string>).Authorization).toBe('Bearer jwt-token');
+      expect(JSON.parse(String(init.body))).toEqual({
+        lessonId: 'l1',
+        callType: 'audio_room',
+        callId: 'lesson-l1-u1',
+        displayName: 'Alex',
+      });
+    });
+
+    it('startStreamAgent never sends the userId in the request body', async () => {
+      const fetchMock = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => okAgent,
+      });
+      global.fetch = fetchMock as unknown as typeof fetch;
+
+      await startStreamAgent(startParams);
+
+      const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+      expect(body).not.toHaveProperty('userId');
+    });
+
+    it('startStreamAgent throws the server error on failure', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({ error: 'AI teacher failed to join.' }),
+      }) as unknown as typeof fetch;
+
+      await expect(startStreamAgent(startParams)).rejects.toThrow('AI teacher failed to join.');
+    });
+
+    it('stopStreamAgent DELETEs the agent session', async () => {
+      const fetchMock = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ stopped: true }),
+      });
+      global.fetch = fetchMock as unknown as typeof fetch;
+
+      await stopStreamAgent({ callId: 'lesson-l1-u1', sessionId: 'sess-1', accessToken: 'jwt' });
+
+      const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe('/api/stream/agent');
+      expect(init.method).toBe('DELETE');
+      expect(JSON.parse(String(init.body))).toEqual({
+        callId: 'lesson-l1-u1',
+        sessionId: 'sess-1',
+      });
+      expect((init.headers as Record<string, string>).Authorization).toBe('Bearer jwt');
     });
   });
 });
