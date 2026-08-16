@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Animated } from 'react-native';
-import { colors } from '@/theme/colors';
 
 export const ProfileSkeletonLoader: React.FC = () => {
   const pulseAnim = useRef(new Animated.Value(0.35)).current;
