@@ -20,34 +20,9 @@ export function useStreamLessonAgent(params: UseStreamLessonAgentParams) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const startingRef = useRef(false);
+  const disposedRef = useRef(false);
 
-  const start = useCallback(async () => {
-    if (startingRef.current) return;
-    startingRef.current = true;
-    setStatus('connecting');
-    setErrorMessage(null);
-    try {
-      const agentSession = await startStreamAgent({
-        lessonId,
-        callType,
-        callId,
-        displayName,
-        accessToken,
-      });
-      sessionIdRef.current = agentSession.sessionId;
-      setSessionId(agentSession.sessionId);
-      setStatus('connected');
-    } catch (err) {
-      setErrorMessage(
-        err instanceof Error ? err.message : 'AI teacher could not join the lesson.'
-      );
-      setStatus('failed');
-    } finally {
-      startingRef.current = false;
-    }
-  }, [lessonId, callType, callId, displayName, accessToken]);
-
-  const stop = useCallback(async () => {
+  const performStop = useCallback(async () => {
     const currentSessionId = sessionIdRef.current;
     sessionIdRef.current = null;
     setSessionId(null);
@@ -66,23 +41,60 @@ export function useStreamLessonAgent(params: UseStreamLessonAgentParams) {
     }
   }, [callId, accessToken]);
 
+  const start = useCallback(async () => {
+    if (startingRef.current) return;
+    startingRef.current = true;
+    setStatus('connecting');
+    setErrorMessage(null);
+    try {
+      const agentSession = await startStreamAgent({
+        lessonId,
+        callType,
+        callId,
+        displayName,
+        accessToken,
+      });
+      if (disposedRef.current) {
+        // The hook was disabled/unmounted while start was in flight. Tear the
+        // just-established server session down instead of committing it here.
+        sessionIdRef.current = agentSession.sessionId;
+        await performStop();
+        return;
+      }
+      sessionIdRef.current = agentSession.sessionId;
+      setSessionId(agentSession.sessionId);
+      setStatus('connected');
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error ? err.message : 'AI teacher could not join the lesson.'
+      );
+      setStatus('failed');
+    } finally {
+      startingRef.current = false;
+    }
+  }, [lessonId, callType, callId, displayName, accessToken, performStop]);
+
+  const stop = useCallback(async () => {
+    await performStop();
+  }, [performStop]);
+
   const retry = useCallback(async () => {
     await start();
   }, [start]);
 
   useEffect(() => {
     if (!enabled) {
-      if (sessionIdRef.current) {
-        void stop();
-      }
+      disposedRef.current = true;
+      void stop();
       return;
     }
+
+    disposedRef.current = false;
     void start();
 
     return () => {
-      if (sessionIdRef.current) {
-        void stop();
-      }
+      disposedRef.current = true;
+      void stop();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled]);

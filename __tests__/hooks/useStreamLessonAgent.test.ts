@@ -103,4 +103,79 @@ describe('useStreamLessonAgent', () => {
     unmount();
     expect(stopStreamAgent).toHaveBeenCalled();
   });
+
+  it('connects when enabled flips true after an initial disabled render, without tearing down', async () => {
+    const { result, rerender } = renderHook(
+      (props: { enabled: boolean }) =>
+        useStreamLessonAgent({ ...baseParams, enabled: props.enabled }),
+      { initialProps: { enabled: false } }
+    );
+    expect(result.current.status).toBe('idle');
+    expect(startStreamAgent).not.toHaveBeenCalled();
+
+    await act(async () => {
+      rerender({ enabled: true });
+    });
+
+    await waitFor(() => expect(result.current.status).toBe('connected'));
+    expect(result.current.sessionId).toBe('sess-1');
+    expect(stopStreamAgent).not.toHaveBeenCalled();
+    expect(startStreamAgent).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops the agent when enabled flips to false after connecting', async () => {
+    const { result, rerender } = renderHook(
+      (props: { enabled: boolean }) =>
+        useStreamLessonAgent({ ...baseParams, enabled: props.enabled }),
+      { initialProps: { enabled: true } }
+    );
+    await waitFor(() => expect(result.current.status).toBe('connected'));
+
+    await act(async () => {
+      rerender({ enabled: false });
+    });
+
+    await waitFor(() => expect(result.current.status).toBe('idle'));
+    expect(result.current.sessionId).toBeNull();
+    await waitFor(() =>
+      expect(stopStreamAgent).toHaveBeenCalledWith({
+        callId: 'lesson-l1-u1',
+        sessionId: 'sess-1',
+        accessToken: 'jwt',
+      })
+    );
+  });
+
+  it('does not commit connected when disabled while start is pending; server stop fires with the resolved session', async () => {
+    let resolveConnect: ((value: typeof agentSession) => void) | null = null;
+    (startStreamAgent as jest.Mock).mockImplementation(
+      () => new Promise((resolve) => (resolveConnect = resolve))
+    );
+    const { result, rerender } = renderHook(
+      (props: { enabled: boolean }) =>
+        useStreamLessonAgent({ ...baseParams, enabled: props.enabled }),
+      { initialProps: { enabled: true } }
+    );
+
+    await waitFor(() => expect(result.current.status).toBe('connecting'));
+
+    await act(async () => {
+      rerender({ enabled: false });
+    });
+
+    await act(async () => {
+      resolveConnect?.(agentSession);
+    });
+
+    await waitFor(() => expect(result.current.status).toBe('idle'));
+    expect(result.current.sessionId).toBeNull();
+    await waitFor(() => expect(stopStreamAgent).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(stopStreamAgent).toHaveBeenCalledWith({
+        callId: 'lesson-l1-u1',
+        sessionId: 'sess-1',
+        accessToken: 'jwt',
+      })
+    );
+  });
 });
