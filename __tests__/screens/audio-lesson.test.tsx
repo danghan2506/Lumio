@@ -48,15 +48,31 @@ const mockRetry = jest.fn();
 const mockLeave = jest.fn();
 const mockToggleMute = jest.fn();
 
+let mockAgentStatus = 'connected';
+const mockAgentRetry = jest.fn();
+
 jest.mock('@/hooks/useStreamLessonCall', () => ({
   useStreamLessonCall: () => ({
     status: mockStatus,
     isMuted: mockIsMuted,
     errorMessage: 'Could not connect to the audio call.',
+    callType: 'audio_room',
+    callId: 'lesson-les-1-user-1',
     join: mockJoin,
     retry: mockRetry,
     toggleMute: mockToggleMute,
     leave: mockLeave,
+  }),
+}));
+
+jest.mock('@/hooks/useStreamLessonAgent', () => ({
+  useStreamLessonAgent: () => ({
+    status: mockAgentStatus,
+    errorMessage: 'Agent server unreachable.',
+    sessionId: 'sess-1',
+    start: jest.fn(),
+    stop: jest.fn(),
+    retry: mockAgentRetry,
   }),
 }));
 
@@ -78,6 +94,7 @@ describe('AudioLessonScreen stream call states', () => {
     jest.clearAllMocks();
     mockStatus = 'connecting';
     mockIsMuted = false;
+    mockAgentStatus = 'connected';
   });
 
   it('shows connecting overlay with the user name while connecting', async () => {
@@ -109,5 +126,14 @@ describe('AudioLessonScreen stream call states', () => {
     fireEvent.press(getByTestId('end-call'));
     expect(mockLeave).toHaveBeenCalled();
     expect(getByText('Lesson Completed!')).toBeTruthy();
+  });
+
+  it('shows teacher failed state and retry button', () => {
+    mockStatus = 'joined';
+    mockAgentStatus = 'failed';
+    const { getByText } = render(<AudioLessonScreen />);
+    expect(getByText(/Teacher unavailable/i)).toBeTruthy();
+    fireEvent.press(getByText(/Retry teacher/i));
+    expect(mockAgentRetry).toHaveBeenCalled();
   });
 });
