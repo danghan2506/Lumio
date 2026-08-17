@@ -25,6 +25,16 @@ LANGUAGE_NAMES = {
     "ko": "Korean",
 }
 
+#: Human-readable learner-language names keyed by the ``learner_language``
+#: codes stored on the ``languages`` rows in Supabase.
+LEARNER_LANGUAGE_NAMES = {
+    "vi": "Vietnamese",
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French",
+    "ko": "Korean",
+}
+
 TARGET_LANGUAGE_FIELD = "language_id"
 
 
@@ -41,14 +51,26 @@ def resolve_language(custom_data: dict) -> str:
     return LANGUAGE_NAMES.get(raw, "English")
 
 
+def resolve_learner_language(custom_data: dict) -> str:
+    """Resolve the learner's native language from the call's custom data.
+
+    Reads the nested ``language.learner_language`` code (set by the server from
+    the ``languages.learner_language`` row, e.g. ``vi`` for Vietnamese) and
+    returns its human-readable name. Falls back to "English".
+    """
+    code = (custom_data.get("language") or {}).get("learner_language")
+    return LEARNER_LANGUAGE_NAMES.get(code, "English")
+
+
 def teacher_instructions(language: str) -> str:
     """System instructions for the teacher, built per target language."""
     return (
-        f"You are an encouraging AI language teacher in a live voice lesson. "
+        f"You are Lumi, a warm, energetic, and encouraging AI language teacher in a live voice lesson. "
         f"The learner wants to learn {language}.\n"
-        f"- Teach {language} vocabulary and short phrases. Give each new word's "
-        f"{language} form, its English meaning, and a simple example.\n"
-        "- After introducing a new word, prompt the learner to repeat it aloud.\n"
+        f"- Act as a real-world language teacher for {language} only.\n"
+        f"- Teach {language} vocabulary and short phrases step-by-step.\n"
+        f"- Stay strictly within this lesson's goals, vocabulary, phrases, and context. Do not teach unrelated topics or switch to other languages.\n"
+        f"- Introduce target-language words slowly with their translation in the learner's native language, and prompt the learner to repeat aloud.\n"
         + TEACHER_RULES
     )
 
@@ -57,11 +79,14 @@ def teacher_instructions(language: str) -> str:
 #: from a client-authored prompt or the per-language fallback.
 TEACHER_RULES = (
     "Rules:\n"
-    "- ALWAYS speak English. You teach the lesson through English.\n"
-    "- Keep responses short, conversational and spoken-only. No markdown, "
-    "no lists, no emojis.\n"
-    "- Correct mistakes gently and praise progress.\n"
-    "- If the learner's speech is unclear or inaudible, ask them to repeat."
+    "- Mostly speak English. Use English for all explanations, guidance, and feedback.\n"
+    "- Keep responses to 1-2 short, conversational spoken-only sentences. Use natural contractions (like let's, I'm, that's, you're).\n"
+    "- Sound warm, human, and energetic instead of robotic. Give gentle encouragement and praise progress.\n"
+    "- Stay strictly within the current lesson's goals, vocabulary, and phrases. Never teach unrelated topics or switch to other languages.\n"
+    "- Introduce target-language words slowly with clear translations in the learner's native language.\n"
+    "- Listen carefully to the user's response, adapt your next explanation accordingly, and ask the student to repeat or try again.\n"
+    "- Spoken-only dialogue: no markdown, no bullet lists, no emojis.\n"
+    "- If the learner's speech is unclear or inaudible, gently ask them to repeat or try again."
 )
 
 
@@ -101,6 +126,38 @@ def build_instructions(custom_data: dict, language: str) -> str:
     return " ".join(parts)
 
 
+def build_greeting(custom_data: dict, language: str) -> str:
+    """Spoken greeting for the kickoff of a lesson.
+
+    Uses the first vocabulary word from the call's custom data when available,
+    falling back to a generic per-language prompt. Translations are given in
+    the learner's native language, not hardcoded English.
+    """
+    vocabulary = custom_data.get("vocabulary") or []
+    first_word = next(
+        (
+            item.get("word")
+            for item in vocabulary
+            if isinstance(item, dict) and item.get("word")
+        ),
+        None,
+    )
+    learner_language = resolve_learner_language(custom_data)
+    if first_word:
+        return (
+            f"Give a warm, energetic 1-2 sentence greeting as Lumi the language teacher. "
+            f"Welcome the learner to the lesson in English, introduce the first "
+            f"word slowly ({first_word}) with its {learner_language} translation, and "
+            f"invite the student to repeat it after you."
+        )
+    return (
+        f"Give a warm, energetic 1-2 sentence greeting as Lumi the language teacher. "
+        f"Welcome the learner to the lesson in English, introduce the first "
+        f"{language} word or phrase slowly with its {learner_language} translation, "
+        f"and invite the student to repeat it after you."
+    )
+
+
 DEFAULT_INSTRUCTIONS = teacher_instructions("English")
 
 
@@ -123,12 +180,7 @@ async def join_call(agent: Agent, call_type: str, call_id: str, **kwargs) -> Non
     agent.llm.set_instructions(agent.instructions)
 
     async with agent.join(call):
-        await agent.simple_response(
-            text=(
-                f"Greet the learner warmly, tell them the lesson will be taught "
-                f"through English, and start with a {language} word or phrase."
-            )
-        )
+        await agent.simple_response(text=build_greeting(custom_data, language))
         await agent.finish()
 
 

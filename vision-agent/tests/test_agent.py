@@ -13,8 +13,10 @@ from agent import (
     DEFAULT_INSTRUCTIONS,
     LANGUAGE_NAMES,
     TEACHER_RULES,
+    build_greeting,
     build_instructions,
     resolve_language,
+    resolve_learner_language,
     teacher_instructions,
 )
 
@@ -48,6 +50,54 @@ def test_default_instructions_teach_english():
 
 def test_resolve_language_reads_nested_language_id():
     assert resolve_language({"language": {"id": "fr"}}) == "French"
+
+
+def test_build_greeting_uses_first_vocabulary_word():
+    custom = {
+        "vocabulary": [
+            {"word": "Hola", "translation": "Hello"},
+            {"word": "Adiós", "translation": "Goodbye"},
+        ],
+    }
+    greeting = build_greeting(custom, "Spanish")
+    assert "Hola" in greeting
+    assert "Adiós" not in greeting
+
+
+def test_build_greeting_falls_back_to_language_name():
+    greeting = build_greeting({}, "Korean")
+    assert "Korean" in greeting
+
+
+def test_build_greeting_skips_vocabulary_without_a_word():
+    custom = {"vocabulary": [{"translation": "Hello"}]}
+    greeting = build_greeting(custom, "French")
+    assert "French" in greeting
+
+
+def test_resolve_learner_language_reads_nested_learner_language():
+    custom = {"language": {"id": "en", "learner_language": "vi"}}
+    assert resolve_learner_language(custom) == "Vietnamese"
+
+
+def test_resolve_learner_language_missing_falls_back():
+    assert resolve_learner_language({}) == "English"
+    assert resolve_learner_language({"language": {"id": "en"}}) == "English"
+
+
+def test_resolve_learner_language_unknown_code():
+    custom = {"language": {"learner_language": "xx"}}
+    assert resolve_learner_language(custom) == "English"
+
+
+def test_build_greeting_uses_learner_language_not_english():
+    custom = {
+        "language": {"id": "en", "learner_language": "vi"},
+        "vocabulary": [{"word": "Hello", "translation": "Xin chào"}],
+    }
+    greeting = build_greeting(custom, "English")
+    assert "Vietnamese" in greeting
+    assert "English translation" not in greeting
 
 
 def test_build_instructions_prefers_ai_teacher_prompt():

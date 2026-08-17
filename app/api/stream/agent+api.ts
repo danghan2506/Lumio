@@ -85,7 +85,7 @@ interface AgentLessonPayload {
   language_id: string;
   aiTeacherPrompt: string | null;
   lesson: { id: string; title: string; order: number; xpReward: number; estimatedMinutes: number };
-  language: { id: string; name: string } | null;
+  language: { id: string; name: string; learner_language: string } | null;
   goals: string[];
   vocabulary: {
     word: string;
@@ -125,7 +125,7 @@ async function buildLessonPayload(
     .maybeSingle()) as { data: UnitRow | null; error: unknown };
   if (unitError) throw unitError;
 
-  let language: { id: string; name: string } | null = null;
+  let language: { id: string; name: string; learner_language: string } | null = null;
   if (unitData) {
     const { data: langData, error: langError } = (await supabase
       .from('languages')
@@ -133,7 +133,12 @@ async function buildLessonPayload(
       .eq('id', unitData.language_id)
       .maybeSingle()) as { data: LanguageRow | null; error: unknown };
     if (langError) throw langError;
-    if (langData) language = { id: langData.id, name: langData.name };
+    if (langData)
+      language = {
+        id: langData.id,
+        name: langData.name,
+        learner_language: langData.learner_language,
+      };
   }
 
   const { data: activitiesData, error: actError } = (await supabase

@@ -48,7 +48,7 @@ jest.mock('@supabase/supabase-js', () => {
       },
     ],
     units: [{ id: 'u1', language_id: 'en', order: 1, title: 'Intro' }],
-    languages: [{ id: 'en', name: 'English', learner_language: 'Vietnamese' }],
+    languages: [{ id: 'en', name: 'English', learner_language: 'vi' }],
     activities: [
       {
         id: 'a1',
@@ -194,7 +194,7 @@ describe('POST /api/stream/agent (start)', () => {
         language_id: 'en',
         aiTeacherPrompt: 'You are a friendly teacher…',
         lesson: { id: 'l1', title: 'Hello & Goodbye', order: 1, xpReward: 10, estimatedMinutes: 5 },
-        language: { id: 'en', name: 'English' },
+        language: { id: 'en', name: 'English', learner_language: 'vi' },
         goals: ['Hãy chào AI teacher.'],
         vocabulary: [
           {
