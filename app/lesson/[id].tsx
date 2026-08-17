@@ -71,7 +71,7 @@ function AnimatedButton({ children, onPress, className, style, disabled, testID 
 export default function AudioLessonScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { lesson, unit, language, loading, error } = useLessonAudioDetails(id || '');
+  const { lesson, language, loading, error } = useLessonAudioDetails(id || '');
   const { user, session } = useAuth();
   const [progressError, setProgressError] = useState<string | null>(null);
   const handleLessonCompleteRef = useRef<((payload: LessonCompleteEvent) => void) | null>(null);
