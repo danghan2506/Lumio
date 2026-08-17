@@ -16,7 +16,6 @@ from agent import (
     build_greeting,
     build_instructions,
     resolve_language,
-    resolve_learner_language,
     teacher_instructions,
 )
 
@@ -73,31 +72,6 @@ def test_build_greeting_skips_vocabulary_without_a_word():
     custom = {"vocabulary": [{"translation": "Hello"}]}
     greeting = build_greeting(custom, "French")
     assert "French" in greeting
-
-
-def test_resolve_learner_language_reads_nested_learner_language():
-    custom = {"language": {"id": "en", "learner_language": "vi"}}
-    assert resolve_learner_language(custom) == "Vietnamese"
-
-
-def test_resolve_learner_language_missing_falls_back():
-    assert resolve_learner_language({}) == "English"
-    assert resolve_learner_language({"language": {"id": "en"}}) == "English"
-
-
-def test_resolve_learner_language_unknown_code():
-    custom = {"language": {"learner_language": "xx"}}
-    assert resolve_learner_language(custom) == "English"
-
-
-def test_build_greeting_uses_learner_language_not_english():
-    custom = {
-        "language": {"id": "en", "learner_language": "vi"},
-        "vocabulary": [{"word": "Hello", "translation": "Xin chào"}],
-    }
-    greeting = build_greeting(custom, "English")
-    assert "Vietnamese" in greeting
-    assert "English translation" not in greeting
 
 
 def test_build_instructions_prefers_ai_teacher_prompt():
@@ -191,3 +165,57 @@ async def test_stays_conversational_and_spoken_only():
             "through English, without markdown, lists, or emojis",
         )
         assert verdict.success, verdict.reason
+
+
+from agent import (
+    FAREWELL_INSTRUCTION,
+    completion_payload,
+    completion_stage,
+    should_send_completion_event,
+)
+
+
+def test_completion_stage_below_nudge_is_idle():
+    assert completion_stage(turn_count=0, elapsed_seconds=0, turn_limit=10, time_limit_minutes=10) == "idle"
+
+
+def test_completion_stage_nudges_at_threshold():
+    assert completion_stage(turn_count=8, elapsed_seconds=1, turn_limit=10, time_limit_minutes=10) == "nudge"
+    assert completion_stage(turn_count=1, elapsed_seconds=8 * 60, turn_limit=10, time_limit_minutes=10) == "nudge"
+
+
+def test_completion_stage_forces_at_limit():
+    assert completion_stage(turn_count=10, elapsed_seconds=1, turn_limit=10, time_limit_minutes=10) == "force"
+    assert completion_stage(turn_count=1, elapsed_seconds=10 * 60, turn_limit=10, time_limit_minutes=10) == "force"
+
+
+def test_completion_stage_never_divide_by_zero():
+    assert completion_stage(turn_count=0, elapsed_seconds=0, turn_limit=0, time_limit_minutes=0) in ("idle", "nudge", "force")
+
+
+def test_completion_payload_shape_and_minutes_floor():
+    payload = completion_payload("l1", 20, 0.4, reason="mastered")
+    assert payload["type"] == "lesson_complete"
+    assert payload["lesson_id"] == "l1"
+    assert payload["xp_earned"] == 20
+    assert payload["minutes_practiced"] == 1
+    assert payload["reason"] == "mastered"
+
+
+def test_completion_payload_omits_reason_when_none():
+    assert "reason" not in completion_payload("l1", 20, 2)
+
+
+def test_should_send_event_waits_for_turn_end_plus_min_gap():
+    assert not should_send_completion_event(False, 1.0, min_seconds=2.0, max_seconds=8.0)
+    assert not should_send_completion_event(True, 1.0, min_seconds=2.0, max_seconds=8.0)
+    assert should_send_completion_event(True, 2.0, min_seconds=2.0, max_seconds=8.0)
+
+
+def test_should_send_event_fires_at_max_cap_when_turn_never_ends():
+    assert should_send_completion_event(False, 8.0, min_seconds=2.0, max_seconds=8.0)
+
+
+def test_farewell_instruction_says_lesson_complete():
+    assert "complete" in FAREWELL_INSTRUCTION.lower()
+    assert "farewell" in FAREWELL_INSTRUCTION.lower()

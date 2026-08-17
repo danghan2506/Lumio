@@ -7,28 +7,118 @@ data (``language_id`` or nested ``language.id``), set by the client when it
 creates the call.
 """
 
+import asyncio
+import logging
+import time
+
 from dotenv import load_dotenv
 
 from vision_agents.core import Agent, Runner, User
 from vision_agents.core.agents import AgentLauncher
+from vision_agents.core.agents.events import (
+    AgentTurnEndedEvent,
+    AgentTurnStartedEvent,
+    UserTurnEndedEvent,
+    UserTurnStartedEvent,
+)
+from vision_agents.core.edge.events import AudioReceivedEvent
 from vision_agents.core.instructions import Instructions
 from vision_agents.plugins import gemini, getstream
+
+_timing_log = logging.getLogger("lumi.timing")
+
+
+FAREWELL_INSTRUCTION = (
+    "The lesson is now complete. Deliver a warm, brief 1-2 sentence farewell to the "
+    "learner in English, praising their practice. Do not start any new topics and do "
+    "not speak after your farewell."
+)
+FAREWELL_STOP_INSTRUCTION = "The lesson is already finished. Do not speak."
+
+DEFAULT_TURN_LIMIT = 10
+DEFAULT_ESTIMATED_MINUTES = 10
+NUDGE_THRESHOLD_RATIO = 0.8
+MIN_FAREWELL_SECONDS = 2.0
+MAX_FAREWELL_SECONDS = 8.0
+POLL_INTERVAL_SECONDS = 0.5
+
+
+def completion_stage(turn_count, elapsed_seconds, turn_limit, time_limit_minutes):
+    """Return 'idle', 'nudge', or 'force' based on learner turns and elapsed time."""
+    turn_frac = turn_count / max(1, turn_limit)
+    time_frac = elapsed_seconds / max(1.0, time_limit_minutes * 60.0)
+    frac = max(turn_frac, time_frac)
+    if frac >= 1.0:
+        return "force"
+    if frac >= NUDGE_THRESHOLD_RATIO:
+        return "nudge"
+    return "idle"
+
+
+def completion_payload(lesson_id, xp_earned, minutes_practiced, reason=None):
+    payload = {
+        "type": "lesson_complete",
+        "lesson_id": lesson_id,
+        "xp_earned": xp_earned,
+        "minutes_practiced": max(1, round(minutes_practiced)),
+    }
+    if reason is not None:
+        payload["reason"] = reason
+    return payload
+
+
+def should_send_completion_event(turn_ended_since_request, elapsed_seconds, min_seconds=MIN_FAREWELL_SECONDS, max_seconds=MAX_FAREWELL_SECONDS):
+    """Send once the farewell turn ended past a min gap, or as a hard cap."""
+    if elapsed_seconds >= max_seconds:
+        return True
+    return turn_ended_since_request and elapsed_seconds >= min_seconds
+
+
+def install_timing_logger(agent: Agent) -> None:
+    """TEMPORARY debug: log per-turn timestamps to locate voice latency.
+
+    Measures (relative to session start):
+      AUDIO-1  .. first audio chunk from the call arrives at the agent
+      U-START/U-END .. Gemini VAD start/end of the learner's speech
+      A-START/A-END .. teacher's audio turn start/end (model audio relayed)
+    Remove once the latency source is confirmed.
+    """
+    start = time.perf_counter()
+    counters: dict[str, int] = {}
+
+    def log(label: str) -> None:
+        counters[label] = counters.get(label, 0) + 1
+        elapsed_ms = (time.perf_counter() - start) * 1000
+        _timing_log.info("TIMING %-8s #%-2d %8.0f ms", label, counters[label], elapsed_ms)
+
+    @agent.subscribe
+    async def _on_turn_event(
+        event: UserTurnStartedEvent
+        | UserTurnEndedEvent
+        | AgentTurnStartedEvent
+        | AgentTurnEndedEvent
+        | AudioReceivedEvent,
+    ) -> None:
+        try:
+            if isinstance(event, AudioReceivedEvent):
+                if not counters.get("AUDIO-1"):
+                    log("AUDIO-1")
+            elif isinstance(event, UserTurnStartedEvent):
+                log("U-START")
+            elif isinstance(event, UserTurnEndedEvent):
+                log("U-END")
+            elif isinstance(event, AgentTurnStartedEvent):
+                log("A-START")
+            elif isinstance(event, AgentTurnEndedEvent):
+                log("A-END")
+        except Exception:  # never destabilise the audio path because of logging
+            pass
 
 load_dotenv()
 
 #: Human-readable language names keyed by the language ids used in
 #: ``data/languages.ts`` on the client.
 LANGUAGE_NAMES = {
-    "en": "English",
-    "es": "Spanish",
-    "fr": "French",
-    "ko": "Korean",
-}
-
-#: Human-readable learner-language names keyed by the ``learner_language``
-#: codes stored on the ``languages`` rows in Supabase.
-LEARNER_LANGUAGE_NAMES = {
-    "vi": "Vietnamese",
     "en": "English",
     "es": "Spanish",
     "fr": "French",
@@ -51,17 +141,6 @@ def resolve_language(custom_data: dict) -> str:
     return LANGUAGE_NAMES.get(raw, "English")
 
 
-def resolve_learner_language(custom_data: dict) -> str:
-    """Resolve the learner's native language from the call's custom data.
-
-    Reads the nested ``language.learner_language`` code (set by the server from
-    the ``languages.learner_language`` row, e.g. ``vi`` for Vietnamese) and
-    returns its human-readable name. Falls back to "English".
-    """
-    code = (custom_data.get("language") or {}).get("learner_language")
-    return LEARNER_LANGUAGE_NAMES.get(code, "English")
-
-
 def teacher_instructions(language: str) -> str:
     """System instructions for the teacher, built per target language."""
     return (
@@ -70,7 +149,7 @@ def teacher_instructions(language: str) -> str:
         f"- Act as a real-world language teacher for {language} only.\n"
         f"- Teach {language} vocabulary and short phrases step-by-step.\n"
         f"- Stay strictly within this lesson's goals, vocabulary, phrases, and context. Do not teach unrelated topics or switch to other languages.\n"
-        f"- Introduce target-language words slowly with their translation in the learner's native language, and prompt the learner to repeat aloud.\n"
+        f"- Introduce target-language words slowly with their English translation, and prompt the learner to repeat aloud.\n"
         + TEACHER_RULES
     )
 
@@ -83,7 +162,7 @@ TEACHER_RULES = (
     "- Keep responses to 1-2 short, conversational spoken-only sentences. Use natural contractions (like let's, I'm, that's, you're).\n"
     "- Sound warm, human, and energetic instead of robotic. Give gentle encouragement and praise progress.\n"
     "- Stay strictly within the current lesson's goals, vocabulary, and phrases. Never teach unrelated topics or switch to other languages.\n"
-    "- Introduce target-language words slowly with clear translations in the learner's native language.\n"
+    "- Introduce target-language words slowly with clear English translations.\n"
     "- Listen carefully to the user's response, adapt your next explanation accordingly, and ask the student to repeat or try again.\n"
     "- Spoken-only dialogue: no markdown, no bullet lists, no emojis.\n"
     "- If the learner's speech is unclear or inaudible, gently ask them to repeat or try again."
@@ -130,8 +209,7 @@ def build_greeting(custom_data: dict, language: str) -> str:
     """Spoken greeting for the kickoff of a lesson.
 
     Uses the first vocabulary word from the call's custom data when available,
-    falling back to a generic per-language prompt. Translations are given in
-    the learner's native language, not hardcoded English.
+    falling back to a generic per-language prompt.
     """
     vocabulary = custom_data.get("vocabulary") or []
     first_word = next(
@@ -142,18 +220,17 @@ def build_greeting(custom_data: dict, language: str) -> str:
         ),
         None,
     )
-    learner_language = resolve_learner_language(custom_data)
     if first_word:
         return (
             f"Give a warm, energetic 1-2 sentence greeting as Lumi the language teacher. "
             f"Welcome the learner to the lesson in English, introduce the first "
-            f"word slowly ({first_word}) with its {learner_language} translation, and "
+            f"word slowly ({first_word}) with its English translation, and "
             f"invite the student to repeat it after you."
         )
     return (
         f"Give a warm, energetic 1-2 sentence greeting as Lumi the language teacher. "
         f"Welcome the learner to the lesson in English, introduce the first "
-        f"{language} word or phrase slowly with its {learner_language} translation, "
+        f"{language} word or phrase slowly with its English translation, "
         f"and invite the student to repeat it after you."
     )
 
@@ -162,12 +239,14 @@ DEFAULT_INSTRUCTIONS = teacher_instructions("English")
 
 
 async def create_agent(**kwargs) -> Agent:
-    return Agent(
+    agent = Agent(
         edge=getstream.Edge(),
         agent_user=User(name="Lumi the teacher", id="lumi-teacher"),
         instructions=DEFAULT_INSTRUCTIONS,
         llm=gemini.Realtime(),
     )
+    install_timing_logger(agent)
+    return agent
 
 
 async def join_call(agent: Agent, call_type: str, call_id: str, **kwargs) -> None:
