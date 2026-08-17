@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
-import { LanguageId } from '../types/learning';
+import { Language, LanguageId } from '../types/learning';
+import { languages } from '../data/languages';
 import {
   Profile,
   UserLanguage,
