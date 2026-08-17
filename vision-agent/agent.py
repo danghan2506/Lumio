@@ -74,6 +74,159 @@ def should_send_completion_event(turn_ended_since_request, elapsed_seconds, min_
     return turn_ended_since_request and elapsed_seconds >= min_seconds
 
 
+class CompletionCoordinator:
+    """Ends the lesson once: farewell (model-spoken) + one lesson_complete event.
+
+    Anti-stall: nudges at 80% and force-completes at 100% of the turn/time limits.
+    """
+
+    def __init__(
+        self,
+        agent,
+        *,
+        lesson_id,
+        xp_earned,
+        turn_limit=DEFAULT_TURN_LIMIT,
+        time_limit_minutes=DEFAULT_ESTIMATED_MINUTES,
+        poll_interval=POLL_INTERVAL_SECONDS,
+        min_farewell_seconds=MIN_FAREWELL_SECONDS,
+        max_farewell_seconds=MAX_FAREWELL_SECONDS,
+    ):
+        self._agent = agent
+        self._lesson_id = lesson_id
+        self._xp_earned = xp_earned
+        self._turn_limit = turn_limit
+        self._time_limit_minutes = time_limit_minutes
+        self._poll_interval = poll_interval
+        self._min_farewell_seconds = min_farewell_seconds
+        self._max_farewell_seconds = max_farewell_seconds
+        self._started_at = time.monotonic()
+        self._turn_count = 0
+        self._nudged = False
+        self._requested = False
+        self._reason = None
+        self._requested_at = None
+        self._turn_ended_since_request = False
+        self._event_sent = False
+
+    @property
+    def completion_requested(self):
+        return self._requested
+
+    def request_completion(self, reason):
+        if self._requested:
+            return False
+        self._requested = True
+        self._reason = reason
+        self._requested_at = time.monotonic()
+        return True
+
+    def count_turn(self):
+        self._turn_count += 1
+
+    def mark_turn_ended(self):
+        if self._requested:
+            self._turn_ended_since_request = True
+
+    def _elapsed(self):
+        return time.monotonic() - self._started_at
+
+    def _wait_since_request(self):
+        return time.monotonic() - (self._requested_at or self._started_at)
+
+    def _nudge_text(self):
+        return (
+            "We're nearly done — let's make sure you've practiced the lesson's key "
+            "words and phrases before we wrap up."
+        )
+
+    def install_functions(self):
+        @self._agent.llm.register_function(
+            name="complete_lesson",
+            description=(
+                "Call this exactly once the learner has demonstrated the lesson's "
+                "goals, vocabulary, and phrases for this session. It ends the lesson."
+            ),
+        )
+        async def complete_lesson(**_kwargs) -> str:
+            if not self.request_completion("mastered"):
+                return FAREWELL_STOP_INSTRUCTION
+            return FAREWELL_INSTRUCTION
+
+    def install_event_hooks(self):
+        from vision_agents.core.agents.events import AgentTurnEndedEvent
+
+        @self._agent.subscribe
+        async def _on_turn_events(event):
+            if isinstance(event, AgentTurnEndedEvent):
+                self.mark_turn_ended()
+
+    def install_user_turn_counter(self):
+        from vision_agents.core.agents.events import UserTurnEndedEvent
+
+        @self._agent.subscribe
+        async def _on_user_turn(event):
+            if isinstance(event, UserTurnEndedEvent):
+                self.count_turn()
+
+    async def _force_complete(self):
+        limit = "turn_limit" if self._turn_count >= self._turn_limit else "time_limit"
+        if self.request_completion(limit):
+            await self._agent.simple_response(FAREWELL_INSTRUCTION, interrupt=False)
+
+    async def _send_event(self):
+        minutes = max(1, round(self._elapsed() / 60))
+        await self._agent.send_custom_event(
+            completion_payload(self._lesson_id, self._xp_earned, minutes, self._reason)
+        )
+        self._event_sent = True
+
+    async def run(self):
+        try:
+            while not self._event_sent:
+                await asyncio.sleep(self._poll_interval)
+                if not self._requested:
+                    stage = completion_stage(
+                        self._turn_count,
+                        self._elapsed(),
+                        self._turn_limit,
+                        self._time_limit_minutes,
+                    )
+                    if stage == "nudge" and not self._nudged:
+                        self._nudged = True
+                        await self._agent.simple_response(self._nudge_text(), interrupt=False)
+                    elif stage == "force":
+                        await self._force_complete()
+                    continue
+                if should_send_completion_event(
+                    self._turn_ended_since_request,
+                    self._wait_since_request(),
+                    self._min_farewell_seconds,
+                    self._max_farewell_seconds,
+                ):
+                    await self._send_event()
+        except asyncio.CancelledError:
+            pass
+
+
+def install_completion(agent, custom_data, *, turn_limit=DEFAULT_TURN_LIMIT):
+    lesson = custom_data.get("lesson") or {}
+    lesson_id = lesson.get("id") or custom_data.get("lesson_id")
+    xp_earned = lesson.get("xpReward") or 0
+    time_limit_minutes = lesson.get("estimatedMinutes") or DEFAULT_ESTIMATED_MINUTES
+    coordinator = CompletionCoordinator(
+        agent,
+        lesson_id=lesson_id,
+        xp_earned=xp_earned,
+        turn_limit=turn_limit,
+        time_limit_minutes=time_limit_minutes,
+    )
+    coordinator.install_functions()
+    coordinator.install_event_hooks()
+    coordinator.install_user_turn_counter()
+    return coordinator
+
+
 def install_timing_logger(agent: Agent) -> None:
     """TEMPORARY debug: log per-turn timestamps to locate voice latency.
 
@@ -258,9 +411,15 @@ async def join_call(agent: Agent, call_type: str, call_id: str, **kwargs) -> Non
     agent.instructions = Instructions(input_text=instructions)
     agent.llm.set_instructions(agent.instructions)
 
+    coordinator = install_completion(agent, custom_data)
+
     async with agent.join(call):
-        await agent.simple_response(text=build_greeting(custom_data, language))
-        await agent.finish()
+        completion = asyncio.create_task(coordinator.run())
+        try:
+            await agent.simple_response(text=build_greeting(custom_data, language))
+            await agent.finish()
+        finally:
+            completion.cancel()
 
 
 runner = Runner(AgentLauncher(create_agent=create_agent, join_call=join_call))

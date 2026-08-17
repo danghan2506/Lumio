@@ -219,3 +219,138 @@ def test_should_send_event_fires_at_max_cap_when_turn_never_ends():
 def test_farewell_instruction_says_lesson_complete():
     assert "complete" in FAREWELL_INSTRUCTION.lower()
     assert "farewell" in FAREWELL_INSTRUCTION.lower()
+
+
+import asyncio
+
+from agent import CompletionCoordinator, FAREWELL_STOP_INSTRUCTION, install_completion
+
+
+class _FakeLLM:
+    def __init__(self, fake):
+        self.fake = fake
+
+    def register_function(self, *, name=None, description=None):
+        def decorator(fn):
+            self.fake.functions[name or fn.__name__] = (description, fn)
+            return fn
+        return decorator
+
+
+class _FakeAgent:
+    def __init__(self):
+        self.llm = _FakeLLM(self)
+        self.functions = {}
+        self.spoken = []
+        self.events = []
+        self._subscribers = []
+
+    async def simple_response(self, text, *, interrupt=True):
+        self.spoken.append(text)
+
+    async def send_custom_event(self, data):
+        self.events.append(data)
+
+    def subscribe(self, function):
+        self._subscribers.append(function)
+        return lambda: None
+
+
+def test_install_completion_registers_tool_and_hooks():
+    agent = _FakeAgent()
+    custom = {"lesson": {"id": "l1", "xpReward": 20, "estimatedMinutes": 10}, "lesson_id": "l1"}
+    coordinator = install_completion(agent, custom, turn_limit=3)
+    assert coordinator is not None
+    assert "complete_lesson" in agent.functions
+    assert len(agent._subscribers) == 2  # user-turn counter + agent-turn marker
+
+
+def test_request_completion_is_once_guarded():
+    agent = _FakeAgent()
+    coordinator = CompletionCoordinator(agent, lesson_id="l1", xp_earned=20)
+    assert coordinator.request_completion("mastered") is True
+    assert coordinator.request_completion("time_limit") is False
+    assert coordinator.completion_requested is True
+
+
+def test_complete_lesson_tool_instructs_farewell():
+    agent = _FakeAgent()
+    coordinator = CompletionCoordinator(agent, lesson_id="l1", xp_earned=20)
+    coordinator.install_functions()
+    _, tool = agent.functions["complete_lesson"]
+
+    async def run_tool():
+        return await tool()
+
+    result = asyncio.run(run_tool())
+    assert result == FAREWELL_INSTRUCTION
+
+
+def test_complete_lesson_tool_is_silent_after_first_call():
+    agent = _FakeAgent()
+    coordinator = CompletionCoordinator(agent, lesson_id="l1", xp_earned=20)
+    coordinator.install_functions()
+    _, tool = agent.functions["complete_lesson"]
+
+    async def invoke_twice():
+        first = await tool()
+        second = await tool()
+        return first, second
+
+    first, second = asyncio.run(invoke_twice())
+    assert first == FAREWELL_INSTRUCTION
+    assert second == FAREWELL_STOP_INSTRUCTION
+
+
+@pytest.mark.asyncio
+async def test_coordinator_forces_completion_and_emits_event():
+    agent = _FakeAgent()
+    coordinator = CompletionCoordinator(
+        agent,
+        lesson_id="l1",
+        xp_earned=20,
+        turn_limit=2,
+        time_limit_minutes=10,
+        poll_interval=0.01,
+        min_farewell_seconds=0.0,
+        max_farewell_seconds=0.02,
+    )
+    coordinator.count_turn()
+    coordinator.count_turn()  # turn_frac == 1.0 -> force
+    running = asyncio.create_task(coordinator.run())
+    await asyncio.sleep(0.05)
+    running.cancel()
+    await asyncio.gather(running, return_exceptions=True)
+
+    assert agent.spoken and FAREWELL_INSTRUCTION in agent.spoken[-1]
+    assert agent.events
+    first = agent.events[-1]
+    assert first["type"] == "lesson_complete"
+    assert first["lesson_id"] == "l1"
+    assert first["xp_earned"] == 20
+    assert first["reason"] in ("turn_limit", "time_limit")
+    assert first["minutes_practiced"] >= 1
+
+
+@pytest.mark.asyncio
+async def test_coordinator_emits_event_after_farewell_turn_end():
+    agent = _FakeAgent()
+    coordinator = CompletionCoordinator(
+        agent,
+        lesson_id="l1",
+        xp_earned=20,
+        poll_interval=0.01,
+        min_farewell_seconds=0.0,
+        max_farewell_seconds=0.02,
+    )
+    coordinator.install_event_hooks()
+    assert coordinator.request_completion("mastered") is True
+    running = asyncio.create_task(coordinator.run())
+    await asyncio.sleep(0.01)
+    coordinator.mark_turn_ended()  # farewell turn finished
+    await asyncio.sleep(0.03)
+    running.cancel()
+    await asyncio.gather(running, return_exceptions=True)
+
+    assert agent.events
+    assert agent.events[-1]["reason"] == "mastered"
