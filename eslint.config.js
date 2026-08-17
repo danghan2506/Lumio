@@ -7,4 +7,14 @@ module.exports = defineConfig([
     ignores: ['dist/**', '.worktrees/**', '__tests__/**', '__mocks__/**'],
   },
   expoConfig,
+  {
+    rules: {
+      'import/no-unresolved': [
+        'error',
+        {
+          ignore: ['^expo-', '^@expo/'],
+        },
+      ],
+    },
+  },
 ]);

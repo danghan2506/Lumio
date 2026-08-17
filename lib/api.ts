@@ -403,7 +403,62 @@ export async function getUserProfileOverview(
   }
 
   if (!profileRes.data) {
-    return null;
+    // Attempt fallback from active auth session
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const authUser = authData?.user;
+      if (!authUser || authUser.id !== userId) {
+        return null;
+      }
+
+      const email = authUser.email ?? null;
+      const displayName =
+        (authUser.user_metadata?.full_name as string | undefined) ??
+        (authUser.user_metadata?.name as string | undefined) ??
+        (email ? email.split('@')[0] : 'Lumio Learner');
+      const avatarUrl =
+        (authUser.user_metadata?.avatar_url as string | undefined) ?? null;
+      const createdAt = authUser.created_at || new Date().toISOString();
+
+      const activeLangRow = userLanguageRes.data;
+      const activeLanguage = activeLangRow
+        ? (languages.find((l) => l.id === activeLangRow.language_id) ?? null)
+        : null;
+
+      const lessonProgressList = lessonProgressRes.data ?? [];
+      const totalXp = lessonProgressList.reduce(
+        (sum, item) => sum + (item.xp_earned || 0),
+        0
+      );
+      const completedLessons = lessonProgressList.filter(
+        (item) => item.status === 'completed'
+      ).length;
+
+      const vocabProgressList = vocabProgressRes.data ?? [];
+      const masteredWords = vocabProgressList.filter(
+        (item) => item.status === 'mastered'
+      ).length;
+
+      const dailyActivities = dailyActivityRes.data ?? [];
+      const daysActive = Math.max(1, dailyActivities.length);
+
+      return {
+        id: userId,
+        email,
+        displayName,
+        avatarUrl,
+        createdAt,
+        activeLanguage,
+        stats: {
+          totalXp,
+          completedLessons,
+          masteredWords,
+          daysActive,
+        },
+      };
+    } catch {
+      return null;
+    }
   }
 
   const profile = profileRes.data;

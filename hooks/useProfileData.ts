@@ -23,6 +23,7 @@ export interface UseProfileDataReturn {
   refreshing: boolean;
   uploadingAvatar: boolean;
   error: string | null;
+  isGuest: boolean;
   refresh: () => Promise<void>;
   updateAvatar: (imageUri: string) => Promise<string | null>;
 }
@@ -110,6 +111,7 @@ export function useProfileData(): UseProfileDataReturn {
     refreshing,
     uploadingAvatar,
     error,
+    isGuest: !userId,
     refresh,
     updateAvatar,
   };
