@@ -32,3 +32,11 @@ export interface StopStreamAgentParams {
   sessionId: string;
   accessToken: string;
 }
+
+export interface LessonCompleteEvent {
+  type: 'lesson_complete';
+  lesson_id: string;
+  xp_earned: number;
+  minutes_practiced: number;
+  reason?: 'mastered' | 'time_limit' | 'turn_limit';
+}
