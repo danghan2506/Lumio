@@ -79,6 +79,34 @@ export type Activity =
   | VocabularyMatchActivity
   | AiConversationActivity;
 
+// ─── Practice & Quiz Types ────────────────────────────────────────────────
+
+export interface MultipleChoiceData {
+  question: string;
+  options: [string, string, string, string] | string[];
+  correctIndex: number;
+}
+
+export interface MultipleChoiceActivityItem {
+  id: string;
+  lesson_id: string;
+  order: number;
+  type: 'multiple_choice';
+  instruction: string;
+  data: MultipleChoiceData;
+}
+
+export interface PracticeLessonItem {
+  id: string;
+  unit_id: string;
+  order: number;
+  title: string;
+  xp_reward: number;
+  estimated_minutes: number;
+  activitiesCount: number;
+  status: 'not_started' | 'in_progress' | 'completed';
+}
+
 // ─── Lesson ────────────────────────────────────────────────────────────────
 
 export interface Lesson {
@@ -92,3 +120,4 @@ export interface Lesson {
   activities: Activity[];
   aiTeacherPrompt: string;
 }
+

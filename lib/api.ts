@@ -1,5 +1,10 @@
 import { supabase } from './supabase';
-import { Language, LanguageId } from '../types/learning';
+import {
+  Language,
+  LanguageId,
+  MultipleChoiceData,
+  PracticeLessonItem,
+} from '../types/learning';
 import { languages } from '../data/languages';
 import {
   Profile,
@@ -9,6 +14,7 @@ import {
   DailyActivity,
   UnitRow,
   LessonRow,
+  ActivityRow,
   LessonProgressStatus,
 } from '../types/database.types';
 import {
@@ -252,6 +258,117 @@ export async function getLessonsWithProgress(unitId: string): Promise<LessonWith
     status: progressMap.get(lesson.id) ?? 'not_started',
   }));
 }
+
+export function sanitizeMultipleChoiceData(data: unknown): MultipleChoiceData | null {
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+    return null;
+  }
+
+  const record = data as Record<string, unknown>;
+
+  if (typeof record.question !== 'string' || record.question.trim().length === 0) {
+    return null;
+  }
+
+  if (
+    !Array.isArray(record.options) ||
+    record.options.length < 2 ||
+    !record.options.every((opt) => typeof opt === 'string' && opt.trim().length > 0)
+  ) {
+    return null;
+  }
+
+  if (
+    typeof record.correctIndex !== 'number' ||
+    !Number.isInteger(record.correctIndex) ||
+    record.correctIndex < 0 ||
+    record.correctIndex >= record.options.length
+  ) {
+    return null;
+  }
+
+  return {
+    question: record.question.trim(),
+    options: record.options.map((opt: string) => opt.trim()),
+    correctIndex: record.correctIndex,
+  };
+}
+
+export async function getActivitiesFromDB(lessonId: string): Promise<ActivityRow[]> {
+  const { data, error } = await supabase
+    .from('activities')
+    .select('*')
+    .eq('lesson_id', lessonId)
+    .order('order', { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data ?? [];
+}
+
+export async function getMultipleChoiceActivities(lessonId: string): Promise<ActivityRow[]> {
+  const { data, error } = await supabase
+    .from('activities')
+    .select('*')
+    .eq('lesson_id', lessonId)
+    .eq('type', 'multiple_choice')
+    .order('order', { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data ?? [];
+}
+
+export async function getPracticeLessons(unitId: string): Promise<PracticeLessonItem[]> {
+  const lessons = await getLessonsFromDB(unitId);
+  if (lessons.length === 0) {
+    return [];
+  }
+
+  const lessonIds = lessons.map((lesson) => lesson.id);
+
+  const [activitiesRes, progressList] = await Promise.all([
+    supabase
+      .from('activities')
+      .select('id, lesson_id')
+      .in('lesson_id', lessonIds)
+      .eq('type', 'multiple_choice'),
+    getLessonProgressForLessons(lessonIds),
+  ]);
+
+  if (activitiesRes.error) {
+    throw new Error(activitiesRes.error.message);
+  }
+
+  const activityCountMap = new Map<string, number>();
+  for (const act of activitiesRes.data ?? []) {
+    activityCountMap.set(
+      act.lesson_id,
+      (activityCountMap.get(act.lesson_id) ?? 0) + 1
+    );
+  }
+
+  const progressMap = new Map(
+    progressList.map((progress) => [
+      progress.lesson_id,
+      normalizeLessonProgressStatus(progress.status),
+    ])
+  );
+
+  return lessons.map((lesson) => ({
+    id: lesson.id,
+    unit_id: lesson.unit_id,
+    order: lesson.order,
+    title: lesson.title,
+    xp_reward: lesson.xp_reward,
+    estimated_minutes: lesson.estimated_minutes,
+    activitiesCount: activityCountMap.get(lesson.id) ?? 0,
+    status: progressMap.get(lesson.id) ?? 'not_started',
+  }));
+}
+
 
 export async function createStreamLessonSession(
   params: CreateStreamLessonSessionParams
