@@ -53,6 +53,10 @@ export default function LearnScreen() {
   const activeUnit = activeTab === 'lessons' ? lessonsActiveUnit : (practiceActiveUnit ?? lessonsActiveUnit);
   const isRefreshing = lessonsRefreshing || practiceRefreshing;
 
+  const practiceCompletedCount = practiceLessons.filter((l) => l.status === 'completed').length;
+  const currentCompletedCount = activeTab === 'lessons' ? completedCount : practiceCompletedCount;
+  const currentTotalCount = activeTab === 'lessons' ? lessons.length : practiceLessons.length;
+
   const handleRefresh = async () => {
     await Promise.all([refreshLessons(), refreshPractice()]);
   };
@@ -101,8 +105,8 @@ export default function LearnScreen() {
           <UnitHeader
             unitTitle={activeUnit?.title ?? 'Unit 1'}
             unitNumber={activeUnit?.order ?? 1}
-            completedCount={completedCount}
-            totalCount={lessons.length}
+            completedCount={currentCompletedCount}
+            totalCount={currentTotalCount}
           />
 
           {/* Segmented Toggle (Lessons vs Practice) */}

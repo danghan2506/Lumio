@@ -62,6 +62,13 @@ describe('MultipleChoiceQuizModal', () => {
 
     const checkBtn = getByTestId('quiz-check-btn');
     expect(checkBtn).toBeTruthy();
+
+    const progressBar = getByTestId('quiz-progress-bar');
+    expect(progressBar.props.style).toEqual(
+      expect.objectContaining({
+        width: '50%',
+      })
+    );
   });
 
   it('allows answering questions, advances through quiz, and finishes with onCompleted call', async () => {

@@ -111,7 +111,7 @@ export function MultipleChoiceQuizModal({
             <View
               testID="quiz-progress-bar"
               style={{
-                width: `${Math.max(5, progress)}%`,
+                width: `${Math.max(5, Math.round(progress * 100))}%`,
                 backgroundColor: colors.daylightAmber,
               }}
               className="h-full rounded-full"
