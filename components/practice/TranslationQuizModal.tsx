@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   StatusBar,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -450,8 +449,8 @@ export function TranslationQuizModal({
         {/* Exit Confirmation Dialog */}
         <QuizExitConfirmDialog
           visible={isExitConfirmVisible}
-          onCancel={cancelExit}
-          onConfirm={() => confirmExit(onClose)}
+          onResume={cancelExit}
+          onExit={() => confirmExit(onClose)}
         />
 
         {/* Final Quiz Completion Modal */}
