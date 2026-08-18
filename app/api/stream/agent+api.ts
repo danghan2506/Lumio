@@ -241,7 +241,7 @@ export async function POST(request: Request): Promise<Response> {
     });
     await call.updateUserPermissions({
       user_id: AGENT_USER_ID,
-      grant_permissions: ['send-audio', 'join-backstage'],
+      grant_permissions: ['send-audio'],
     });
     try {
       await call.goLive();

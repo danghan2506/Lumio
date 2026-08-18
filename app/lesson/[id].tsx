@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,10 @@ import { useLessonAudioDetails } from '@/hooks/useLessonAudioDetails';
 import { useAuth } from '@/hooks/useAuth';
 import { useStreamLessonCall } from '@/hooks/useStreamLessonCall';
 import { useStreamLessonAgent } from '@/hooks/useStreamLessonAgent';
+import { recordLessonProgress } from '@/lib/api';
+import type { LessonCompleteEvent } from '@/types/stream';
+
+const AUDIO_DRAIN_MS = 1200;
 
 interface AnimatedButtonProps {
   children: React.ReactNode;
@@ -67,8 +71,14 @@ function AnimatedButton({ children, onPress, className, style, disabled, testID 
 export default function AudioLessonScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { lesson, unit, language, vocabularies, loading, error } = useLessonAudioDetails(id || '');
+  const { lesson, language, loading, error } = useLessonAudioDetails(id || '');
   const { user, session } = useAuth();
+  const [progressError, setProgressError] = useState<string | null>(null);
+  const handleLessonCompleteRef = useRef<((payload: LessonCompleteEvent) => void) | null>(null);
+  const lastPayloadRef = useRef<LessonCompleteEvent | null>(null);
+  const completionProxy = useCallback((payload: LessonCompleteEvent) => {
+    handleLessonCompleteRef.current?.(payload);
+  }, []);
   const { isMuted, status, errorMessage, retry, toggleMute, leave, callType, callId } =
     useStreamLessonCall({
       lessonId: id || '',
@@ -76,6 +86,7 @@ export default function AudioLessonScreen() {
       displayName: user?.email ?? 'Learner',
       accessToken: session?.access_token ?? '',
       enabled: Boolean(user && session && lesson && language),
+      onLessonComplete: completionProxy,
     });
 
   const teacher = useStreamLessonAgent({
@@ -87,20 +98,43 @@ export default function AudioLessonScreen() {
     enabled: Boolean(status === 'joined' && callType && callId && user && session),
   });
 
+  const handleLessonComplete = useCallback(
+    async (payload: LessonCompleteEvent) => {
+      setShowSummary(true);
+      setProgressError(null);
+      lastPayloadRef.current = payload;
+      try {
+        await recordLessonProgress({
+          lessonId: id || '',
+          status: 'completed',
+          currentActivity: 1,
+          xpEarned: payload.xp_earned || lesson?.xp_reward || 0,
+          minutesPracticed: payload.minutes_practiced,
+        });
+      } catch (err) {
+        setProgressError(err instanceof Error ? err.message : 'Could not save your progress.');
+      }
+      setTimeout(() => {
+        void teacher.stop();
+        void leave();
+      }, AUDIO_DRAIN_MS);
+    },
+    [id, lesson, teacher, leave]
+  );
+  handleLessonCompleteRef.current = handleLessonComplete;
+
   // State Variables
   const [showSubtitles, setShowSubtitles] = useState(true);
   const [isPlayingSound, setIsPlayingSound] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [userFeedback, setUserFeedback] = useState('');
   
-  // Conversation simulation state
+  // Conversation state
   const [tutorMessage, setTutorMessage] = useState<string>('');
   const [tutorTranslation, setTutorTranslation] = useState<string>('');
-  const [userMessage, setUserMessage] = useState<string | null>(null);
-  const [isListening, setIsListening] = useState(false);
 
   // Feedback metrics
-  const [feedback, setFeedback] = useState({
+  const [feedback] = useState({
     speaking: 'Excellent',
     pronunciation: 'Great',
     grammar: 'Good',
@@ -109,33 +143,10 @@ export default function AudioLessonScreen() {
   // Initialize tutor message from lesson data
   React.useEffect(() => {
     if (lesson) {
-      setTutorMessage(lesson.ai_teacher_prompt || `Hello! Let's practice ${language?.name || 'language'} greetings today. Tap any phrase below to talk to me.`);
-      setTutorTranslation('Xin chào! Chúng ta hãy cùng luyện tập giao tiếp hôm nay. Nhấp vào bất kỳ cụm từ nào bên dưới để trò chuyện cùng tôi.');
+      setTutorMessage(lesson.ai_teacher_prompt || `Hello! Let's practice ${language?.name || 'language'} greetings today. Talk to me and I'll help you out.`);
+      setTutorTranslation('Xin chào! Hôm nay chúng ta hãy cùng luyện tập giao tiếp. Hãy nói chuyện với tôi nhé!');
     }
   }, [lesson, language]);
-
-  const handlePhrasePress = (phraseWord: string, phraseTranslation: string) => {
-    if (isListening || isMuted) return;
-
-    // 1. Show user message and set listening state
-    setUserMessage(phraseWord);
-    setIsListening(true);
-
-    // 2. Simulate AI response after 1.5 seconds
-    setTimeout(() => {
-      setIsListening(false);
-      setTutorMessage(`Perfect! Your pronunciation of "${phraseWord}" was spot on. Let's keep going!`);
-      setTutorTranslation(`Hoàn hảo! Phát âm cụm từ "${phraseTranslation}" của bạn rất chuẩn xác. Hãy tiếp tục nào!`);
-      
-      // Randomly update feedback metrics slightly to feel dynamic
-      const performanceRatings = ['Excellent', 'Great', 'Good'];
-      setFeedback({
-        speaking: performanceRatings[Math.floor(Math.random() * 3)],
-        pronunciation: performanceRatings[Math.floor(Math.random() * 3)],
-        grammar: performanceRatings[Math.floor(Math.random() * 3)],
-      });
-    }, 1500);
-  };
 
   const triggerPlaySound = () => {
     setIsPlayingSound(true);
@@ -385,7 +396,7 @@ export default function AudioLessonScreen() {
             }}
           >
             {/* Pulsing visual circles representing audio waves */}
-            {(isPlayingSound || isListening) && (
+            {isPlayingSound && (
               <View
                 style={{
                   position: 'absolute',
@@ -470,79 +481,19 @@ export default function AudioLessonScreen() {
           </View>
         </View>
 
-        {/* User Spoken Bubble */}
-        {userMessage && (
-          <View style={{ paddingHorizontal: 20, marginTop: 12, alignItems: 'flex-end' }}>
-            <View
-              style={{
-                backgroundColor: colors.lumioCoral,
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                borderRadius: 20,
-                maxWidth: '80%',
-              }}
-            >
-              <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.cream, fontSize: 15 }}>
-                {userMessage}
-              </Text>
-              {isListening && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                  <ActivityIndicator size="small" color={colors.cream} style={{ marginRight: 6 }} />
-                  <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.cream, fontSize: 11, opacity: 0.8 }}>
-                    Listening...
-                  </Text>
-                </View>
-              )}
-            </View>
-          </View>
-        )}
-
-        {/* Interactive Phrases */}
-        <View style={{ paddingHorizontal: 20, marginTop: 24 }}>
+        {/* Voice Interaction Hint */}
+        <View style={{ paddingHorizontal: 20, marginTop: 24, alignItems: 'center' }}>
           <Text
             style={{
-              fontFamily: 'PlusJakartaSans_700Bold',
+              fontFamily: 'PlusJakartaSans_600SemiBold',
               color: colors.lavenderMist,
-              fontSize: 10,
-              textTransform: 'uppercase',
-              letterSpacing: 1.2,
-              marginBottom: 12,
-              opacity: 0.5,
+              fontSize: 11,
+              textAlign: 'center',
+              opacity: 0.75,
             }}
           >
-            Tap phrase to speak
+            Just talk to Lumi to practice this lesson.
           </Text>
-          
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {vocabularies.map((vocab) => (
-              <AnimatedButton
-                key={vocab.id}
-                onPress={() => handlePhrasePress(vocab.word, vocab.translation)}
-                disabled={isListening || isMuted}
-                style={{
-                  backgroundColor: colors.deepIndigo,
-                  borderWidth: 1,
-                  borderColor: 'rgba(94,90,128,0.35)',
-                  borderRadius: 16,
-                  paddingHorizontal: 14,
-                  paddingVertical: 10,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  opacity: (isListening || isMuted) ? 0.5 : 1,
-                }}
-              >
-                <Ionicons name="mic-outline" size={15} color={colors.lumioCoral} style={{ marginRight: 8 }} />
-                <View>
-                  <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.cream, fontSize: 13 }}>
-                    {vocab.word}
-                  </Text>
-                  <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.slate, fontSize: 10, marginTop: 1 }}>
-                    {vocab.pronunciation}
-                  </Text>
-                </View>
-              </AnimatedButton>
-            ))}
-          </View>
         </View>
       </ScrollView>
 
@@ -617,30 +568,6 @@ export default function AudioLessonScreen() {
             }}
           >
             <Ionicons name={isMuted ? 'mic-off-outline' : 'mic-outline'} size={22} color={isMuted ? colors.lumioCoral : colors.deepIndigo} />
-          </AnimatedButton>
-
-          {/* End Call Button */}
-          <AnimatedButton
-            testID="end-call"
-            onPress={() => {
-              void leave();
-              setShowSummary(true);
-            }}
-            style={{
-              width: 60,
-              height: 60,
-              borderRadius: 30,
-              backgroundColor: '#EF4444',
-              justifyContent: 'center',
-              alignItems: 'center',
-              shadowColor: '#EF4444',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
-              elevation: 4,
-            }}
-          >
-            <Ionicons name="call-outline" size={26} color={colors.cream} style={{ transform: [{ rotate: '135deg' }] }} />
           </AnimatedButton>
 
           {/* Subtitles Toggle */}
@@ -723,6 +650,29 @@ export default function AudioLessonScreen() {
               </Text>
             </View>
 
+            {progressError && (
+              <View style={{ alignItems: 'center', marginBottom: 16 }}>
+                <Text style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.lumioCoral, fontSize: 12, textAlign: 'center', marginBottom: 8 }}>
+                  Could not save your progress: {progressError}
+                </Text>
+                <AnimatedButton
+                  onPress={() => {
+                    if (lastPayloadRef.current) void handleLessonComplete(lastPayloadRef.current);
+                  }}
+                  style={{
+                    backgroundColor: colors.lumioCoral,
+                    paddingHorizontal: 24,
+                    paddingVertical: 8,
+                    borderRadius: 999,
+                  }}
+                >
+                  <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.cream, fontSize: 12 }}>
+                    Retry
+                  </Text>
+                </AnimatedButton>
+              </View>
+            )}
+
             {/* User Feedback form */}
             <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.lavenderMist, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8, opacity: 0.8 }}>
               Leave Lesson Feedback (Optional)
@@ -751,6 +701,7 @@ export default function AudioLessonScreen() {
             {/* Claim Reward Button */}
             <AnimatedButton
               onPress={() => {
+                if (progressError) return;
                 setShowSummary(false);
                 router.replace('/(tabs)/learn');
               }}

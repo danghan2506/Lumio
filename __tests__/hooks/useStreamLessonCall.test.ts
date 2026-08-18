@@ -2,6 +2,7 @@ import { renderHook, act, waitFor } from '@testing-library/react-native';
 import { useStreamLessonCall } from '../../hooks/useStreamLessonCall';
 import { createStreamLessonSession } from '../../lib/api';
 import { getStreamClient, disconnectStreamUser } from '../../lib/stream';
+import { LessonCompleteEvent } from '../../types/stream';
 
 jest.mock('../../lib/api', () => ({
   createStreamLessonSession: jest.fn(),
@@ -15,6 +16,7 @@ jest.mock('@stream-io/video-react-native-sdk', () => ({
   CallingState: { LEFT: 'left' },
 }));
 
+let customHandler: ((event: { custom?: LessonCompleteEvent }) => void) | undefined;
 const createCall = jest.fn((type: string, id: string) => ({
   type,
   id,
@@ -27,6 +29,10 @@ const createCall = jest.fn((type: string, id: string) => ({
   },
   join: jest.fn().mockResolvedValue(undefined),
   leave: jest.fn().mockResolvedValue(undefined),
+  on: jest.fn((eventName: string, fn: (event: never) => void) => {
+    if (eventName === 'custom') customHandler = fn as (event: { custom?: LessonCompleteEvent }) => void;
+    return () => {};
+  }),
 }));
 
 const baseParams = {
@@ -48,6 +54,7 @@ const session = {
 describe('useStreamLessonCall', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    customHandler = undefined;
     (createStreamLessonSession as jest.Mock).mockResolvedValue(session);
     (getStreamClient as jest.Mock).mockReturnValue({
       call: createCall,
@@ -137,5 +144,43 @@ describe('useStreamLessonCall', () => {
     });
     unmount();
     expect(call.leave).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useStreamLessonCall lesson completion', () => {
+  it('forwards a lesson_complete custom event to onLessonComplete once', async () => {
+    const onLessonComplete = jest.fn();
+    const payload: LessonCompleteEvent = {
+      type: 'lesson_complete',
+      lesson_id: 'l1',
+      xp_earned: 20,
+      minutes_practiced: 3,
+      reason: 'mastered',
+    };
+    const { result } = renderHook(() =>
+      useStreamLessonCall({ ...baseParams, onLessonComplete })
+    );
+    await waitFor(() => expect(result.current.status).toBe('joined'));
+
+    await act(async () => {
+      customHandler?.({ custom: payload });
+      customHandler?.({ custom: payload });
+    });
+
+    expect(onLessonComplete).toHaveBeenCalledTimes(1);
+    expect(onLessonComplete).toHaveBeenCalledWith(payload);
+  });
+
+  it('ignores non-completion custom events', async () => {
+    const onLessonComplete = jest.fn();
+    const { result } = renderHook(() =>
+      useStreamLessonCall({ ...baseParams, onLessonComplete })
+    );
+    await waitFor(() => expect(result.current.status).toBe('joined'));
+
+    await act(async () => {
+      customHandler?.({ custom: { type: 'other', data: 1 } });
+    });
+    expect(onLessonComplete).not.toHaveBeenCalled();
   });
 });

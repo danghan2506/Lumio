@@ -166,6 +166,10 @@ describe('POST /api/stream/agent (start)', () => {
       { id: 'lumi-teacher', role: 'admin', name: 'Lumi the teacher' },
     ]);
     expect(videoCall).toHaveBeenCalledWith('audio_room', 'lesson-l1-u1');
+    expect(updateUserPermissions).toHaveBeenCalledWith({
+      user_id: 'lumi-teacher',
+      grant_permissions: ['send-audio'],
+    });
     expect(goLive).toHaveBeenCalled();
     expect(fetchMock).toHaveBeenCalledWith(
       'http://localhost:8000/calls/lesson-l1-u1/sessions',

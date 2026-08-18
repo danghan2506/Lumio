@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Call, CallingState, StreamVideoClient } from '@stream-io/video-react-native-sdk';
 import { createStreamLessonSession } from '@/lib/api';
-import type { StreamLessonSession } from '@/types/stream';
+import type { StreamLessonSession, LessonCompleteEvent } from '@/types/stream';
 import { getStreamClient, disconnectStreamUser } from '@/lib/stream';
 
 export type StreamCallStatus =
@@ -18,10 +18,11 @@ export interface UseStreamLessonCallParams {
   displayName: string;
   accessToken: string;
   enabled: boolean;
+  onLessonComplete?: (payload: LessonCompleteEvent) => void;
 }
 
 export function useStreamLessonCall(params: UseStreamLessonCallParams) {
-  const { lessonId, languageId, displayName, accessToken, enabled } = params;
+  const { lessonId, languageId, displayName, accessToken, enabled, onLessonComplete } = params;
   const [status, setStatus] = useState<StreamCallStatus>('idle');
   const [isMuted, setIsMuted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -31,6 +32,12 @@ export function useStreamLessonCall(params: UseStreamLessonCallParams) {
   } | null>(null);
   const callRef = useRef<Call | null>(null);
   const clientRef = useRef<StreamVideoClient | null>(null);
+  const onLessonCompleteRef = useRef(onLessonComplete);
+  const unsubscribeCustomRef = useRef<(() => void) | null>(null);
+  const completionHandledRef = useRef(false);
+  useEffect(() => {
+    onLessonCompleteRef.current = onLessonComplete;
+  }, [onLessonComplete]);
 
   const disconnect = useCallback(async () => {
     const client = clientRef.current;
@@ -74,6 +81,14 @@ export function useStreamLessonCall(params: UseStreamLessonCallParams) {
         reuseInstance: true,
       });
       callRef.current = call;
+      completionHandledRef.current = false;
+      unsubscribeCustomRef.current = call.on('custom', (event) => {
+        const payload = event.custom;
+        if (payload?.type === 'lesson_complete' && !completionHandledRef.current) {
+          completionHandledRef.current = true;
+          onLessonCompleteRef.current?.(payload as LessonCompleteEvent);
+        }
+      });
 
       setStatus('joining');
       // The call was already created server-side; the SDK auto-starts audio
@@ -112,6 +127,8 @@ export function useStreamLessonCall(params: UseStreamLessonCallParams) {
   const leave = useCallback(async () => {
     const call = callRef.current;
     callRef.current = null;
+    unsubscribeCustomRef.current?.();
+    unsubscribeCustomRef.current = null;
     if (call && call.state.callingState !== CallingState.LEFT) {
       try {
         await call.leave();
@@ -129,6 +146,8 @@ export function useStreamLessonCall(params: UseStreamLessonCallParams) {
     void join();
 
     return () => {
+      unsubscribeCustomRef.current?.();
+      unsubscribeCustomRef.current = null;
       const call = callRef.current;
       if (call && call.state.callingState !== CallingState.LEFT) {
         void call.leave().catch(() => {});

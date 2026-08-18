@@ -1,6 +1,8 @@
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, act } from '@testing-library/react-native';
 import AudioLessonScreen from '@/app/lesson/[id]';
+import { recordLessonProgress } from '@/lib/api';
+import type { LessonCompleteEvent } from '@/types/stream';
 
 const mockBack = jest.fn();
 
@@ -48,21 +50,30 @@ const mockRetry = jest.fn();
 const mockLeave = jest.fn();
 const mockToggleMute = jest.fn();
 
+let mockOnLessonComplete: ((payload: LessonCompleteEvent) => void) | null = null;
+
 let mockAgentStatus = 'connected';
 const mockAgentRetry = jest.fn();
 
 jest.mock('@/hooks/useStreamLessonCall', () => ({
-  useStreamLessonCall: () => ({
-    status: mockStatus,
-    isMuted: mockIsMuted,
-    errorMessage: 'Could not connect to the audio call.',
-    callType: 'audio_room',
-    callId: 'lesson-les-1-user-1',
-    join: mockJoin,
-    retry: mockRetry,
-    toggleMute: mockToggleMute,
-    leave: mockLeave,
-  }),
+  useStreamLessonCall: (params: { onLessonComplete?: (payload: LessonCompleteEvent) => void }) => {
+    mockOnLessonComplete = params.onLessonComplete ?? null;
+    return {
+      status: mockStatus,
+      isMuted: mockIsMuted,
+      errorMessage: 'Could not connect to the audio call.',
+      callType: 'audio_room',
+      callId: 'lesson-les-1-user-1',
+      join: mockJoin,
+      retry: mockRetry,
+      toggleMute: mockToggleMute,
+      leave: mockLeave,
+    };
+  },
+}));
+
+jest.mock('@/lib/api', () => ({
+  recordLessonProgress: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock('@/hooks/useStreamLessonAgent', () => ({
@@ -95,6 +106,8 @@ describe('AudioLessonScreen stream call states', () => {
     mockStatus = 'connecting';
     mockIsMuted = false;
     mockAgentStatus = 'connected';
+    mockOnLessonComplete = null;
+    (recordLessonProgress as jest.Mock).mockClear();
   });
 
   it('shows connecting overlay with the user name while connecting', async () => {
@@ -120,12 +133,47 @@ describe('AudioLessonScreen stream call states', () => {
     expect(mockToggleMute).toHaveBeenCalled();
   });
 
-  it('end call presses leave and opens summary modal', () => {
+  it('does not render an end-call button (auto-completion only)', () => {
     mockStatus = 'joined';
-    const { getByTestId, getByText } = render(<AudioLessonScreen />);
-    fireEvent.press(getByTestId('end-call'));
-    expect(mockLeave).toHaveBeenCalled();
+    const { queryByTestId } = render(<AudioLessonScreen />);
+    expect(queryByTestId('end-call')).toBeNull();
+  });
+
+  it('records progress and shows the summary on lesson_complete', async () => {
+    mockStatus = 'joined';
+    const { getByText } = render(<AudioLessonScreen />);
+
+    await act(async () => {
+      mockOnLessonComplete?.({
+        type: 'lesson_complete',
+        lesson_id: 'les-1',
+        xp_earned: 10,
+        minutes_practiced: 2,
+        reason: 'mastered',
+      });
+    });
+
+    expect(recordLessonProgress).toHaveBeenCalledWith({
+      lessonId: 'les-1',
+      status: 'completed',
+      currentActivity: 1,
+      xpEarned: 10,
+      minutesPracticed: 2,
+    });
     expect(getByText('Lesson Completed!')).toBeTruthy();
+  });
+
+  it('blocks navigation and shows a retry when progress recording fails', async () => {
+    mockStatus = 'joined';
+    (recordLessonProgress as jest.Mock).mockRejectedValueOnce(new Error('DB down'));
+    const { getByText } = render(<AudioLessonScreen />);
+
+    await act(async () => {
+      mockOnLessonComplete?.({ type: 'lesson_complete', lesson_id: 'les-1', xp_earned: 10, minutes_practiced: 2 });
+    });
+
+    expect(getByText(/could not save/i)).toBeTruthy();
+    expect(getByText(/retry/i)).toBeTruthy();
   });
 
   it('shows teacher failed state and retry button', () => {
