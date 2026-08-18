@@ -16,6 +16,7 @@ import {
   sanitizeMultipleChoiceData,
   getActivitiesFromDB,
   getMultipleChoiceActivities,
+  getTranslationActivities,
   getPracticeLessons,
   createStreamLessonSession,
   startStreamAgent,
@@ -859,6 +860,70 @@ describe('lib/api database helpers', () => {
     });
   });
 
+  describe('getTranslationActivities', () => {
+    it('fetches translation activities for a lesson ordered by order asc', async () => {
+      const mockActivities = [
+        {
+          id: 'act-tr-1',
+          lesson_id: 'lesson-1',
+          order: 1,
+          type: 'translation',
+          instruction: 'Translate sentence',
+          data: {
+            sourceText: 'Xin chào',
+            targetText: 'Hello',
+            acceptedVariants: ['Hello'],
+          },
+          created_at: '2026-08-11T00:00:00Z',
+        },
+      ];
+
+      const orderMock = jest.fn().mockResolvedValueOnce({
+        data: mockActivities,
+        error: null,
+      });
+      const eqTypeMock = jest.fn().mockReturnValue({ order: orderMock });
+      const eqLessonMock = jest.fn().mockReturnValue({ eq: eqTypeMock });
+      const selectMock = jest.fn().mockReturnValue({ eq: eqLessonMock });
+      (supabase.from as jest.Mock).mockReturnValue({ select: selectMock });
+
+      const activities = await getTranslationActivities('lesson-1');
+
+      expect(activities).toEqual(mockActivities);
+      expect(supabase.from).toHaveBeenCalledWith('activities');
+      expect(eqLessonMock).toHaveBeenCalledWith('lesson_id', 'lesson-1');
+      expect(eqTypeMock).toHaveBeenCalledWith('type', 'translation');
+      expect(orderMock).toHaveBeenCalledWith('order', { ascending: true });
+    });
+
+    it('returns empty array when data is null', async () => {
+      const orderMock = jest.fn().mockResolvedValueOnce({
+        data: null,
+        error: null,
+      });
+      const eqTypeMock = jest.fn().mockReturnValue({ order: orderMock });
+      const eqLessonMock = jest.fn().mockReturnValue({ eq: eqTypeMock });
+      const selectMock = jest.fn().mockReturnValue({ eq: eqLessonMock });
+      (supabase.from as jest.Mock).mockReturnValue({ select: selectMock });
+
+      const activities = await getTranslationActivities('lesson-1');
+      expect(activities).toEqual([]);
+    });
+
+    it('throws error when translation query fails', async () => {
+      const orderMock = jest.fn().mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Translation fetch error' },
+      });
+      const eqTypeMock = jest.fn().mockReturnValue({ order: orderMock });
+      const eqLessonMock = jest.fn().mockReturnValue({ eq: eqTypeMock });
+      const selectMock = jest.fn().mockReturnValue({ eq: eqLessonMock });
+      (supabase.from as jest.Mock).mockReturnValue({ select: selectMock });
+
+      await expect(getTranslationActivities('lesson-1')).rejects.toThrow('Translation fetch error');
+    });
+  });
+
   describe('getPracticeLessons', () => {
     it('returns empty array immediately when unit has no lessons', async () => {
       const lessonsOrderMock = jest.fn().mockResolvedValueOnce({
@@ -912,9 +977,9 @@ describe('lib/api database helpers', () => {
       ];
 
       const mockActivities = [
-        { id: 'act-1', lesson_id: 'l1' },
-        { id: 'act-2', lesson_id: 'l1' },
-        { id: 'act-3', lesson_id: 'l2' },
+        { id: 'act-1', lesson_id: 'l1', type: 'multiple_choice' },
+        { id: 'act-2', lesson_id: 'l1', type: 'translation' },
+        { id: 'act-3', lesson_id: 'l2', type: 'multiple_choice' },
       ];
 
       const mockProgress = [
@@ -956,7 +1021,7 @@ describe('lib/api database helpers', () => {
           return {
             select: jest.fn().mockReturnValue({
               in: jest.fn().mockReturnValue({
-                eq: jest.fn().mockResolvedValueOnce({ data: mockActivities, error: null }),
+                in: jest.fn().mockResolvedValueOnce({ data: mockActivities, error: null }),
               }),
             }),
           };
@@ -982,6 +1047,8 @@ describe('lib/api database helpers', () => {
           xp_reward: 10,
           estimated_minutes: 5,
           activitiesCount: 2,
+          multipleChoiceActivitiesCount: 1,
+          translationActivitiesCount: 1,
           status: 'completed',
         },
         {
@@ -992,6 +1059,8 @@ describe('lib/api database helpers', () => {
           xp_reward: 15,
           estimated_minutes: 8,
           activitiesCount: 1,
+          multipleChoiceActivitiesCount: 1,
+          translationActivitiesCount: 0,
           status: 'in_progress',
         },
         {
@@ -1002,6 +1071,8 @@ describe('lib/api database helpers', () => {
           xp_reward: 20,
           estimated_minutes: 10,
           activitiesCount: 0,
+          multipleChoiceActivitiesCount: 0,
+          translationActivitiesCount: 0,
           status: 'not_started',
         },
       ]);
@@ -1055,7 +1126,7 @@ describe('lib/api database helpers', () => {
           return {
             select: jest.fn().mockReturnValue({
               in: jest.fn().mockReturnValue({
-                eq: jest.fn().mockResolvedValueOnce({
+                in: jest.fn().mockResolvedValueOnce({
                   data: null,
                   error: { message: 'Activities query failed' },
                 }),
@@ -1104,7 +1175,7 @@ describe('lib/api database helpers', () => {
           return {
             select: jest.fn().mockReturnValue({
               in: jest.fn().mockReturnValue({
-                eq: jest.fn().mockResolvedValueOnce({ data: [], error: null }),
+                in: jest.fn().mockResolvedValueOnce({ data: [], error: null }),
               }),
             }),
           };
