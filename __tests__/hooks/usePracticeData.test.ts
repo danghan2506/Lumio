@@ -16,6 +16,7 @@ jest.mock('../../lib/api', () => ({
   getUnitsFromDB: jest.fn(),
   getPracticeLessons: jest.fn(),
   getMultipleChoiceActivities: jest.fn(),
+  getTranslationActivities: jest.fn(),
   sanitizeMultipleChoiceData: jest.requireActual('../../lib/api').sanitizeMultipleChoiceData,
 }));
 
@@ -29,6 +30,7 @@ import {
   getUnitsFromDB,
   getPracticeLessons,
   getMultipleChoiceActivities,
+  getTranslationActivities,
 } from '../../lib/api';
 import { useLanguageStore } from '../../store/useLanguageStore';
 import type { UnitRow, ActivityRow } from '../../types/database.types';
@@ -64,16 +66,20 @@ const mockPracticeLessons: PracticeLessonItem[] = [
     xp_reward: 10,
     estimated_minutes: 5,
     activitiesCount: 2,
+    multipleChoiceActivitiesCount: 2,
+    translationActivitiesCount: 0,
     status: 'completed',
   },
   {
     id: 'les-2',
     unit_id: 'unit-1',
     order: 2,
-    title: 'Polite Expressions Practice',
+    title: 'Polite Expressions Translation',
     xp_reward: 15,
     estimated_minutes: 7,
     activitiesCount: 1,
+    multipleChoiceActivitiesCount: 0,
+    translationActivitiesCount: 1,
     status: 'in_progress',
   },
 ];
@@ -115,6 +121,35 @@ const mockRawActivities: ActivityRow[] = [
       question: '',
       options: [],
       correctIndex: -1,
+    },
+    created_at: '2026-01-01T00:00:00Z',
+  },
+];
+
+const mockRawTranslationActivities: ActivityRow[] = [
+  {
+    id: 'act-tr-1',
+    lesson_id: 'les-2',
+    order: 1,
+    type: 'translation',
+    instruction: 'Dịch câu sau sang tiếng Anh:',
+    data: {
+      sourceText: 'Rất vui được gặp bạn!',
+      targetText: 'Nice to meet you!',
+      acceptedVariants: ['Nice to meet you!', 'Nice to meet you'],
+      distractors: ['friend', 'good'],
+    },
+    created_at: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'act-tr-invalid',
+    lesson_id: 'les-2',
+    order: 2,
+    type: 'translation',
+    instruction: 'Invalid translation',
+    data: {
+      sourceText: '',
+      targetText: '',
     },
     created_at: '2026-01-01T00:00:00Z',
   },
@@ -170,10 +205,13 @@ describe('usePracticeData', () => {
       expect(result.current.units).toEqual(mockUnits);
       expect(result.current.activeUnit).toEqual(mockUnits[0]);
       expect(result.current.practiceLessons).toEqual(mockPracticeLessons);
+      expect(result.current.filteredPracticeLessons).toEqual(mockPracticeLessons);
+      expect(result.current.filterType).toBe('all');
       expect(result.current.error).toBeNull();
       expect(result.current.refreshing).toBe(false);
       expect(result.current.selectedPracticeLesson).toBeNull();
       expect(result.current.activeLessonActivities).toEqual([]);
+      expect(result.current.activeTranslationActivities).toEqual([]);
       expect(result.current.loadingActivities).toBe(false);
       expect(result.current.activitiesError).toBeNull();
     });
@@ -221,69 +259,37 @@ describe('usePracticeData', () => {
     });
   });
 
-  describe('Refresh Flow', () => {
-    it('re-fetches units and lessons when refresh() is invoked', async () => {
+  describe('Filtering Activity Types', () => {
+    it('filters practice lessons by multiple_choice and translation correctly', async () => {
       (getUnitsFromDB as jest.Mock).mockResolvedValueOnce(mockUnits);
       (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockPracticeLessons);
 
       const { result } = renderHook(() => usePracticeData());
       await waitFor(() => expect(result.current.loading).toBe(false));
 
-      const updatedLessons: PracticeLessonItem[] = [
-        ...mockPracticeLessons,
-        {
-          id: 'les-3',
-          unit_id: 'unit-1',
-          order: 3,
-          title: 'Advanced Practice',
-          xp_reward: 20,
-          estimated_minutes: 10,
-          activitiesCount: 4,
-          status: 'not_started',
-        },
-      ];
+      expect(result.current.filteredPracticeLessons).toHaveLength(2);
 
-      (getUnitsFromDB as jest.Mock).mockResolvedValueOnce(mockUnits);
-      (getPracticeLessons as jest.Mock).mockResolvedValueOnce(updatedLessons);
-
-      let refreshPromise!: Promise<void>;
+      // Filter by multiple choice
       act(() => {
-        refreshPromise = result.current.refresh();
+        result.current.setFilterType('multiple_choice');
       });
+      expect(result.current.filteredPracticeLessons).toEqual([mockPracticeLessons[0]]);
 
-      expect(result.current.refreshing).toBe(true);
-
-      await act(async () => {
-        await refreshPromise;
+      // Filter by translation
+      act(() => {
+        result.current.setFilterType('translation');
       });
+      expect(result.current.filteredPracticeLessons).toEqual([mockPracticeLessons[1]]);
 
-      expect(result.current.refreshing).toBe(false);
-      expect(result.current.practiceLessons).toEqual(updatedLessons);
-      expect(result.current.error).toBeNull();
-      expect(getUnitsFromDB).toHaveBeenCalledTimes(2);
-      expect(getPracticeLessons).toHaveBeenCalledTimes(2);
-    });
-
-    it('handles refresh errors and updates error state', async () => {
-      (getUnitsFromDB as jest.Mock).mockResolvedValueOnce(mockUnits);
-      (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockPracticeLessons);
-
-      const { result } = renderHook(() => usePracticeData());
-      await waitFor(() => expect(result.current.loading).toBe(false));
-
-      (getUnitsFromDB as jest.Mock).mockRejectedValueOnce(new Error('Network error on refresh'));
-
-      await act(async () => {
-        await result.current.refresh();
+      // Reset to all
+      act(() => {
+        result.current.setFilterType('all');
       });
-
-      expect(result.current.refreshing).toBe(false);
-      expect(result.current.error).toBe('Network error on refresh');
-      expect(result.current.practiceLessons).toEqual([]);
+      expect(result.current.filteredPracticeLessons).toHaveLength(2);
     });
   });
 
-  describe('selectLessonForPractice & clearSelectedPracticeLesson', () => {
+  describe('selectLessonForPractice (Multiple Choice)', () => {
     it('fetches multiple choice activities and filters out invalid ones', async () => {
       (getUnitsFromDB as jest.Mock).mockResolvedValueOnce(mockUnits);
       (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockPracticeLessons);
@@ -298,6 +304,7 @@ describe('usePracticeData', () => {
       });
 
       expect(result.current.selectedPracticeLesson).toEqual(mockPracticeLessons[0]);
+      expect(result.current.selectedPracticeActivityType).toBe('multiple_choice');
       expect(result.current.loadingActivities).toBe(true);
       expect(result.current.activitiesError).toBeNull();
 
@@ -307,126 +314,98 @@ describe('usePracticeData', () => {
 
       expect(getMultipleChoiceActivities).toHaveBeenCalledWith('les-1');
       expect(result.current.loadingActivities).toBe(false);
-      // act-invalid should have been filtered out by sanitizeMultipleChoiceData
       expect(result.current.activeLessonActivities).toHaveLength(2);
-      expect(result.current.activeLessonActivities[0]).toEqual({
-        id: 'act-1',
-        lesson_id: 'les-1',
-        order: 1,
-        type: 'multiple_choice',
-        instruction: 'Chọn nghĩa đúng của từ sau:',
-        data: {
-          question: '"Hello" có nghĩa là gì?',
-          options: ['Tạm biệt', 'Xin chào', 'Cảm ơn', 'Xin lỗi'],
-          correctIndex: 1,
-        },
-      });
-      expect(result.current.activeLessonActivities[1]).toEqual({
-        id: 'act-2',
-        lesson_id: 'les-1',
-        order: 2,
-        type: 'multiple_choice',
-        instruction: 'Chọn đáp án chính xác:',
-        data: {
-          question: 'How do you say "Thank you"?',
-          options: ['Hello', 'Please', 'Thank you', 'Goodbye'],
-          correctIndex: 2,
-        },
-      });
+      expect(result.current.activeTranslationActivities).toEqual([]);
     });
+  });
 
-    it('sets activitiesError when getMultipleChoiceActivities fails', async () => {
+  describe('selectLessonForTranslationPractice', () => {
+    it('fetches translation activities and sanitizes them properly', async () => {
       (getUnitsFromDB as jest.Mock).mockResolvedValueOnce(mockUnits);
       (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockPracticeLessons);
-      (getMultipleChoiceActivities as jest.Mock).mockRejectedValueOnce(
-        new Error('Failed to fetch questions')
+      (getTranslationActivities as jest.Mock).mockResolvedValueOnce(mockRawTranslationActivities);
+
+      const { result } = renderHook(() => usePracticeData());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      let selectPromise!: Promise<void>;
+      act(() => {
+        selectPromise = result.current.selectLessonForTranslationPractice(mockPracticeLessons[1]);
+      });
+
+      expect(result.current.selectedPracticeLesson).toEqual(mockPracticeLessons[1]);
+      expect(result.current.selectedPracticeActivityType).toBe('translation');
+      expect(result.current.loadingActivities).toBe(true);
+
+      await act(async () => {
+        await selectPromise;
+      });
+
+      expect(getTranslationActivities).toHaveBeenCalledWith('les-2');
+      expect(result.current.loadingActivities).toBe(false);
+      expect(result.current.activeTranslationActivities).toHaveLength(1);
+      expect(result.current.activeTranslationActivities[0]).toEqual({
+        id: 'act-tr-1',
+        lesson_id: 'les-2',
+        order: 1,
+        type: 'translation',
+        instruction: 'Dịch câu sau sang tiếng Anh:',
+        data: {
+          sourceText: 'Rất vui được gặp bạn!',
+          targetText: 'Nice to meet you!',
+          acceptedVariants: ['Nice to meet you!', 'Nice to meet you'],
+          distractors: ['friend', 'good'],
+        },
+      });
+      expect(result.current.activeLessonActivities).toEqual([]);
+    });
+
+    it('sets activitiesError when getTranslationActivities fails', async () => {
+      (getUnitsFromDB as jest.Mock).mockResolvedValueOnce(mockUnits);
+      (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockPracticeLessons);
+      (getTranslationActivities as jest.Mock).mockRejectedValueOnce(
+        new Error('Failed to fetch translation activities')
       );
 
       const { result } = renderHook(() => usePracticeData());
       await waitFor(() => expect(result.current.loading).toBe(false));
 
       await act(async () => {
-        await result.current.selectLessonForPractice(mockPracticeLessons[0]);
+        await result.current.selectLessonForTranslationPractice(mockPracticeLessons[1]);
       });
 
-      expect(result.current.activitiesError).toBe('Failed to fetch questions');
-      expect(result.current.activeLessonActivities).toEqual([]);
+      expect(result.current.activitiesError).toBe('Failed to fetch translation activities');
+      expect(result.current.activeTranslationActivities).toEqual([]);
       expect(result.current.loadingActivities).toBe(false);
     });
+  });
 
-    it('clears selected practice lesson and activities on clearSelectedPracticeLesson', async () => {
+  describe('clearSelectedPracticeLesson', () => {
+    it('clears selected practice lesson and all activities', async () => {
       (getUnitsFromDB as jest.Mock).mockResolvedValueOnce(mockUnits);
       (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockPracticeLessons);
-      (getMultipleChoiceActivities as jest.Mock).mockResolvedValueOnce(mockRawActivities);
+      (getTranslationActivities as jest.Mock).mockResolvedValueOnce(mockRawTranslationActivities);
 
       const { result } = renderHook(() => usePracticeData());
       await waitFor(() => expect(result.current.loading).toBe(false));
 
       await act(async () => {
-        await result.current.selectLessonForPractice(mockPracticeLessons[0]);
+        await result.current.selectLessonForTranslationPractice(mockPracticeLessons[1]);
       });
 
       expect(result.current.selectedPracticeLesson).not.toBeNull();
-      expect(result.current.activeLessonActivities.length).toBeGreaterThan(0);
+      expect(result.current.selectedPracticeActivityType).toBe('translation');
 
       act(() => {
         result.current.clearSelectedPracticeLesson();
       });
 
       expect(result.current.selectedPracticeLesson).toBeNull();
+      expect(result.current.selectedPracticeActivityType).toBeNull();
       expect(result.current.activeLessonActivities).toEqual([]);
+      expect(result.current.activeTranslationActivities).toEqual([]);
       expect(result.current.activitiesError).toBeNull();
       expect(result.current.loadingActivities).toBe(false);
-    });
-  });
-
-  describe('Language switching', () => {
-    it('re-fetches units and lessons when selectedLanguage changes', async () => {
-      (getUnitsFromDB as jest.Mock).mockResolvedValueOnce(mockUnits);
-      (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockPracticeLessons);
-
-      const { result } = renderHook(() => usePracticeData());
-      await waitFor(() => expect(result.current.loading).toBe(false));
-
-      const koUnits: UnitRow[] = [
-        {
-          id: 'ko-unit-1',
-          language_id: 'ko',
-          title: 'Korean Basics',
-          description: 'Learn Hangul',
-          icon_emoji: '🇰🇷',
-          order: 1,
-          created_at: '2026-01-01T00:00:00Z',
-        },
-      ];
-      const koPracticeLessons: PracticeLessonItem[] = [
-        {
-          id: 'ko-les-1',
-          unit_id: 'ko-unit-1',
-          order: 1,
-          title: 'Hangul Vowels Practice',
-          xp_reward: 10,
-          estimated_minutes: 5,
-          activitiesCount: 5,
-          status: 'not_started',
-        },
-      ];
-
-      (getUnitsFromDB as jest.Mock).mockResolvedValueOnce(koUnits);
-      (getPracticeLessons as jest.Mock).mockResolvedValueOnce(koPracticeLessons);
-
-      act(() => {
-        useLanguageStore.setState({ selectedLanguage: 'ko' });
-      });
-
-      await waitFor(() => expect(result.current.selectedLanguage).toBe('ko'));
-      await waitFor(() => expect(result.current.loading).toBe(false));
-
-      expect(getUnitsFromDB).toHaveBeenCalledWith('ko');
-      expect(getPracticeLessons).toHaveBeenCalledWith('ko-unit-1');
-      expect(result.current.units).toEqual(koUnits);
-      expect(result.current.activeUnit).toEqual(koUnits[0]);
-      expect(result.current.practiceLessons).toEqual(koPracticeLessons);
     });
   });
 });

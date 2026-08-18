@@ -321,6 +321,20 @@ export async function getMultipleChoiceActivities(lessonId: string): Promise<Act
   return data ?? [];
 }
 
+export async function getTranslationActivities(lessonId: string): Promise<ActivityRow[]> {
+  const { data, error } = await supabase
+    .from('activities')
+    .select('*')
+    .eq('lesson_id', lessonId)
+    .eq('type', 'translation')
+    .order('order', { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data ?? [];
+}
+
 export async function getPracticeLessons(unitId: string): Promise<PracticeLessonItem[]> {
   const lessons = await getLessonsFromDB(unitId);
   if (lessons.length === 0) {
@@ -332,9 +346,9 @@ export async function getPracticeLessons(unitId: string): Promise<PracticeLesson
   const [activitiesRes, progressList] = await Promise.all([
     supabase
       .from('activities')
-      .select('id, lesson_id')
+      .select('id, lesson_id, type')
       .in('lesson_id', lessonIds)
-      .eq('type', 'multiple_choice'),
+      .in('type', ['multiple_choice', 'translation']),
     getLessonProgressForLessons(lessonIds),
   ]);
 
@@ -342,12 +356,26 @@ export async function getPracticeLessons(unitId: string): Promise<PracticeLesson
     throw new Error(activitiesRes.error.message);
   }
 
-  const activityCountMap = new Map<string, number>();
+  const totalCountMap = new Map<string, number>();
+  const mcCountMap = new Map<string, number>();
+  const transCountMap = new Map<string, number>();
+
   for (const act of activitiesRes.data ?? []) {
-    activityCountMap.set(
+    totalCountMap.set(
       act.lesson_id,
-      (activityCountMap.get(act.lesson_id) ?? 0) + 1
+      (totalCountMap.get(act.lesson_id) ?? 0) + 1
     );
+    if (act.type === 'multiple_choice') {
+      mcCountMap.set(
+        act.lesson_id,
+        (mcCountMap.get(act.lesson_id) ?? 0) + 1
+      );
+    } else if (act.type === 'translation') {
+      transCountMap.set(
+        act.lesson_id,
+        (transCountMap.get(act.lesson_id) ?? 0) + 1
+      );
+    }
   }
 
   const progressMap = new Map(
@@ -364,7 +392,9 @@ export async function getPracticeLessons(unitId: string): Promise<PracticeLesson
     title: lesson.title,
     xp_reward: lesson.xp_reward,
     estimated_minutes: lesson.estimated_minutes,
-    activitiesCount: activityCountMap.get(lesson.id) ?? 0,
+    activitiesCount: totalCountMap.get(lesson.id) ?? 0,
+    multipleChoiceActivitiesCount: mcCountMap.get(lesson.id) ?? 0,
+    translationActivitiesCount: transCountMap.get(lesson.id) ?? 0,
     status: progressMap.get(lesson.id) ?? 'not_started',
   }));
 }

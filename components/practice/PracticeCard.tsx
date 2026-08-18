@@ -10,6 +10,7 @@ export interface PracticeCardProps {
   xpReward: number;
   estimatedMinutes: number;
   status: 'completed' | 'in_progress' | 'not_started';
+  activityType?: 'multiple_choice' | 'translation';
   onPress: () => void;
   testID?: string;
 }
@@ -21,11 +22,13 @@ export function PracticeCard({
   xpReward,
   estimatedMinutes,
   status,
+  activityType = 'multiple_choice',
   onPress,
   testID = 'practice-card',
 }: PracticeCardProps) {
   const isCompleted = status === 'completed';
   const isInProgress = status === 'in_progress';
+  const isTranslation = activityType === 'translation';
 
   const borderColorStyle = isCompleted
     ? { borderColor: `${colors.mint}50` }
@@ -45,6 +48,14 @@ export function PracticeCard({
     ? colors.lumioCoral
     : colors.lavenderMist;
 
+  const activityBadgeText = isTranslation
+    ? `Bài ${lessonNumber} • Ghép câu dịch`
+    : `Bài ${lessonNumber} • Trắc nghiệm`;
+
+  const countBadgeText = isTranslation
+    ? `${activitiesCount} câu dịch`
+    : `${activitiesCount} câu hỏi`;
+
   return (
     <TouchableOpacity
       testID={testID}
@@ -53,7 +64,7 @@ export function PracticeCard({
       style={borderColorStyle}
       className="mx-4 mb-3.5 p-4 rounded-3xl border bg-slate-900/60 flex-row items-center justify-between"
       accessibilityRole="button"
-      accessibilityLabel={`Luyện tập bài ${lessonNumber}: ${title}`}
+      accessibilityLabel={`Luyện tập bài ${lessonNumber}: ${title} (${isTranslation ? 'Ghép câu' : 'Trắc nghiệm'})`}
     >
       <View className="flex-1 mr-3">
         {/* Header Row: Label & Status */}
@@ -61,11 +72,11 @@ export function PracticeCard({
           <Text
             style={{
               fontFamily: 'PlusJakartaSans_600SemiBold',
-              color: isCompleted ? colors.mint : colors.lavenderMist,
+              color: isCompleted ? colors.mint : isTranslation ? colors.daylightAmber : colors.lavenderMist,
             }}
             className="text-xs uppercase tracking-wider mr-2"
           >
-            {`Bài ${lessonNumber} • Trắc nghiệm`}
+            {activityBadgeText}
           </Text>
 
           {isCompleted && (
@@ -113,7 +124,12 @@ export function PracticeCard({
         {/* Info Tags: Question Count & XP */}
         <View className="flex-row items-center flex-wrap">
           <View className="flex-row items-center mr-3">
-            <Ionicons name="help-circle-outline" size={13} color={colors.lavenderMist} style={{ marginRight: 4 }} />
+            <Ionicons
+              name={isTranslation ? 'chatbubble-ellipses-outline' : 'help-circle-outline'}
+              size={13}
+              color={colors.lavenderMist}
+              style={{ marginRight: 4 }}
+            />
             <Text
               style={{
                 fontFamily: 'PlusJakartaSans_500Medium',
@@ -121,7 +137,7 @@ export function PracticeCard({
               }}
               className="text-xs"
             >
-              {`${activitiesCount} câu hỏi`}
+              {countBadgeText}
             </Text>
           </View>
 
