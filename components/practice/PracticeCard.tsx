@@ -8,6 +8,7 @@ export interface PracticeCardProps {
   xpReward: number;
   estimatedMinutes: number;
   status: 'completed' | 'in_progress' | 'not_started';
+  activityType?: 'multiple_choice' | 'translation';
   onPress: () => void;
   testID?: string;
 }
@@ -19,13 +20,16 @@ export function PracticeCard({
   xpReward,
   estimatedMinutes,
   status,
+  activityType = 'multiple_choice',
   onPress,
   testID = 'practice-card',
 }: PracticeCardProps) {
+  const typeLabel = activityType === 'translation' ? 'Ghép câu dịch' : 'Trắc nghiệm';
+
   return (
     <ActivityCard
       orderNumber={lessonNumber}
-      typeLabel="Trắc nghiệm"
+      typeLabel={typeLabel}
       title={title}
       questionsCount={activitiesCount}
       xpReward={xpReward}

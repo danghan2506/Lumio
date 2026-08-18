@@ -15,11 +15,19 @@ import { UnitHeader } from '@/components/learn/UnitHeader';
 import { SegmentedToggle } from '@/components/learn/SegmentedToggle';
 import { ActivityCard } from '@/components/ui/ActivityCard';
 import { MultipleChoiceQuizModal } from '@/components/practice/MultipleChoiceQuizModal';
+import { TranslationQuizModal } from '@/components/practice/TranslationQuizModal';
 import { useLessonsData } from '@/hooks/useLessonsData';
 import { usePracticeData } from '@/hooks/usePracticeData';
 import { recordLessonProgress } from '@/lib/api';
 import { colors } from '@/theme/colors';
 import type { QuizResultSummary } from '@/hooks/useMultipleChoiceQuiz';
+import type { PracticeActivityType } from '@/types/learning';
+
+const FILTER_OPTIONS: { type: PracticeActivityType; label: string }[] = [
+  { type: 'all', label: 'Tất cả' },
+  { type: 'multiple_choice', label: 'Trắc nghiệm' },
+  { type: 'translation', label: 'Ghép câu' },
+];
 
 export default function LearnScreen() {
   const router = useRouter();
@@ -38,12 +46,17 @@ export default function LearnScreen() {
   const {
     activeUnit: practiceActiveUnit,
     practiceLessons,
+    filteredPracticeLessons,
+    filterType,
+    setFilterType,
     loading: practiceLoading,
     refreshing: practiceRefreshing,
     error: practiceError,
     refresh: refreshPractice,
     selectedPracticeLesson,
+    selectedPracticeActivityType,
     activeLessonActivities,
+    activeTranslationActivities,
     loadingActivities,
     selectLessonForPractice,
     clearSelectedPracticeLesson,
@@ -200,50 +213,129 @@ export default function LearnScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
-            ) : practiceLessons.length === 0 ? (
-              <View className="mx-4 p-8 rounded-3xl bg-slate-900/60 border border-slate-700/40 items-center justify-center">
-                <View className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 items-center justify-center mb-3">
-                  <Ionicons name="sparkles" size={28} color={colors.daylightAmber} />
-                </View>
-                <Text
-                  style={{ fontFamily: 'Fredoka_700Bold', color: colors.cream }}
-                  className="text-lg text-center mb-1"
-                >
-                  Chưa có bài tập trắc nghiệm
-                </Text>
-                <Text
-                  style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.lavenderMist }}
-                  className="text-xs text-center opacity-80"
-                >
-                  Các bài tập trắc nghiệm cho bài học này sẽ được cập nhật sớm!
-                </Text>
-              </View>
             ) : (
-              <View testID="practice-lessons-list">
-                {practiceLessons.map((lesson) => (
-                  <ActivityCard
-                    key={lesson.id}
-                    orderNumber={lesson.order}
-                    typeLabel="Trắc nghiệm"
-                    title={lesson.title}
-                    questionsCount={lesson.activitiesCount}
-                    xpReward={lesson.xp_reward}
-                    estimatedMinutes={lesson.estimated_minutes}
-                    status={lesson.status}
-                    onPress={() => selectLessonForPractice(lesson)}
-                  />
-                ))}
+              <View>
+                {/* Practice Activity Filter Pills */}
+                <View className="px-4 mb-4 flex-row items-center gap-2" testID="practice-filter-bar">
+                  {FILTER_OPTIONS.map((opt) => {
+                    const isSelected = filterType === opt.type;
+                    return (
+                      <TouchableOpacity
+                        key={opt.type}
+                        testID={`filter-chip-${opt.type}`}
+                        onPress={() => setFilterType(opt.type)}
+                        activeOpacity={0.8}
+                        style={{
+                          backgroundColor: isSelected ? colors.lumioCoral : 'rgba(255, 255, 255, 0.06)',
+                          borderColor: isSelected ? colors.lumioCoral : 'rgba(255, 255, 255, 0.12)',
+                        }}
+                        className="px-4 py-2 rounded-full border"
+                        accessibilityRole="button"
+                        accessibilityLabel={`Lọc theo ${opt.label}`}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: isSelected ? 'PlusJakartaSans_700Bold' : 'PlusJakartaSans_500Medium',
+                            color: isSelected ? colors.cream : colors.lavenderMist,
+                          }}
+                          className="text-xs"
+                        >
+                          {opt.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {filteredPracticeLessons.length === 0 ? (
+                  <View className="mx-4 p-8 rounded-3xl bg-slate-900/60 border border-slate-700/40 items-center justify-center">
+                    <View className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 items-center justify-center mb-3">
+                      <Ionicons name="sparkles" size={28} color={colors.daylightAmber} />
+                    </View>
+                    <Text
+                      style={{ fontFamily: 'Fredoka_700Bold', color: colors.cream }}
+                      className="text-lg text-center mb-1"
+                    >
+                      Chưa có bài tập luyện tập
+                    </Text>
+                    <Text
+                      style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.lavenderMist }}
+                      className="text-xs text-center opacity-80"
+                    >
+                      Các bài tập cho chủ đề này sẽ được cập nhật sớm!
+                    </Text>
+                  </View>
+                ) : (
+                  <View testID="practice-lessons-list">
+                    {filteredPracticeLessons.flatMap((lesson) => {
+                      const mcCount = lesson.multipleChoiceActivitiesCount ?? (lesson.translationActivitiesCount ? 0 : lesson.activitiesCount);
+                      const trCount = lesson.translationActivitiesCount ?? 0;
+
+                      const cards: React.ReactNode[] = [];
+
+                      // If filter is all or multiple_choice, and has MC questions
+                      if ((filterType === 'all' || filterType === 'multiple_choice') && (mcCount > 0 || (mcCount === 0 && trCount === 0))) {
+                        cards.push(
+                          <ActivityCard
+                            key={`${lesson.id}-mc`}
+                            testID={`practice-card-mc-${lesson.id}`}
+                            orderNumber={lesson.order}
+                            typeLabel="Trắc nghiệm"
+                            title={lesson.title}
+                            questionsCount={mcCount || lesson.activitiesCount}
+                            xpReward={lesson.xp_reward}
+                            estimatedMinutes={lesson.estimated_minutes}
+                            status={lesson.status}
+                            onPress={() => selectLessonForPractice(lesson, 'multiple_choice')}
+                          />
+                        );
+                      }
+
+                      // If filter is all or translation, and has translation questions
+                      if ((filterType === 'all' || filterType === 'translation') && trCount > 0) {
+                        cards.push(
+                          <ActivityCard
+                            key={`${lesson.id}-tr`}
+                            testID={`practice-card-tr-${lesson.id}`}
+                            orderNumber={lesson.order}
+                            typeLabel="Ghép câu dịch"
+                            title={lesson.title}
+                            questionsCount={trCount}
+                            xpReward={lesson.xp_reward}
+                            estimatedMinutes={lesson.estimated_minutes}
+                            status={lesson.status}
+                            onPress={() => selectLessonForPractice(lesson, 'translation')}
+                          />
+                        );
+                      }
+
+                      return cards;
+                    })}
+                  </View>
+                )}
               </View>
             )
           )}
         </ScrollView>
 
         {/* Multiple Choice Quiz Modal */}
-        {selectedPracticeLesson && (
+        {selectedPracticeLesson && selectedPracticeActivityType === 'multiple_choice' && (
           <MultipleChoiceQuizModal
-            visible={!!selectedPracticeLesson && !loadingActivities}
+            visible={!loadingActivities && activeLessonActivities.length > 0}
             lessonTitle={selectedPracticeLesson.title}
             questions={activeLessonActivities}
+            baseXpReward={selectedPracticeLesson.xp_reward}
+            onClose={clearSelectedPracticeLesson}
+            onCompleted={handleQuizCompleted}
+          />
+        )}
+
+        {/* Translation Word Bank Quiz Modal */}
+        {selectedPracticeLesson && selectedPracticeActivityType === 'translation' && (
+          <TranslationQuizModal
+            visible={!loadingActivities && activeTranslationActivities.length > 0}
+            lessonTitle={selectedPracticeLesson.title}
+            questions={activeTranslationActivities}
             baseXpReward={selectedPracticeLesson.xp_reward}
             onClose={clearSelectedPracticeLesson}
             onCompleted={handleQuizCompleted}

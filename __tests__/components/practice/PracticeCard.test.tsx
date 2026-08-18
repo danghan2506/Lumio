@@ -28,6 +28,25 @@ describe('PracticeCard', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
+  it('renders correctly for translation activityType', () => {
+    const onPress = jest.fn();
+    const { getByText } = render(
+      <PracticeCard
+        lessonNumber={1}
+        title="Translate sentences"
+        activitiesCount={3}
+        xpReward={15}
+        estimatedMinutes={5}
+        status="not_started"
+        activityType="translation"
+        onPress={onPress}
+      />
+    );
+
+    expect(getByText('Bài 1 • Ghép câu dịch')).toBeTruthy();
+    expect(getByText('Translate sentences')).toBeTruthy();
+  });
+
   it('renders completed status badge with checkmark when completed', () => {
     const onPress = jest.fn();
     const { getByText, getByTestId } = render(

@@ -81,6 +81,30 @@ export type Activity =
 
 // ─── Practice & Quiz Types ────────────────────────────────────────────────
 
+export type PracticeActivityType = 'all' | 'multiple_choice' | 'translation';
+
+export interface WordChip {
+  id: string;
+  text: string;
+  isSelected?: boolean;
+}
+
+export interface TranslationActivityData {
+  sourceText: string;
+  targetText: string;
+  acceptedVariants: string[];
+  distractors?: string[];
+}
+
+export interface TranslationActivityItem {
+  id: string;
+  lesson_id: string;
+  order: number;
+  type: 'translation';
+  instruction: string;
+  data: TranslationActivityData;
+}
+
 export interface MultipleChoiceData {
   question: string;
   options: [string, string, string, string] | string[];
@@ -105,6 +129,8 @@ export interface PracticeLessonItem {
   estimated_minutes: number;
   activitiesCount: number;
   status: 'not_started' | 'in_progress' | 'completed';
+  translationActivitiesCount?: number;
+  multipleChoiceActivitiesCount?: number;
 }
 
 // ─── Lesson ────────────────────────────────────────────────────────────────
@@ -120,4 +146,3 @@ export interface Lesson {
   activities: Activity[];
   aiTeacherPrompt: string;
 }
-

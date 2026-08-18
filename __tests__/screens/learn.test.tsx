@@ -19,6 +19,7 @@ jest.mock('@/hooks/useLessonsData', () => ({
 const mockRefreshPractice = jest.fn();
 const mockSelectLessonForPractice = jest.fn();
 const mockClearSelectedPracticeLesson = jest.fn();
+const mockSetFilterType = jest.fn();
 const mockUsePracticeData = jest.fn();
 
 jest.mock('@/hooks/usePracticeData', () => ({
@@ -99,6 +100,8 @@ describe('LearnScreen', () => {
       xp_reward: 10,
       estimated_minutes: 5,
       activitiesCount: 3,
+      multipleChoiceActivitiesCount: 2,
+      translationActivitiesCount: 1,
       status: 'completed' as const,
     },
     {
@@ -109,6 +112,8 @@ describe('LearnScreen', () => {
       xp_reward: 15,
       estimated_minutes: 8,
       activitiesCount: 2,
+      multipleChoiceActivitiesCount: 2,
+      translationActivitiesCount: 0,
       status: 'not_started' as const,
     },
   ];
@@ -132,12 +137,17 @@ describe('LearnScreen', () => {
       units: [mockUnit],
       activeUnit: mockUnit,
       practiceLessons: mockPracticeLessons,
+      filteredPracticeLessons: mockPracticeLessons,
+      filterType: 'all',
+      setFilterType: mockSetFilterType,
       loading: false,
       refreshing: false,
       error: null,
       refresh: mockRefreshPractice,
       selectedPracticeLesson: null,
+      selectedPracticeActivityType: null,
       activeLessonActivities: [],
+      activeTranslationActivities: [],
       loadingActivities: false,
       activitiesError: null,
       selectLessonForPractice: mockSelectLessonForPractice,
@@ -165,20 +175,28 @@ describe('LearnScreen', () => {
     });
   });
 
-  it('switches to Practice tab and renders practice cards', () => {
-    const { getByText } = render(<LearnScreen />);
+  it('switches to Practice tab and renders practice cards and filter pills', () => {
+    const { getByText, getByTestId } = render(<LearnScreen />);
 
     // Press Practice tab option
     fireEvent(getByText('Practice'), 'press');
 
-    expect(getByText('Basic Greetings Practice')).toBeTruthy();
-    expect(getByText('Café Conversations Practice')).toBeTruthy();
-    expect(getByText('3 câu hỏi')).toBeTruthy();
-    expect(getByText('2 câu hỏi')).toBeTruthy();
+    expect(getByTestId('practice-filter-bar')).toBeTruthy();
+    expect(getByText('Tất cả')).toBeTruthy();
+    expect(getByText('Trắc nghiệm')).toBeTruthy();
+    expect(getByText('Ghép câu')).toBeTruthy();
 
-    // Tap on a practice card
-    fireEvent.press(getByText('Basic Greetings Practice'));
-    expect(mockSelectLessonForPractice).toHaveBeenCalledWith(mockPracticeLessons[0]);
+    expect(getByTestId('practice-card-mc-les-1')).toBeTruthy();
+    expect(getByTestId('practice-card-tr-les-1')).toBeTruthy();
+    expect(getByTestId('practice-card-mc-les-2')).toBeTruthy();
+
+    // Tap on filter pill
+    fireEvent.press(getByText('Ghép câu'));
+    expect(mockSetFilterType).toHaveBeenCalledWith('translation');
+
+    // Tap on translation practice card
+    fireEvent.press(getByTestId('practice-card-tr-les-1'));
+    expect(mockSelectLessonForPractice).toHaveBeenCalledWith(mockPracticeLessons[0], 'translation');
   });
 
   it('renders empty practice lessons state when practiceLessons is empty', () => {
@@ -187,12 +205,17 @@ describe('LearnScreen', () => {
       units: [mockUnit],
       activeUnit: mockUnit,
       practiceLessons: [],
+      filteredPracticeLessons: [],
+      filterType: 'all',
+      setFilterType: mockSetFilterType,
       loading: false,
       refreshing: false,
       error: null,
       refresh: mockRefreshPractice,
       selectedPracticeLesson: null,
+      selectedPracticeActivityType: null,
       activeLessonActivities: [],
+      activeTranslationActivities: [],
       loadingActivities: false,
       activitiesError: null,
       selectLessonForPractice: mockSelectLessonForPractice,
@@ -202,7 +225,7 @@ describe('LearnScreen', () => {
     const { getByText } = render(<LearnScreen />);
     fireEvent(getByText('Practice'), 'press');
 
-    expect(getByText('Chưa có bài tập trắc nghiệm')).toBeTruthy();
+    expect(getByText('Chưa có bài tập luyện tập')).toBeTruthy();
   });
 
   it('renders practice error alert when error occurs on practice tab', () => {
@@ -211,12 +234,17 @@ describe('LearnScreen', () => {
       units: [],
       activeUnit: null,
       practiceLessons: [],
+      filteredPracticeLessons: [],
+      filterType: 'all',
+      setFilterType: mockSetFilterType,
       loading: false,
       refreshing: false,
       error: 'Network connection lost',
       refresh: mockRefreshPractice,
       selectedPracticeLesson: null,
+      selectedPracticeActivityType: null,
       activeLessonActivities: [],
+      activeTranslationActivities: [],
       loadingActivities: false,
       activitiesError: null,
       selectLessonForPractice: mockSelectLessonForPractice,
