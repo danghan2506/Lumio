@@ -78,7 +78,7 @@ export async function POST(request: Request): Promise<Response> {
         custom: { lesson_id: lessonId, language_id: languageId },
         settings_override: {
           audio: { default_device: 'speaker', mic_default_on: true },
-          video: { camera_default_on: false },
+          video: { camera_default_on: false, target_resolution: { width: 1280, height: 720 } },
         },
       },
     });
@@ -96,7 +96,8 @@ export async function POST(request: Request): Promise<Response> {
       callId,
     };
     return json(session);
-  } catch {
+  } catch (error) {
+    console.error('Stream session creation failed:', error);
     return json({ error: 'Failed to prepare the audio session. Please try again.' }, 500);
   }
 }

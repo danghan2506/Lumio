@@ -131,7 +131,10 @@ describe('POST /api/stream/session', () => {
         custom: { lesson_id: 'l1', language_id: 'en' },
         settings_override: {
           audio: { default_device: 'speaker', mic_default_on: true },
-          video: { camera_default_on: false },
+          video: {
+            camera_default_on: false,
+            target_resolution: { width: 1280, height: 720 },
+          },
         },
       },
     });
