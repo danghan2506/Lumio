@@ -20,7 +20,7 @@ describe('LessonCard', () => {
     );
 
     expect(getByText('Basic Greetings')).toBeTruthy();
-    expect(getByText('Lesson 1')).toBeTruthy();
+    expect(getByText('Bài 1')).toBeTruthy();
     expect(getByTestId('icon-play-outline')).toBeTruthy();
   });
 
@@ -35,8 +35,8 @@ describe('LessonCard', () => {
     );
 
     expect(getByText('Common Expressions')).toBeTruthy();
-    expect(getByText('Lesson 2')).toBeTruthy();
-    expect(getByText('In progress')).toBeTruthy();
+    expect(getByText('Bài 2')).toBeTruthy();
+    expect(getByText('Đang học')).toBeTruthy();
     expect(getByTestId('icon-play-solid')).toBeTruthy();
   });
 
@@ -51,7 +51,8 @@ describe('LessonCard', () => {
     );
 
     expect(getByText('Alphabet & Sounds')).toBeTruthy();
-    expect(getByText('Lesson 3')).toBeTruthy();
+    expect(getByText('Bài 3')).toBeTruthy();
+    expect(getByText('Đã xong')).toBeTruthy();
     expect(getByTestId('icon-checkmark')).toBeTruthy();
   });
 
@@ -65,7 +66,7 @@ describe('LessonCard', () => {
     );
 
     expect(getByText('+20 XP')).toBeTruthy();
-    expect(getByText('5 mins')).toBeTruthy();
+    expect(getByText('5 phút')).toBeTruthy();
   });
 
   it('triggers onPress callback when card is pressed regardless of status', () => {
@@ -74,19 +75,19 @@ describe('LessonCard', () => {
     const { getByTestId: getByTestIdCompleted } = render(
       <LessonCard {...defaultProps} status="completed" onPress={handlePress} />
     );
-    fireEvent(getByTestIdCompleted('lesson-card'), 'press');
+    fireEvent.press(getByTestIdCompleted('lesson-card'));
     expect(handlePress).toHaveBeenCalledTimes(1);
 
     const { getByTestId: getByTestIdInProgress } = render(
       <LessonCard {...defaultProps} status="in_progress" onPress={handlePress} />
     );
-    fireEvent(getByTestIdInProgress('lesson-card'), 'press');
+    fireEvent.press(getByTestIdInProgress('lesson-card'));
     expect(handlePress).toHaveBeenCalledTimes(2);
 
     const { getByTestId: getByTestIdNotStarted } = render(
       <LessonCard {...defaultProps} status="not_started" onPress={handlePress} />
     );
-    fireEvent(getByTestIdNotStarted('lesson-card'), 'press');
+    fireEvent.press(getByTestIdNotStarted('lesson-card'));
     expect(handlePress).toHaveBeenCalledTimes(3);
   });
 });

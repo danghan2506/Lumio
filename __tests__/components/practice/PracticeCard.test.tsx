@@ -3,7 +3,7 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { PracticeCard } from '../../../components/practice/PracticeCard';
 
 describe('PracticeCard', () => {
-  it('renders lesson number, title, question count, and xp reward', () => {
+  it('renders lesson number, typeLabel, title, question count, and xp reward', () => {
     const onPress = jest.fn();
     const { getByText, getByTestId } = render(
       <PracticeCard
@@ -21,16 +21,16 @@ describe('PracticeCard', () => {
     expect(getByText('Greetings & Introductions')).toBeTruthy();
     expect(getByText('4 câu hỏi')).toBeTruthy();
     expect(getByText('+15 XP')).toBeTruthy();
-    expect(getByText('~5 phút')).toBeTruthy();
-    expect(getByText('Luyện tập')).toBeTruthy();
+    expect(getByText('5 phút')).toBeTruthy();
+    expect(getByTestId('icon-play-outline')).toBeTruthy();
 
     fireEvent.press(getByTestId('practice-card'));
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
-  it('renders completed status badge and "Làm lại" button text when completed', () => {
+  it('renders completed status badge with checkmark when completed', () => {
     const onPress = jest.fn();
-    const { getByText } = render(
+    const { getByText, getByTestId } = render(
       <PracticeCard
         lessonNumber={2}
         title="Numbers & Time"
@@ -42,13 +42,13 @@ describe('PracticeCard', () => {
       />
     );
 
-    expect(getByText('Đã đạt')).toBeTruthy();
-    expect(getByText('Làm lại')).toBeTruthy();
+    expect(getByText('Đã xong')).toBeTruthy();
+    expect(getByTestId('icon-checkmark')).toBeTruthy();
   });
 
-  it('renders in-progress status badge when in_progress', () => {
+  it('renders in-progress status badge and play icon when in_progress', () => {
     const onPress = jest.fn();
-    const { getByText } = render(
+    const { getByText, getByTestId } = render(
       <PracticeCard
         lessonNumber={3}
         title="Food & Drinks"
@@ -60,7 +60,7 @@ describe('PracticeCard', () => {
       />
     );
 
-    expect(getByText('Đang làm')).toBeTruthy();
-    expect(getByText('Luyện tập')).toBeTruthy();
+    expect(getByText('Đang học')).toBeTruthy();
+    expect(getByTestId('icon-play-solid')).toBeTruthy();
   });
 });
