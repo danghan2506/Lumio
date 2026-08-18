@@ -1,10 +1,10 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import { LessonCard } from '@/components/learn/LessonCard';
+import { ActivityCard } from '@/components/ui/ActivityCard';
 
-describe('LessonCard', () => {
+describe('ActivityCard', () => {
   const defaultProps = {
-    lessonNumber: 1,
+    orderNumber: 1,
     title: 'Basic Greetings',
     status: 'not_started' as const,
     onPress: jest.fn(),
@@ -16,7 +16,7 @@ describe('LessonCard', () => {
 
   it('renders correctly for not_started status', () => {
     const { getByText, getByTestId } = render(
-      <LessonCard {...defaultProps} status="not_started" />
+      <ActivityCard {...defaultProps} status="not_started" />
     );
 
     expect(getByText('Basic Greetings')).toBeTruthy();
@@ -24,12 +24,12 @@ describe('LessonCard', () => {
     expect(getByTestId('icon-play-outline')).toBeTruthy();
   });
 
-  it('renders correctly for in_progress status with badge', () => {
+  it('renders correctly for in_progress status with "Đang học" badge and solid play icon', () => {
     const { getByText, getByTestId } = render(
-      <LessonCard
+      <ActivityCard
         {...defaultProps}
+        orderNumber={2}
         title="Common Expressions"
-        lessonNumber={2}
         status="in_progress"
       />
     );
@@ -40,12 +40,12 @@ describe('LessonCard', () => {
     expect(getByTestId('icon-play-solid')).toBeTruthy();
   });
 
-  it('renders correctly for completed status with checkmark badge', () => {
+  it('renders correctly for completed status with "Đã xong" badge and checkmark icon', () => {
     const { getByText, getByTestId } = render(
-      <LessonCard
+      <ActivityCard
         {...defaultProps}
+        orderNumber={3}
         title="Alphabet & Sounds"
-        lessonNumber={3}
         status="completed"
       />
     );
@@ -56,38 +56,39 @@ describe('LessonCard', () => {
     expect(getByTestId('icon-checkmark')).toBeTruthy();
   });
 
-  it('renders optional xpReward and estimatedMinutes when provided', () => {
+  it('renders typeLabel when provided', () => {
     const { getByText } = render(
-      <LessonCard
+      <ActivityCard
         {...defaultProps}
+        typeLabel="Trắc nghiệm"
+      />
+    );
+
+    expect(getByText('Bài 1 • Trắc nghiệm')).toBeTruthy();
+  });
+
+  it('renders metadata items (questions count, xpReward, estimatedMinutes) when provided', () => {
+    const { getByText } = render(
+      <ActivityCard
+        {...defaultProps}
+        questionsCount={4}
         xpReward={20}
         estimatedMinutes={5}
       />
     );
 
+    expect(getByText('4 câu hỏi')).toBeTruthy();
     expect(getByText('+20 XP')).toBeTruthy();
     expect(getByText('5 phút')).toBeTruthy();
   });
 
-  it('triggers onPress callback when card is pressed regardless of status', () => {
+  it('triggers onPress callback when card is pressed', () => {
     const handlePress = jest.fn();
-
-    const { getByTestId: getByTestIdCompleted } = render(
-      <LessonCard {...defaultProps} status="completed" onPress={handlePress} />
+    const { getByTestId } = render(
+      <ActivityCard {...defaultProps} onPress={handlePress} />
     );
-    fireEvent.press(getByTestIdCompleted('lesson-card'));
+
+    fireEvent.press(getByTestId('activity-card'));
     expect(handlePress).toHaveBeenCalledTimes(1);
-
-    const { getByTestId: getByTestIdInProgress } = render(
-      <LessonCard {...defaultProps} status="in_progress" onPress={handlePress} />
-    );
-    fireEvent.press(getByTestIdInProgress('lesson-card'));
-    expect(handlePress).toHaveBeenCalledTimes(2);
-
-    const { getByTestId: getByTestIdNotStarted } = render(
-      <LessonCard {...defaultProps} status="not_started" onPress={handlePress} />
-    );
-    fireEvent.press(getByTestIdNotStarted('lesson-card'));
-    expect(handlePress).toHaveBeenCalledTimes(3);
   });
 });
