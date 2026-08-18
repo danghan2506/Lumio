@@ -13,8 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { TabScreenWrapper } from '@/components/navigation/TabScreenWrapper';
 import { UnitHeader } from '@/components/learn/UnitHeader';
 import { SegmentedToggle } from '@/components/learn/SegmentedToggle';
-import { LessonCard } from '@/components/learn/LessonCard';
-import { PracticeCard } from '@/components/practice/PracticeCard';
+import { ActivityCard } from '@/components/ui/ActivityCard';
 import { MultipleChoiceQuizModal } from '@/components/practice/MultipleChoiceQuizModal';
 import { useLessonsData } from '@/hooks/useLessonsData';
 import { usePracticeData } from '@/hooks/usePracticeData';
@@ -155,9 +154,9 @@ export default function LearnScreen() {
             ) : (
               <View>
                 {lessons.map((lesson) => (
-                  <LessonCard
+                  <ActivityCard
                     key={lesson.id}
-                    lessonNumber={lesson.order}
+                    orderNumber={lesson.order}
                     title={lesson.title}
                     status={lesson.status}
                     xpReward={lesson.xp_reward}
@@ -222,11 +221,12 @@ export default function LearnScreen() {
             ) : (
               <View testID="practice-lessons-list">
                 {practiceLessons.map((lesson) => (
-                  <PracticeCard
+                  <ActivityCard
                     key={lesson.id}
-                    lessonNumber={lesson.order}
+                    orderNumber={lesson.order}
+                    typeLabel="Trắc nghiệm"
                     title={lesson.title}
-                    activitiesCount={lesson.activitiesCount}
+                    questionsCount={lesson.activitiesCount}
                     xpReward={lesson.xp_reward}
                     estimatedMinutes={lesson.estimated_minutes}
                     status={lesson.status}
