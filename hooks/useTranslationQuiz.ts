@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import type {
   TranslationActivityItem,
   TranslationActivityData,
@@ -78,7 +78,33 @@ export function useTranslationQuiz({
   onFinish,
 }: UseTranslationQuizParams): UseTranslationQuizReturn {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [availableChips, setAvailableChips] = useState<WordChip[]>([]);
+
+  const normalizedQuestions = useMemo(() => {
+    return (questions || [])
+      .map(normalizeTranslationQuestion)
+      .filter((q): q is TranslationActivityData => q !== null);
+  }, [questions]);
+
+  const totalQuestions = normalizedQuestions.length;
+  const currentQuestion = normalizedQuestions[currentIndex] || null;
+
+  const createChipsForIndex = useCallback(
+    (index: number): WordChip[] => {
+      const q = normalizedQuestions[index];
+      if (!q) return [];
+      return generateWordBankChips({
+        targetText: q.targetText,
+        lessonVocab,
+        languageId,
+        distractors: q.distractors,
+      });
+    },
+    [normalizedQuestions, lessonVocab, languageId]
+  );
+
+  const [availableChips, setAvailableChips] = useState<WordChip[]>(() =>
+    createChipsForIndex(0)
+  );
   const [selectedChips, setSelectedChips] = useState<WordChip[]>([]);
   const [isAnswerChecked, setIsAnswerChecked] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -93,47 +119,10 @@ export function useTranslationQuiz({
   const isQuizFinishedRef = useRef<boolean>(false);
   const currentIndexRef = useRef<number>(0);
   const selectedChipsRef = useRef<WordChip[]>([]);
-  const availableChipsRef = useRef<WordChip[]>([]);
-  const prevQuestionKeyRef = useRef<string>('');
+  const availableChipsRef = useRef<WordChip[]>(availableChips);
 
-  const normalizedQuestions = useMemo(() => {
-    return (questions || [])
-      .map(normalizeTranslationQuestion)
-      .filter((q): q is TranslationActivityData => q !== null);
-  }, [questions]);
-
-  const totalQuestions = normalizedQuestions.length;
-  const currentQuestion = normalizedQuestions[currentIndex] || null;
-
-  const questionKey = currentQuestion
-    ? `${currentIndex}:${currentQuestion.targetText}`
-    : `empty:${currentIndex}`;
-
-  // Initialize/refresh chips when question changes
-  useEffect(() => {
-    if (prevQuestionKeyRef.current === questionKey) return;
-    prevQuestionKeyRef.current = questionKey;
-
-    if (!currentQuestion) {
-      setAvailableChips([]);
-      availableChipsRef.current = [];
-      setSelectedChips([]);
-      selectedChipsRef.current = [];
-      return;
-    }
-
-    const chips = generateWordBankChips({
-      targetText: currentQuestion.targetText,
-      lessonVocab,
-      languageId,
-      distractors: currentQuestion.distractors,
-    });
-
-    setAvailableChips(chips);
-    availableChipsRef.current = chips;
-    setSelectedChips([]);
-    selectedChipsRef.current = [];
-  }, [questionKey, currentQuestion, lessonVocab, languageId]);
+  // Keep ref in sync
+  availableChipsRef.current = availableChips;
 
   const progress = useMemo(() => {
     if (totalQuestions === 0) return 0;
@@ -236,8 +225,16 @@ export function useTranslationQuiz({
     }
 
     if (currentIndexRef.current + 1 < totalQuestions) {
-      currentIndexRef.current += 1;
-      setCurrentIndex(currentIndexRef.current);
+      const nextIdx = currentIndexRef.current + 1;
+      currentIndexRef.current = nextIdx;
+      setCurrentIndex(nextIdx);
+
+      const nextChips = createChipsForIndex(nextIdx);
+      setAvailableChips(nextChips);
+      availableChipsRef.current = nextChips;
+      setSelectedChips([]);
+      selectedChipsRef.current = [];
+
       isAnswerCheckedRef.current = false;
       setIsAnswerChecked(false);
       setIsCorrect(null);
@@ -255,14 +252,13 @@ export function useTranslationQuiz({
       setSummary(finalSummary);
       onFinish?.(finalSummary);
     }
-  }, [totalQuestions, baseXpReward, onFinish]);
+  }, [totalQuestions, baseXpReward, createChipsForIndex, onFinish]);
 
   const restartQuiz = useCallback(() => {
     currentIndexRef.current = 0;
     isAnswerCheckedRef.current = false;
     correctAnswersCountRef.current = 0;
     isQuizFinishedRef.current = false;
-    prevQuestionKeyRef.current = '';
 
     setCurrentIndex(0);
     setIsAnswerChecked(false);
@@ -272,23 +268,12 @@ export function useTranslationQuiz({
     setIsExitConfirmVisible(false);
     setSummary(null);
 
-    const firstQuestion = normalizedQuestions[0];
-    if (firstQuestion) {
-      const chips = generateWordBankChips({
-        targetText: firstQuestion.targetText,
-        lessonVocab,
-        languageId,
-        distractors: firstQuestion.distractors,
-      });
-      setAvailableChips(chips);
-      availableChipsRef.current = chips;
-    } else {
-      setAvailableChips([]);
-      availableChipsRef.current = [];
-    }
+    const freshChips = createChipsForIndex(0);
+    setAvailableChips(freshChips);
+    availableChipsRef.current = freshChips;
     setSelectedChips([]);
     selectedChipsRef.current = [];
-  }, [normalizedQuestions, lessonVocab, languageId]);
+  }, [createChipsForIndex]);
 
   const requestExit = useCallback(() => {
     setIsExitConfirmVisible(true);
