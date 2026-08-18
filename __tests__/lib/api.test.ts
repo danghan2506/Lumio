@@ -13,6 +13,10 @@ import {
   getLessonsFromDB,
   getLessonProgressForLessons,
   getLessonsWithProgress,
+  sanitizeMultipleChoiceData,
+  getActivitiesFromDB,
+  getMultipleChoiceActivities,
+  getPracticeLessons,
   createStreamLessonSession,
   startStreamAgent,
   stopStreamAgent,
@@ -590,6 +594,538 @@ describe('lib/api database helpers', () => {
       expect(progressInMock).toHaveBeenCalledWith('lesson_id', ['l1', 'l2', 'l3']);
     });
   });
+
+  describe('sanitizeMultipleChoiceData', () => {
+    it('returns sanitized data for valid 4-option input', () => {
+      const input = {
+        question: 'What does "Hello" mean?',
+        options: ['Xin chào', 'Tạm biệt', 'Cảm ơn', 'Làm ơn'],
+        correctIndex: 0,
+      };
+
+      const result = sanitizeMultipleChoiceData(input);
+      expect(result).toEqual({
+        question: 'What does "Hello" mean?',
+        options: ['Xin chào', 'Tạm biệt', 'Cảm ơn', 'Làm ơn'],
+        correctIndex: 0,
+      });
+    });
+
+    it('returns sanitized data for valid 2-option input with string trimming', () => {
+      const input = {
+        question: '  Is this correct?  ',
+        options: [' Yes ', ' No '],
+        correctIndex: 1,
+      };
+
+      const result = sanitizeMultipleChoiceData(input);
+      expect(result).toEqual({
+        question: 'Is this correct?',
+        options: ['Yes', 'No'],
+        correctIndex: 1,
+      });
+    });
+
+    it('returns null for non-object or null/undefined inputs', () => {
+      expect(sanitizeMultipleChoiceData(null)).toBeNull();
+      expect(sanitizeMultipleChoiceData(undefined)).toBeNull();
+      expect(sanitizeMultipleChoiceData('string')).toBeNull();
+      expect(sanitizeMultipleChoiceData(123)).toBeNull();
+      expect(sanitizeMultipleChoiceData(true)).toBeNull();
+      expect(sanitizeMultipleChoiceData([])).toBeNull();
+    });
+
+    it('returns null if question is missing, not a string, or empty/whitespace', () => {
+      expect(
+        sanitizeMultipleChoiceData({
+          options: ['A', 'B'],
+          correctIndex: 0,
+        })
+      ).toBeNull();
+
+      expect(
+        sanitizeMultipleChoiceData({
+          question: 123,
+          options: ['A', 'B'],
+          correctIndex: 0,
+        })
+      ).toBeNull();
+
+      expect(
+        sanitizeMultipleChoiceData({
+          question: '',
+          options: ['A', 'B'],
+          correctIndex: 0,
+        })
+      ).toBeNull();
+
+      expect(
+        sanitizeMultipleChoiceData({
+          question: '   ',
+          options: ['A', 'B'],
+          correctIndex: 0,
+        })
+      ).toBeNull();
+    });
+
+    it('returns null if options is not an array or has fewer than 2 items', () => {
+      expect(
+        sanitizeMultipleChoiceData({
+          question: 'Question?',
+          options: 'Not an array',
+          correctIndex: 0,
+        })
+      ).toBeNull();
+
+      expect(
+        sanitizeMultipleChoiceData({
+          question: 'Question?',
+          options: [],
+          correctIndex: 0,
+        })
+      ).toBeNull();
+
+      expect(
+        sanitizeMultipleChoiceData({
+          question: 'Question?',
+          options: ['Only one'],
+          correctIndex: 0,
+        })
+      ).toBeNull();
+    });
+
+    it('returns null if options contains non-strings or empty/whitespace strings', () => {
+      expect(
+        sanitizeMultipleChoiceData({
+          question: 'Question?',
+          options: ['Valid', 123],
+          correctIndex: 0,
+        })
+      ).toBeNull();
+
+      expect(
+        sanitizeMultipleChoiceData({
+          question: 'Question?',
+          options: ['Valid', ''],
+          correctIndex: 0,
+        })
+      ).toBeNull();
+
+      expect(
+        sanitizeMultipleChoiceData({
+          question: 'Question?',
+          options: ['Valid', '   '],
+          correctIndex: 0,
+        })
+      ).toBeNull();
+    });
+
+    it('returns null if correctIndex is invalid (out of bounds, non-integer, or non-number)', () => {
+      const base = {
+        question: 'Question?',
+        options: ['A', 'B', 'C'],
+      };
+
+      expect(sanitizeMultipleChoiceData({ ...base, correctIndex: -1 })).toBeNull();
+      expect(sanitizeMultipleChoiceData({ ...base, correctIndex: 3 })).toBeNull();
+      expect(sanitizeMultipleChoiceData({ ...base, correctIndex: 10 })).toBeNull();
+      expect(sanitizeMultipleChoiceData({ ...base, correctIndex: 1.5 })).toBeNull();
+      expect(sanitizeMultipleChoiceData({ ...base, correctIndex: NaN })).toBeNull();
+      expect(sanitizeMultipleChoiceData({ ...base, correctIndex: '0' as unknown as number })).toBeNull();
+    });
+  });
+
+  describe('getActivitiesFromDB', () => {
+    it('fetches activities for a lesson ordered by order asc', async () => {
+      const mockActivities = [
+        {
+          id: 'act-1',
+          lesson_id: 'lesson-1',
+          order: 1,
+          type: 'multiple_choice',
+          instruction: 'Choose the correct answer',
+          data: {
+            question: 'What is "Hello"?',
+            options: ['A', 'B', 'C', 'D'],
+            correctIndex: 0,
+          },
+          created_at: '2026-08-11T00:00:00Z',
+        },
+      ];
+
+      const orderMock = jest.fn().mockResolvedValueOnce({
+        data: mockActivities,
+        error: null,
+      });
+      const eqMock = jest.fn().mockReturnValue({ order: orderMock });
+      const selectMock = jest.fn().mockReturnValue({ eq: eqMock });
+      (supabase.from as jest.Mock).mockReturnValue({ select: selectMock });
+
+      const activities = await getActivitiesFromDB('lesson-1');
+
+      expect(activities).toEqual(mockActivities);
+      expect(supabase.from).toHaveBeenCalledWith('activities');
+      expect(eqMock).toHaveBeenCalledWith('lesson_id', 'lesson-1');
+      expect(orderMock).toHaveBeenCalledWith('order', { ascending: true });
+    });
+
+    it('returns empty array when data is null', async () => {
+      const orderMock = jest.fn().mockResolvedValueOnce({
+        data: null,
+        error: null,
+      });
+      const eqMock = jest.fn().mockReturnValue({ order: orderMock });
+      const selectMock = jest.fn().mockReturnValue({ eq: eqMock });
+      (supabase.from as jest.Mock).mockReturnValue({ select: selectMock });
+
+      const activities = await getActivitiesFromDB('lesson-1');
+      expect(activities).toEqual([]);
+    });
+
+    it('throws error when query fails', async () => {
+      const orderMock = jest.fn().mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Activities fetch failed' },
+      });
+      const eqMock = jest.fn().mockReturnValue({ order: orderMock });
+      const selectMock = jest.fn().mockReturnValue({ eq: eqMock });
+      (supabase.from as jest.Mock).mockReturnValue({ select: selectMock });
+
+      await expect(getActivitiesFromDB('lesson-1')).rejects.toThrow('Activities fetch failed');
+    });
+  });
+
+  describe('getMultipleChoiceActivities', () => {
+    it('fetches multiple_choice activities for a lesson ordered by order asc', async () => {
+      const mockActivities = [
+        {
+          id: 'act-mc-1',
+          lesson_id: 'lesson-1',
+          order: 1,
+          type: 'multiple_choice',
+          instruction: 'Select answer',
+          data: {
+            question: 'What is "Goodbye"?',
+            options: ['A', 'B', 'C', 'D'],
+            correctIndex: 1,
+          },
+          created_at: '2026-08-11T00:00:00Z',
+        },
+      ];
+
+      const orderMock = jest.fn().mockResolvedValueOnce({
+        data: mockActivities,
+        error: null,
+      });
+      const eqTypeMock = jest.fn().mockReturnValue({ order: orderMock });
+      const eqLessonMock = jest.fn().mockReturnValue({ eq: eqTypeMock });
+      const selectMock = jest.fn().mockReturnValue({ eq: eqLessonMock });
+      (supabase.from as jest.Mock).mockReturnValue({ select: selectMock });
+
+      const activities = await getMultipleChoiceActivities('lesson-1');
+
+      expect(activities).toEqual(mockActivities);
+      expect(supabase.from).toHaveBeenCalledWith('activities');
+      expect(eqLessonMock).toHaveBeenCalledWith('lesson_id', 'lesson-1');
+      expect(eqTypeMock).toHaveBeenCalledWith('type', 'multiple_choice');
+      expect(orderMock).toHaveBeenCalledWith('order', { ascending: true });
+    });
+
+    it('returns empty array when data is null', async () => {
+      const orderMock = jest.fn().mockResolvedValueOnce({
+        data: null,
+        error: null,
+      });
+      const eqTypeMock = jest.fn().mockReturnValue({ order: orderMock });
+      const eqLessonMock = jest.fn().mockReturnValue({ eq: eqTypeMock });
+      const selectMock = jest.fn().mockReturnValue({ eq: eqLessonMock });
+      (supabase.from as jest.Mock).mockReturnValue({ select: selectMock });
+
+      const activities = await getMultipleChoiceActivities('lesson-1');
+      expect(activities).toEqual([]);
+    });
+
+    it('throws error when multiple_choice query fails', async () => {
+      const orderMock = jest.fn().mockResolvedValueOnce({
+        data: null,
+        error: { message: 'MC fetch error' },
+      });
+      const eqTypeMock = jest.fn().mockReturnValue({ order: orderMock });
+      const eqLessonMock = jest.fn().mockReturnValue({ eq: eqTypeMock });
+      const selectMock = jest.fn().mockReturnValue({ eq: eqLessonMock });
+      (supabase.from as jest.Mock).mockReturnValue({ select: selectMock });
+
+      await expect(getMultipleChoiceActivities('lesson-1')).rejects.toThrow('MC fetch error');
+    });
+  });
+
+  describe('getPracticeLessons', () => {
+    it('returns empty array immediately when unit has no lessons', async () => {
+      const lessonsOrderMock = jest.fn().mockResolvedValueOnce({
+        data: [],
+        error: null,
+      });
+      const lessonsEqMock = jest.fn().mockReturnValue({ order: lessonsOrderMock });
+      (supabase.from as jest.Mock).mockReturnValue({
+        select: jest.fn().mockReturnValue({ eq: lessonsEqMock }),
+      });
+
+      const result = await getPracticeLessons('empty-unit');
+      expect(result).toEqual([]);
+      expect(supabase.from).toHaveBeenCalledWith('lessons');
+      expect(supabase.from).not.toHaveBeenCalledWith('activities');
+      expect(supabase.from).not.toHaveBeenCalledWith('lesson_progress');
+    });
+
+    it('maps lessons with activity counts, normalized progress statuses, and lesson fields', async () => {
+      const mockLessons = [
+        {
+          id: 'l1',
+          unit_id: 'u1',
+          order: 1,
+          title: 'Lesson 1',
+          xp_reward: 10,
+          estimated_minutes: 5,
+          ai_teacher_prompt: null,
+          created_at: '2026-08-11T00:00:00Z',
+        },
+        {
+          id: 'l2',
+          unit_id: 'u1',
+          order: 2,
+          title: 'Lesson 2',
+          xp_reward: 15,
+          estimated_minutes: 8,
+          ai_teacher_prompt: null,
+          created_at: '2026-08-11T00:00:00Z',
+        },
+        {
+          id: 'l3',
+          unit_id: 'u1',
+          order: 3,
+          title: 'Lesson 3',
+          xp_reward: 20,
+          estimated_minutes: 10,
+          ai_teacher_prompt: null,
+          created_at: '2026-08-11T00:00:00Z',
+        },
+      ];
+
+      const mockActivities = [
+        { id: 'act-1', lesson_id: 'l1' },
+        { id: 'act-2', lesson_id: 'l1' },
+        { id: 'act-3', lesson_id: 'l2' },
+      ];
+
+      const mockProgress = [
+        {
+          user_id: 'user-1',
+          lesson_id: 'l1',
+          status: 'completed',
+          current_activity: 2,
+          attempts: 1,
+          xp_earned: 10,
+          started_at: '2026-08-11T00:00:00Z',
+          completed_at: '2026-08-11T00:05:00Z',
+          updated_at: '2026-08-11T00:05:00Z',
+        },
+        {
+          user_id: 'user-1',
+          lesson_id: 'l2',
+          status: 'in_progress',
+          current_activity: 1,
+          attempts: 1,
+          xp_earned: 5,
+          started_at: '2026-08-11T00:00:00Z',
+          completed_at: null,
+          updated_at: '2026-08-11T00:05:00Z',
+        },
+      ];
+
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'lessons') {
+          return {
+            select: jest.fn().mockReturnValue({
+              eq: jest.fn().mockReturnValue({
+                order: jest.fn().mockResolvedValueOnce({ data: mockLessons, error: null }),
+              }),
+            }),
+          };
+        }
+        if (table === 'activities') {
+          return {
+            select: jest.fn().mockReturnValue({
+              in: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValueOnce({ data: mockActivities, error: null }),
+              }),
+            }),
+          };
+        }
+        if (table === 'lesson_progress') {
+          return {
+            select: jest.fn().mockReturnValue({
+              in: jest.fn().mockResolvedValueOnce({ data: mockProgress, error: null }),
+            }),
+          };
+        }
+        return {};
+      });
+
+      const practiceLessons = await getPracticeLessons('u1');
+
+      expect(practiceLessons).toEqual([
+        {
+          id: 'l1',
+          unit_id: 'u1',
+          order: 1,
+          title: 'Lesson 1',
+          xp_reward: 10,
+          estimated_minutes: 5,
+          activitiesCount: 2,
+          status: 'completed',
+        },
+        {
+          id: 'l2',
+          unit_id: 'u1',
+          order: 2,
+          title: 'Lesson 2',
+          xp_reward: 15,
+          estimated_minutes: 8,
+          activitiesCount: 1,
+          status: 'in_progress',
+        },
+        {
+          id: 'l3',
+          unit_id: 'u1',
+          order: 3,
+          title: 'Lesson 3',
+          xp_reward: 20,
+          estimated_minutes: 10,
+          activitiesCount: 0,
+          status: 'not_started',
+        },
+      ]);
+    });
+
+    it('throws error when lessons query fails', async () => {
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'lessons') {
+          return {
+            select: jest.fn().mockReturnValue({
+              eq: jest.fn().mockReturnValue({
+                order: jest.fn().mockResolvedValueOnce({
+                  data: null,
+                  error: { message: 'Failed fetching lessons' },
+                }),
+              }),
+            }),
+          };
+        }
+        return {};
+      });
+
+      await expect(getPracticeLessons('u1')).rejects.toThrow('Failed fetching lessons');
+    });
+
+    it('throws error when activities query fails', async () => {
+      const mockLessons = [
+        {
+          id: 'l1',
+          unit_id: 'u1',
+          order: 1,
+          title: 'Lesson 1',
+          xp_reward: 10,
+          estimated_minutes: 5,
+          ai_teacher_prompt: null,
+          created_at: '2026-08-11T00:00:00Z',
+        },
+      ];
+
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'lessons') {
+          return {
+            select: jest.fn().mockReturnValue({
+              eq: jest.fn().mockReturnValue({
+                order: jest.fn().mockResolvedValueOnce({ data: mockLessons, error: null }),
+              }),
+            }),
+          };
+        }
+        if (table === 'activities') {
+          return {
+            select: jest.fn().mockReturnValue({
+              in: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValueOnce({
+                  data: null,
+                  error: { message: 'Activities query failed' },
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === 'lesson_progress') {
+          return {
+            select: jest.fn().mockReturnValue({
+              in: jest.fn().mockResolvedValueOnce({ data: [], error: null }),
+            }),
+          };
+        }
+        return {};
+      });
+
+      await expect(getPracticeLessons('u1')).rejects.toThrow('Activities query failed');
+    });
+
+    it('throws error when progress query fails', async () => {
+      const mockLessons = [
+        {
+          id: 'l1',
+          unit_id: 'u1',
+          order: 1,
+          title: 'Lesson 1',
+          xp_reward: 10,
+          estimated_minutes: 5,
+          ai_teacher_prompt: null,
+          created_at: '2026-08-11T00:00:00Z',
+        },
+      ];
+
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'lessons') {
+          return {
+            select: jest.fn().mockReturnValue({
+              eq: jest.fn().mockReturnValue({
+                order: jest.fn().mockResolvedValueOnce({ data: mockLessons, error: null }),
+              }),
+            }),
+          };
+        }
+        if (table === 'activities') {
+          return {
+            select: jest.fn().mockReturnValue({
+              in: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValueOnce({ data: [], error: null }),
+              }),
+            }),
+          };
+        }
+        if (table === 'lesson_progress') {
+          return {
+            select: jest.fn().mockReturnValue({
+              in: jest.fn().mockResolvedValueOnce({
+                data: null,
+                error: { message: 'Progress query failed' },
+              }),
+            }),
+          };
+        }
+        return {};
+      });
+
+      await expect(getPracticeLessons('u1')).rejects.toThrow('Progress query failed');
+    });
+  });
+
 
   describe('createStreamLessonSession', () => {
     const params = {
