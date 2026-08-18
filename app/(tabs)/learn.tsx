@@ -13,8 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { TabScreenWrapper } from '@/components/navigation/TabScreenWrapper';
 import { UnitHeader } from '@/components/learn/UnitHeader';
 import { SegmentedToggle } from '@/components/learn/SegmentedToggle';
-import { LessonCard } from '@/components/learn/LessonCard';
-import { PracticeCard } from '@/components/practice/PracticeCard';
+import { ActivityCard } from '@/components/ui/ActivityCard';
 import { MultipleChoiceQuizModal } from '@/components/practice/MultipleChoiceQuizModal';
 import { TranslationQuizModal } from '@/components/practice/TranslationQuizModal';
 import { useLessonsData } from '@/hooks/useLessonsData';
@@ -168,9 +167,9 @@ export default function LearnScreen() {
             ) : (
               <View>
                 {lessons.map((lesson) => (
-                  <LessonCard
+                  <ActivityCard
                     key={lesson.id}
-                    lessonNumber={lesson.order}
+                    orderNumber={lesson.order}
                     title={lesson.title}
                     status={lesson.status}
                     xpReward={lesson.xp_reward}
@@ -277,16 +276,16 @@ export default function LearnScreen() {
                       // If filter is all or multiple_choice, and has MC questions
                       if ((filterType === 'all' || filterType === 'multiple_choice') && (mcCount > 0 || (mcCount === 0 && trCount === 0))) {
                         cards.push(
-                          <PracticeCard
+                          <ActivityCard
                             key={`${lesson.id}-mc`}
                             testID={`practice-card-mc-${lesson.id}`}
-                            lessonNumber={lesson.order}
+                            orderNumber={lesson.order}
+                            typeLabel="Trắc nghiệm"
                             title={lesson.title}
-                            activitiesCount={mcCount || lesson.activitiesCount}
+                            questionsCount={mcCount || lesson.activitiesCount}
                             xpReward={lesson.xp_reward}
                             estimatedMinutes={lesson.estimated_minutes}
                             status={lesson.status}
-                            activityType="multiple_choice"
                             onPress={() => selectLessonForPractice(lesson, 'multiple_choice')}
                           />
                         );
@@ -295,16 +294,16 @@ export default function LearnScreen() {
                       // If filter is all or translation, and has translation questions
                       if ((filterType === 'all' || filterType === 'translation') && trCount > 0) {
                         cards.push(
-                          <PracticeCard
+                          <ActivityCard
                             key={`${lesson.id}-tr`}
                             testID={`practice-card-tr-${lesson.id}`}
-                            lessonNumber={lesson.order}
+                            orderNumber={lesson.order}
+                            typeLabel="Ghép câu dịch"
                             title={lesson.title}
-                            activitiesCount={trCount}
+                            questionsCount={trCount}
                             xpReward={lesson.xp_reward}
                             estimatedMinutes={lesson.estimated_minutes}
                             status={lesson.status}
-                            activityType="translation"
                             onPress={() => selectLessonForPractice(lesson, 'translation')}
                           />
                         );

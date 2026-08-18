@@ -19,12 +19,20 @@ import {
 } from '@/components/profile';
 import { useProfileData } from '@/hooks/useProfileData';
 import { useAuth } from '@/hooks/useAuth';
+import { useLanguageStore } from '@/store/useLanguageStore';
+import { languages } from '@/data/languages';
 import { colors } from '@/theme/colors';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
+  const { selectedLanguage } = useLanguageStore();
   const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const currentLanguage =
+    languages.find((l) => l.id === selectedLanguage) ??
+    languages.find((l) => l.id === 'es') ??
+    languages[0];
 
   const {
     profileOverview,
@@ -32,6 +40,7 @@ export default function ProfileScreen() {
     refreshing,
     uploadingAvatar,
     error,
+    isGuest,
     refresh,
     updateAvatar,
   } = useProfileData();
@@ -49,6 +58,10 @@ export default function ProfileScreen() {
 
   const handleSwitchLanguage = () => {
     router.push('/(tabs)/learn');
+  };
+
+  const handleSignIn = () => {
+    router.push('/(auth)/login');
   };
 
   return (
@@ -74,7 +87,7 @@ export default function ProfileScreen() {
         >
           {loading && !profileOverview && !refreshing ? (
             <ProfileSkeletonLoader />
-          ) : error && !profileOverview ? (
+          ) : error && !profileOverview && !isGuest ? (
             <View
               style={{
                 backgroundColor: 'rgba(255, 107, 87, 0.1)',
@@ -197,9 +210,47 @@ export default function ProfileScreen() {
               <ProfileActionSection
                 onSignOut={handleSignOut}
                 isSigningOut={isSigningOut}
+                isGuest={false}
               />
             </>
-          ) : null}
+          ) : (
+            <>
+              {/* Guest Profile State */}
+              <ProfileHeaderCard
+                userId={user?.id ?? 'guest'}
+                email={user?.email ?? null}
+                displayName={user?.user_metadata?.full_name ?? 'Guest Learner'}
+                avatarUrl={null}
+                joinedDate={user?.created_at ?? new Date().toISOString()}
+                uploadingAvatar={false}
+              />
+
+              <ActiveLanguageCard
+                activeLanguage={{
+                  id: currentLanguage.id,
+                  name: currentLanguage.name,
+                  nativeName: currentLanguage.nativeName,
+                  flag: currentLanguage.flag,
+                  startedAt: new Date().toISOString(),
+                }}
+                onSwitchLanguage={handleSwitchLanguage}
+              />
+
+              <LearningStatsGrid
+                totalXp={0}
+                completedLessons={0}
+                masteredWords={0}
+                daysActive={1}
+              />
+
+              <ProfileActionSection
+                onSignOut={handleSignOut}
+                isSigningOut={isSigningOut}
+                isGuest={!user}
+                onSignIn={handleSignIn}
+              />
+            </>
+          )}
         </ScrollView>
       </TabScreenWrapper>
     </SafeAreaView>

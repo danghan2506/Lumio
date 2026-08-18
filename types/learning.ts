@@ -146,4 +146,3 @@ export interface Lesson {
   activities: Activity[];
   aiTeacherPrompt: string;
 }
-
