@@ -1,3 +1,5 @@
+import type { Language } from './learning';
+
 export type PlanItemType = 'lesson' | 'ai_conversation' | 'vocabulary';
 
 export interface DailyPlanItem {
@@ -10,21 +12,37 @@ export interface DailyPlanItem {
   lessonId?: string;
 }
 
-export interface DailyGoalData {
-  currentXp: number;
-  targetXp: number;
-}
-
-export interface HeroCourseData {
-  languageId: string;
-  languageName: string;
-  flag: string;
-  level: string;
+export interface ContinueLessonInfo {
+  lessonId: string;
+  lessonTitle: string;
   unitTitle: string;
+  unitOrder: number;
+  xpReward: number;
+  estimatedMinutes: number;
+  isCourseCompleted: boolean;
 }
 
-export interface HomeData {
+export interface DashboardData {
+  userName: string;
+  avatarUrl: string | null;
+  activeLanguage: Language;
   streak: number;
-  dailyGoal: DailyGoalData;
+  isStreakActiveToday: boolean;
+  dailyGoal: {
+    currentXp: number;
+    targetXp: number;
+    isCompleted: boolean;
+  };
+  continueLesson: ContinueLessonInfo | null;
   todaysPlan: DailyPlanItem[];
+  aiTopicLessonId: string | null;
+  aiTopicTitle: string;
+}
+
+export interface UseDashboardDataReturn {
+  data: DashboardData | null;
+  loading: boolean;
+  refreshing: boolean;
+  error: string | null;
+  refresh: () => Promise<void>;
 }
