@@ -3,34 +3,42 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { HeroContinueCard } from '@/components/home/HeroContinueCard';
 
 describe('HeroContinueCard', () => {
-  it('renders "CONTINUE LEARNING", course title, and handles press on the "Continue" button', () => {
+  it('renders dynamic lesson title, unit title, chips and handles continue press', () => {
     const handleContinue = jest.fn();
 
     const { getByText } = render(
       <HeroContinueCard
-        language="Spanish"
-        level="A1"
-        unitTitle="Unit 2"
+        lessonTitle="Greetings & Introductions"
+        unitTitle="Unit 1"
+        xpReward={10}
+        estimatedMinutes={5}
+        isCourseCompleted={false}
         onContinue={handleContinue}
       />
     );
 
     expect(getByText('CONTINUE LEARNING')).toBeTruthy();
-    expect(getByText('Spanish A1 • Unit 2')).toBeTruthy();
+    expect(getByText('Unit 1 • Greetings & Introductions')).toBeTruthy();
+    expect(getByText('+10 XP')).toBeTruthy();
+    expect(getByText('~5 min')).toBeTruthy();
 
     const continueButton = getByText('Continue');
-    expect(continueButton).toBeTruthy();
-
     fireEvent(continueButton, 'press');
     expect(handleContinue).toHaveBeenCalledTimes(1);
   });
 
-  it('renders correctly without onContinue callback', () => {
+  it('renders Course Completed state when isCourseCompleted is true', () => {
     const { getByText } = render(
-      <HeroContinueCard language="French" level="B2" unitTitle="Basics 1" />
+      <HeroContinueCard
+        lessonTitle="Final Mastery"
+        unitTitle="Unit 2"
+        xpReward={20}
+        estimatedMinutes={10}
+        isCourseCompleted={true}
+      />
     );
 
-    expect(getByText('CONTINUE LEARNING')).toBeTruthy();
-    expect(getByText('French B2 • Basics 1')).toBeTruthy();
+    expect(getByText('COURSE COMPLETED 🎉')).toBeTruthy();
+    expect(getByText('Review')).toBeTruthy();
   });
 });

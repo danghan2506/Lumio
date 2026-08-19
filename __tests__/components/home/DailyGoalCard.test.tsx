@@ -12,13 +12,13 @@ describe('DailyGoalCard', () => {
     expect(getByText('/ 20 XP')).toBeTruthy();
   });
 
-  it('renders correctly when goal is met or exceeded', () => {
+  it('renders celebration banner when isCompleted is true', () => {
     const { getByText } = render(
-      <DailyGoalCard currentXp={25} targetXp={20} />
+      <DailyGoalCard currentXp={20} targetXp={20} isCompleted={true} />
     );
     expect(getByText('Daily goal')).toBeTruthy();
-    expect(getByText('25')).toBeTruthy();
-    expect(getByText('/ 20 XP')).toBeTruthy();
+    expect(getByText('20')).toBeTruthy();
+    expect(getByText('Goal completed! 🎉')).toBeTruthy();
   });
 
   it('renders correctly when progress is 0 XP', () => {

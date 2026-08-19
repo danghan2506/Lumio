@@ -8,6 +8,8 @@ export interface HeaderBarProps {
   languageFlag: string;
   languageName: string;
   streak: number;
+  isStreakActiveToday?: boolean;
+  avatarUrl?: string | null;
   onLanguagePress?: () => void;
   onNotificationPress?: () => void;
 }
@@ -17,10 +19,10 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   languageFlag,
   languageName,
   streak,
+  isStreakActiveToday = true,
   onLanguagePress,
   onNotificationPress,
 }) => {
-  // Determine greeting based on language
   const getGreetingPrefix = (lang: string) => {
     switch (lang.toLowerCase()) {
       case 'spanish':
@@ -41,24 +43,30 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
 
   return (
     <View className="flex-row items-center justify-between px-6 py-4 bg-cream">
-      {/* Language Badge & User Greeting */}
       <Pressable
         onPress={onLanguagePress}
-        className="flex-row items-center space-x-2 active:opacity-80"
+        className="flex-row items-center space-x-2 active:opacity-80 flex-1 mr-3"
       >
         <Text className="text-2xl mr-1">{languageFlag}</Text>
-        <Text className="text-deep-indigo font-display text-xl">{greeting}</Text>
+        <Text className="text-deep-indigo font-display text-xl" numberOfLines={1}>
+          {greeting}
+        </Text>
       </Pressable>
 
-      {/* Right Controls */}
       <View className="flex-row items-center space-x-3">
-        {/* Streak Flame Badge */}
-        <View className="flex-row items-center bg-daylight-amber/20 px-3 py-1.5 rounded-full border border-daylight-amber/40">
+        <View
+          className={`flex-row items-center px-3 py-1.5 rounded-full border ${
+            isStreakActiveToday || streak === 0
+              ? 'bg-daylight-amber/20 border-daylight-amber/40'
+              : 'bg-lavender-mist/50 border-slate/20 opacity-70'
+          }`}
+        >
           <Ionicons name="flame" size={18} color="#FFB74D" />
-          <Text className="text-deep-indigo font-display text-sm ml-1">{String(streak)}</Text>
+          <Text className="text-deep-indigo font-display text-sm ml-1">
+            {String(streak)}
+          </Text>
         </View>
 
-        {/* Notification Bell */}
         <Pressable
           onPress={onNotificationPress}
           className="w-10 h-10 rounded-full bg-lavender-mist/60 items-center justify-center border border-slate/15"
@@ -70,4 +78,3 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
     </View>
   );
 };
-
