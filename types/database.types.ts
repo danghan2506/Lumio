@@ -409,6 +409,7 @@ export type Database = {
           p_interval_days: number;
           p_due_at: string;
           p_minutes_practiced?: number;
+          p_xp_earned?: number;
         };
         Returns: void;
       };
