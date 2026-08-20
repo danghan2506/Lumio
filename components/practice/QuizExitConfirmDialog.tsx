@@ -48,7 +48,7 @@ export function QuizExitConfirmDialog({
             }}
             className="text-xl text-center mb-2"
           >
-            Thoát bài luyện tập?
+            Quit Practice Session?
           </Text>
 
           {/* Description */}
@@ -59,7 +59,7 @@ export function QuizExitConfirmDialog({
             }}
             className="text-sm text-center leading-5 mb-6"
           >
-            Tiến trình làm bài hiện tại sẽ không được lưu và bạn sẽ chưa nhận được XP. Bạn có chắc muốn thoát?
+            Your current progress will not be saved and you will not earn XP. Are you sure you want to quit?
           </Text>
 
           {/* Actions */}
@@ -72,7 +72,7 @@ export function QuizExitConfirmDialog({
               style={{ backgroundColor: colors.lumioCoral }}
               className="w-full py-3.5 rounded-2xl items-center shadow-md mb-2.5"
               accessibilityRole="button"
-              accessibilityLabel="Tiếp tục học"
+              accessibilityLabel="Keep practicing"
             >
               <Text
                 style={{
@@ -81,7 +81,7 @@ export function QuizExitConfirmDialog({
                 }}
                 className="text-base"
               >
-                Tiếp tục học
+                Keep Practicing
               </Text>
             </TouchableOpacity>
 
@@ -92,7 +92,7 @@ export function QuizExitConfirmDialog({
               activeOpacity={0.7}
               className="w-full py-3 rounded-2xl items-center border border-white/10"
               accessibilityRole="button"
-              accessibilityLabel="Thoát ra"
+              accessibilityLabel="Quit session"
             >
               <Text
                 style={{
@@ -101,7 +101,7 @@ export function QuizExitConfirmDialog({
                 }}
                 className="text-sm text-gray-400"
               >
-                Thoát ra
+                Quit Session
               </Text>
             </TouchableOpacity>
           </View>

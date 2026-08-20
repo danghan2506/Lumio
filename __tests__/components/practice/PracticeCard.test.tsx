@@ -17,11 +17,11 @@ describe('PracticeCard', () => {
       />
     );
 
-    expect(getByText('Bài 1 • Trắc nghiệm')).toBeTruthy();
+    expect(getByText('Lesson 1 • Quiz')).toBeTruthy();
     expect(getByText('Greetings & Introductions')).toBeTruthy();
-    expect(getByText('4 câu hỏi')).toBeTruthy();
+    expect(getByText('4 questions')).toBeTruthy();
     expect(getByText('+15 XP')).toBeTruthy();
-    expect(getByText('5 phút')).toBeTruthy();
+    expect(getByText('5 mins')).toBeTruthy();
     expect(getByTestId('icon-play-outline')).toBeTruthy();
 
     fireEvent.press(getByTestId('practice-card'));
@@ -43,7 +43,7 @@ describe('PracticeCard', () => {
       />
     );
 
-    expect(getByText('Bài 1 • Ghép câu dịch')).toBeTruthy();
+    expect(getByText('Lesson 1 • Sentence Builder')).toBeTruthy();
     expect(getByText('Translate sentences')).toBeTruthy();
   });
 
@@ -61,7 +61,7 @@ describe('PracticeCard', () => {
       />
     );
 
-    expect(getByText('Đã xong')).toBeTruthy();
+    expect(getByText('Completed')).toBeTruthy();
     expect(getByTestId('icon-checkmark')).toBeTruthy();
   });
 
@@ -79,7 +79,7 @@ describe('PracticeCard', () => {
       />
     );
 
-    expect(getByText('Đang học')).toBeTruthy();
+    expect(getByText('In Progress')).toBeTruthy();
     expect(getByTestId('icon-play-solid')).toBeTruthy();
   });
 });

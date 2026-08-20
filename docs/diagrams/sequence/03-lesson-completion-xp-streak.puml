@@ -1,0 +1,59 @@
+@startuml
+!theme plain
+title Sequence Diagram — Target Lesson Completion, XP, and Streak Update
+
+autonumber
+actor Learner
+participant "Lesson Screen" as Screen
+participant "Lesson Progress Service
+(lib/api)" as ProgressApi
+participant "Supabase Client" as Client
+participant "Supabase RPC
+record_lesson_progress" as Rpc
+database "lessons" as Lessons
+database "lesson_progress" as LessonProgress
+database "daily_activity" as DailyActivity
+participant "Dashboard / Progress Query" as Dashboard
+
+note over Screen, ProgressApi
+Target integration: recordLessonProgress already exists in lib/api;
+the lesson UI should call it after the final activity is completed.
+end note
+
+Learner -> Screen: Submit final lesson activity
+Screen -> Screen: Validate answer and calculate earned XP
+Screen -> ProgressApi: recordLessonProgress(lessonId, "completed",
+currentActivity, xpEarned, minutesPracticed)
+ProgressApi -> Client: rpc("record_lesson_progress", parameters)
+Client -> Rpc: Authenticated RPC request
+Rpc -> Rpc: Resolve authenticated user from auth.uid()
+Rpc -> Lessons: Validate lessonId
+Lessons --> Rpc: Lesson exists
+Rpc -> LessonProgress: Read previous status and earned XP
+LessonProgress --> Rpc: Existing progress or none
+Rpc -> Rpc: Calculate non-negative XP delta
+and completion delta
+Rpc -> LessonProgress: Upsert completed lesson progress
+(increment attempt count)
+Rpc -> DailyActivity: Upsert today's XP, completed lessons,
+and practice minutes atomically
+
+alt Lesson was not previously completed
+  Rpc --> Client: Success; XP and completion count updated
+else Lesson was already completed
+  Rpc --> Client: Success; prevent duplicate XP/completion increment
+end
+
+Client --> ProgressApi: Success
+ProgressApi --> Screen: Completion stored
+Screen -> Dashboard: Refresh progress summary
+Dashboard --> Screen: Updated XP and streak-related activity
+Screen --> Learner: Display completion summary and earned XP
+
+alt Validation or persistence fails
+  Rpc --> Client: Error
+  Client --> ProgressApi: Error
+  ProgressApi --> Screen: Error
+  Screen --> Learner: Preserve lesson state and show retry feedback
+end
+@enduml

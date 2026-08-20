@@ -1,0 +1,78 @@
+@startuml
+!theme plain
+title Sequence Diagram — AI Teacher Audio Session Initialization
+
+autonumber
+actor Learner
+participant "Audio Lesson Screen" as Screen
+participant "Stream Call Hook
+(useStreamLessonCall)" as CallHook
+participant "Session API Route
+POST /api/stream/session" as SessionApi
+participant "Supabase Auth" as SupabaseAuth
+participant "Stream Server SDK" as StreamServer
+participant "Stream Video Client" as VideoClient
+participant "Agent Hook
+(useStreamLessonAgent)" as AgentHook
+participant "Agent API Route
+POST /api/stream/agent" as AgentApi
+database "Lesson Content
+(Supabase)" as LessonDb
+participant "Vision Agent Server" as AgentServer
+participant "Lumi AI Teacher" as Teacher
+
+Learner -> Screen: Open an audio lesson
+Screen -> CallHook: Enable lesson call with session access token
+CallHook -> SessionApi: POST lessonId, languageId, displayName
+Authorization: Bearer accessToken
+SessionApi -> SupabaseAuth: getUser(accessToken)
+
+alt Access token is valid
+  SupabaseAuth --> SessionApi: Authenticated learner
+  SessionApi -> StreamServer: Upsert learner
+  SessionApi -> StreamServer: Create or retrieve audio_room call
+  SessionApi -> StreamServer: Generate time-limited user token
+  StreamServer --> SessionApi: apiKey, userId, token, callType, callId
+  SessionApi --> CallHook: Stream lesson session
+  CallHook -> VideoClient: Connect learner using Stream token
+  CallHook -> VideoClient: Get call(callType, callId)
+  CallHook -> VideoClient: Join audio call
+  VideoClient --> Screen: Calling state = joined
+
+  Screen -> AgentHook: Enable AI teacher after call is joined
+  AgentHook -> AgentApi: POST lessonId, callType, callId
+Authorization: Bearer accessToken
+  AgentApi -> SupabaseAuth: getUser(accessToken)
+  SupabaseAuth --> AgentApi: Authenticated learner
+  AgentApi -> LessonDb: Read lesson, language, goals,
+vocabulary, and practice activities
+  LessonDb --> AgentApi: Authoritative lesson payload
+  AgentApi -> StreamServer: Upsert Lumi teacher user
+  AgentApi -> StreamServer: Attach lesson payload to call
+  AgentApi -> StreamServer: Add teacher as admin and grant audio permissions
+  AgentApi -> StreamServer: Make call live when necessary
+  AgentApi -> AgentServer: POST /calls/{callId}/sessions
+  AgentServer -> Teacher: Start AI teacher session for the call
+  Teacher --> AgentServer: sessionId
+  AgentServer --> AgentApi: sessionId
+  AgentApi --> AgentHook: sessionId, callId, agentUserId
+  AgentHook --> Screen: AI teacher connected
+  Teacher --> Learner: Join call and deliver live audio guidance
+else Missing or invalid access token
+  SupabaseAuth --> SessionApi: Unauthorized
+  SessionApi --> CallHook: 401 error
+  CallHook --> Screen: Connection error
+  Screen --> Learner: Show retry feedback
+end
+
+== Session teardown ==
+Learner -> Screen: Leave lesson
+Screen -> AgentHook: Stop agent session
+AgentHook -> AgentApi: DELETE callId, sessionId
+Authorization: Bearer accessToken
+AgentApi -> AgentServer: DELETE /calls/{callId}/sessions/{sessionId}
+AgentServer --> AgentApi: Stopped or already absent
+AgentApi --> AgentHook: Stopped
+Screen -> CallHook: Leave call
+CallHook -> VideoClient: Leave call and disconnect user
+@enduml

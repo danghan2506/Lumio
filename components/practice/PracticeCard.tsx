@@ -24,7 +24,7 @@ export function PracticeCard({
   onPress,
   testID = 'practice-card',
 }: PracticeCardProps) {
-  const typeLabel = activityType === 'translation' ? 'Ghép câu dịch' : 'Trắc nghiệm';
+  const typeLabel = activityType === 'translation' ? 'Sentence Builder' : 'Quiz';
 
   return (
     <ActivityCard

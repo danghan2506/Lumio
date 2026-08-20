@@ -1,0 +1,4 @@
+interface:
+  display_name: "UML Report Diagrams"
+  short_description: "Report-ready UML diagrams for IT projects"
+  default_prompt: "Use $uml-report-diagrams to create a coherent UML diagram set for my IT project report."

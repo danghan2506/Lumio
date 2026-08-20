@@ -97,7 +97,7 @@ describe('TranslationQuizModal Component', () => {
 
     // Select correct words in order
     for (const targetWord of targetWords) {
-      const chip = getByLabelText(`Chọn từ ${targetWord}`);
+      const chip = getByLabelText(`Select ${targetWord}`);
       fireEvent.press(chip);
     }
 
@@ -106,7 +106,7 @@ describe('TranslationQuizModal Component', () => {
 
     // Check feedback banner
     expect(getByTestId('translation-feedback-banner')).toBeTruthy();
-    expect(getByText('Chính xác! 🎉')).toBeTruthy();
+    expect(getByText('Correct! 🎉')).toBeTruthy();
 
     // Press continue
     fireEvent.press(getByTestId('translation-continue-btn'));
@@ -128,7 +128,7 @@ describe('TranslationQuizModal Component', () => {
     fireEvent.press(getByTestId('translation-check-btn'));
 
     expect(getByTestId('translation-feedback-banner')).toBeTruthy();
-    expect(getByText('Chưa chính xác!')).toBeTruthy();
+    expect(getByText('Incorrect!')).toBeTruthy();
     expect(getByText(/Nice to meet you!/)).toBeTruthy();
   });
 
@@ -138,7 +138,20 @@ describe('TranslationQuizModal Component', () => {
     );
 
     fireEvent.press(getByTestId('translation-quiz-close-btn'));
-    expect(getByText('Thoát bài luyện tập?')).toBeTruthy();
+    expect(getByText('Quit Practice Session?')).toBeTruthy();
+  });
+
+  it('renders word bank chips properly when questions prop is loaded dynamically', () => {
+    const { getByTestId, getAllByTestId, rerender } = render(
+      <TranslationQuizModal {...defaultProps} questions={[]} />
+    );
+
+    // Re-render with questions
+    rerender(<TranslationQuizModal {...defaultProps} questions={mockQuestions} />);
+
+    expect(getByTestId('translation-word-bank')).toBeTruthy();
+    const bankChips = getAllByTestId(/word-bank-chip-/);
+    expect(bankChips.length).toBeGreaterThan(0);
   });
 
   it('triggers onCompleted when finishing the final question', async () => {

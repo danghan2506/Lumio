@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import type {
   TranslationActivityItem,
   TranslationActivityData,
@@ -123,6 +123,29 @@ export function useTranslationQuiz({
 
   // Keep ref in sync
   availableChipsRef.current = availableChips;
+
+  // Track previous question set identity to reinitialize when questions change (e.g. async fetch)
+  const prevQuestionsRef = useRef(questions);
+  useEffect(() => {
+    if (prevQuestionsRef.current !== questions) {
+      prevQuestionsRef.current = questions;
+      currentIndexRef.current = 0;
+      setCurrentIndex(0);
+      const freshChips = createChipsForIndex(0);
+      setAvailableChips(freshChips);
+      availableChipsRef.current = freshChips;
+      setSelectedChips([]);
+      selectedChipsRef.current = [];
+      setIsAnswerChecked(false);
+      isAnswerCheckedRef.current = false;
+      setIsCorrect(null);
+      setCorrectAnswersCount(0);
+      correctAnswersCountRef.current = 0;
+      setIsQuizFinished(false);
+      isQuizFinishedRef.current = false;
+      setSummary(null);
+    }
+  }, [questions, createChipsForIndex]);
 
   const progress = useMemo(() => {
     if (totalQuestions === 0) return 0;

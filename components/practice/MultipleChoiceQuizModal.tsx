@@ -7,7 +7,7 @@ import {
   ScrollView,
   StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme/colors';
 import type { MultipleChoiceActivityItem } from '@/types/learning';
@@ -37,6 +37,10 @@ export function MultipleChoiceQuizModal({
   onClose,
   onCompleted,
 }: MultipleChoiceQuizModalProps) {
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, 44);
+  const bottomInset = Math.max(insets.bottom, 16);
+
   const [savingProgress, setSavingProgress] = useState(false);
 
   const {
@@ -91,42 +95,85 @@ export function MultipleChoiceQuizModal({
       onRequestClose={requestExit}
     >
       <StatusBar barStyle="light-content" backgroundColor={colors.deepIndigo} />
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.deepIndigo }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.deepIndigo,
+          paddingTop: topInset,
+          paddingBottom: bottomInset,
+        }}
+      >
         {/* Top Navigation & Progress Header */}
-        <View className="px-4 py-3 flex-row items-center justify-between border-b border-white/10">
+        <View
+          style={{
+            paddingHorizontal: 16,
+            paddingTop: 8,
+            paddingBottom: 14,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottomWidth: 1,
+            borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+          }}
+        >
           {/* Close / Exit Button */}
           <TouchableOpacity
             testID="quiz-close-btn"
             onPress={requestExit}
             activeOpacity={0.7}
-            className="w-10 h-10 rounded-full bg-white/10 items-center justify-center mr-3"
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 12,
+            }}
             accessibilityRole="button"
-            accessibilityLabel="Đóng bài luyện tập"
+            accessibilityLabel="Close practice quiz"
           >
             <Ionicons name="close" size={22} color={colors.cream} />
           </TouchableOpacity>
 
           {/* Progress Bar Track */}
-          <View className="flex-1 h-3.5 bg-white/10 rounded-full overflow-hidden mr-3">
+          <View
+            style={{
+              flex: 1,
+              height: 14,
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              borderRadius: 999,
+              overflow: 'hidden',
+              marginRight: 12,
+            }}
+          >
             <View
               testID="quiz-progress-bar"
               style={{
                 width: `${Math.max(5, Math.round(progress * 100))}%`,
                 backgroundColor: colors.daylightAmber,
+                height: '100%',
+                borderRadius: 999,
               }}
-              className="h-full rounded-full"
             />
           </View>
 
           {/* Question Counter */}
-          <View className="px-2.5 py-1 rounded-full bg-white/10">
+          <View
+            style={{
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              borderRadius: 999,
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            }}
+          >
             <Text
               testID="quiz-counter"
               style={{
                 fontFamily: 'PlusJakartaSans_600SemiBold',
                 color: colors.lavenderMist,
+                fontSize: 12,
               }}
-              className="text-xs"
             >
               {`${currentIndex + 1}/${Math.max(1, totalQuestions)}`}
             </Text>
@@ -136,7 +183,7 @@ export function MultipleChoiceQuizModal({
         {/* Content Area */}
         <ScrollView
           className="flex-1 px-5"
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'space-between', paddingBottom: 24 }}
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'space-between', paddingBottom: 20 }}
           showsVerticalScrollIndicator={false}
         >
           {/* Question Prompt Section */}
@@ -148,7 +195,7 @@ export function MultipleChoiceQuizModal({
               }}
               className="text-xs uppercase tracking-wider mb-2"
             >
-              {`Luyện tập • ${lessonTitle}`}
+              {`Practice • ${lessonTitle}`}
             </Text>
 
             <Text
@@ -158,7 +205,7 @@ export function MultipleChoiceQuizModal({
               }}
               className="text-sm mb-4"
             >
-              Chọn câu trả lời đúng cho câu hỏi dưới đây:
+              Choose the correct answer for the question below:
             </Text>
 
             {/* Question Text Box */}
@@ -223,7 +270,7 @@ export function MultipleChoiceQuizModal({
                     className={`p-4 rounded-2xl border ${optionBorder} ${optionBg} flex-row items-center justify-between mb-3`}
                     accessibilityRole="radio"
                     accessibilityState={{ selected: isSelected }}
-                    accessibilityLabel={`Đáp án ${OPTION_LABELS[index]}: ${optionText}`}
+                    accessibilityLabel={`Option ${OPTION_LABELS[index]}: ${optionText}`}
                   >
                     <View className="flex-row items-center flex-1 mr-2">
                       <View className={`w-8 h-8 rounded-xl ${badgeBg} items-center justify-center mr-3.5`}>
@@ -279,7 +326,7 @@ export function MultipleChoiceQuizModal({
                     }}
                     className="text-base"
                   >
-                    {isCorrect ? 'Chính xác! 🎉' : 'Chưa đúng rồi!'}
+                    {isCorrect ? 'Correct! 🎉' : 'Incorrect!'}
                   </Text>
                 </View>
 
@@ -291,7 +338,7 @@ export function MultipleChoiceQuizModal({
                     }}
                     className="text-sm mt-1"
                   >
-                    Đáp án đúng: <Text style={{ color: colors.mint, fontFamily: 'PlusJakartaSans_700Bold' }}>{currentQuestion.options[currentQuestion.correctIndex]}</Text>
+                    Correct answer: <Text style={{ color: colors.mint, fontFamily: 'PlusJakartaSans_700Bold' }}>{currentQuestion.options[currentQuestion.correctIndex]}</Text>
                   </Text>
                 )}
               </View>
@@ -309,7 +356,7 @@ export function MultipleChoiceQuizModal({
                 }}
                 className="w-full py-4 rounded-2xl items-center shadow-lg"
                 accessibilityRole="button"
-                accessibilityLabel="Kiểm tra câu trả lời"
+                accessibilityLabel="Check answer"
               >
                 <Text
                   style={{
@@ -318,7 +365,7 @@ export function MultipleChoiceQuizModal({
                   }}
                   className="text-base"
                 >
-                  Kiểm tra
+                  Check
                 </Text>
               </TouchableOpacity>
             ) : (
@@ -331,7 +378,7 @@ export function MultipleChoiceQuizModal({
                 }}
                 className="w-full py-4 rounded-2xl items-center shadow-lg flex-row justify-center"
                 accessibilityRole="button"
-                accessibilityLabel="Tiếp tục"
+                accessibilityLabel="Continue"
               >
                 <Text
                   style={{
@@ -340,7 +387,7 @@ export function MultipleChoiceQuizModal({
                   }}
                   className="text-base mr-2"
                 >
-                  {currentIndex + 1 >= totalQuestions ? 'Xem kết quả' : 'Tiếp tục'}
+                  {currentIndex + 1 >= totalQuestions ? 'View Results' : 'Continue'}
                 </Text>
                 <Ionicons
                   name="arrow-forward"
@@ -368,7 +415,7 @@ export function MultipleChoiceQuizModal({
           onClaim={handleClaimFinish}
           saving={savingProgress}
         />
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }

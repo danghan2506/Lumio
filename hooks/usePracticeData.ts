@@ -7,6 +7,7 @@ import {
   sanitizeMultipleChoiceData,
 } from '@/lib/api';
 import { sanitizeTranslationData } from '@/lib/wordBankHelper';
+import { lessons as fallbackLessons } from '@/data/lessons';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import type {
   LanguageId,
@@ -136,6 +137,30 @@ export function usePracticeData(): UsePracticeDataReturn {
           }
         }
 
+        // Fallback to typed hardcoded lesson data if DB has no activities
+        if (sanitizedActivities.length === 0) {
+          const fallbackLesson = fallbackLessons.find((l) => l.id === lesson.id);
+          if (fallbackLesson) {
+            const mcActs = fallbackLesson.activities.filter((a) => a.type === 'multiple_choice');
+            mcActs.forEach((act, idx) => {
+              if (act.type === 'multiple_choice') {
+                sanitizedActivities.push({
+                  id: act.id,
+                  lesson_id: lesson.id,
+                  order: idx + 1,
+                  type: 'multiple_choice',
+                  instruction: act.instruction,
+                  data: {
+                    question: act.question,
+                    options: act.options,
+                    correctIndex: act.correctIndex,
+                  },
+                });
+              }
+            });
+          }
+        }
+
         setActiveLessonActivities(sanitizedActivities);
         setActiveTranslationActivities([]);
       } else {
@@ -156,10 +181,80 @@ export function usePracticeData(): UsePracticeDataReturn {
           }
         }
 
+        // Fallback to typed hardcoded lesson data if DB has no activities
+        if (sanitizedActivities.length === 0) {
+          const fallbackLesson = fallbackLessons.find((l) => l.id === lesson.id);
+          if (fallbackLesson) {
+            const trActs = fallbackLesson.activities.filter((a) => a.type === 'translation');
+            trActs.forEach((act, idx) => {
+              if (act.type === 'translation') {
+                sanitizedActivities.push({
+                  id: act.id,
+                  lesson_id: lesson.id,
+                  order: idx + 1,
+                  type: 'translation',
+                  instruction: act.instruction,
+                  data: {
+                    sourceText: act.sourceText,
+                    targetText: act.targetText,
+                    acceptedVariants: act.acceptedVariants,
+                  },
+                });
+              }
+            });
+          }
+        }
+
         setActiveTranslationActivities(sanitizedActivities);
         setActiveLessonActivities([]);
       }
     } catch (fetchError: unknown) {
+      // Local fallback in case of network or Supabase errors
+      const fallbackLesson = fallbackLessons.find((l) => l.id === lesson.id);
+      if (fallbackLesson && type === 'translation') {
+        const trActs = fallbackLesson.activities.filter((a) => a.type === 'translation');
+        if (trActs.length > 0) {
+          const fallbackItems: TranslationActivityItem[] = trActs.map((act, idx) => ({
+            id: act.id,
+            lesson_id: lesson.id,
+            order: idx + 1,
+            type: 'translation',
+            instruction: act.instruction,
+            data: {
+              sourceText: act.type === 'translation' ? act.sourceText : '',
+              targetText: act.type === 'translation' ? act.targetText : '',
+              acceptedVariants: act.type === 'translation' ? act.acceptedVariants : [],
+            },
+          }));
+          setActiveTranslationActivities(fallbackItems);
+          setActiveLessonActivities([]);
+          setActivitiesError(null);
+          setLoadingActivities(false);
+          return;
+        }
+      } else if (fallbackLesson && type === 'multiple_choice') {
+        const mcActs = fallbackLesson.activities.filter((a) => a.type === 'multiple_choice');
+        if (mcActs.length > 0) {
+          const fallbackItems: MultipleChoiceActivityItem[] = mcActs.map((act, idx) => ({
+            id: act.id,
+            lesson_id: lesson.id,
+            order: idx + 1,
+            type: 'multiple_choice',
+            instruction: act.instruction,
+            data: {
+              question: act.type === 'multiple_choice' ? act.question : '',
+              options: act.type === 'multiple_choice' ? act.options : ['', '', '', ''],
+              correctIndex: act.type === 'multiple_choice' ? act.correctIndex : 0,
+            },
+          }));
+          setActiveLessonActivities(fallbackItems);
+          setActiveTranslationActivities([]);
+          setActivitiesError(null);
+          setLoadingActivities(false);
+          return;
+        }
+      }
+
       setActivitiesError(getFriendlyErrorMessage(fetchError, ACTIVITIES_ERROR_MESSAGE));
       setActiveLessonActivities([]);
       setActiveTranslationActivities([]);

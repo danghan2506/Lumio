@@ -182,16 +182,16 @@ describe('LearnScreen', () => {
     fireEvent(getByText('Practice'), 'press');
 
     expect(getByTestId('practice-filter-bar')).toBeTruthy();
-    expect(getByText('Tất cả')).toBeTruthy();
-    expect(getByText('Trắc nghiệm')).toBeTruthy();
-    expect(getByText('Ghép câu')).toBeTruthy();
+    expect(getByText('All')).toBeTruthy();
+    expect(getByText('Quiz')).toBeTruthy();
+    expect(getByText('Sentence')).toBeTruthy();
 
     expect(getByTestId('practice-card-mc-les-1')).toBeTruthy();
     expect(getByTestId('practice-card-tr-les-1')).toBeTruthy();
     expect(getByTestId('practice-card-mc-les-2')).toBeTruthy();
 
     // Tap on filter pill
-    fireEvent.press(getByText('Ghép câu'));
+    fireEvent.press(getByText('Sentence'));
     expect(mockSetFilterType).toHaveBeenCalledWith('translation');
 
     // Tap on translation practice card
@@ -225,7 +225,7 @@ describe('LearnScreen', () => {
     const { getByText } = render(<LearnScreen />);
     fireEvent(getByText('Practice'), 'press');
 
-    expect(getByText('Chưa có bài tập luyện tập')).toBeTruthy();
+    expect(getByText('No practice exercises yet')).toBeTruthy();
   });
 
   it('renders practice error alert when error occurs on practice tab', () => {

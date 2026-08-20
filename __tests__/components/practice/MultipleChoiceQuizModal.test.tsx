@@ -54,7 +54,7 @@ describe('MultipleChoiceQuizModal', () => {
       />
     );
 
-    expect(getByText('Luyện tập • Greetings')).toBeTruthy();
+    expect(getByText('Practice • Greetings')).toBeTruthy();
     expect(getByText('"Hello" có nghĩa là gì?')).toBeTruthy();
     expect(getByText('1/2')).toBeTruthy();
     expect(getByText('Xin chào')).toBeTruthy();
@@ -90,7 +90,7 @@ describe('MultipleChoiceQuizModal', () => {
     fireEvent.press(getByTestId('quiz-option-1'));
     fireEvent.press(getByTestId('quiz-check-btn'));
 
-    expect(getByText('Chính xác! 🎉')).toBeTruthy();
+    expect(getByText('Correct! 🎉')).toBeTruthy();
 
     // Advance to Q2
     fireEvent.press(getByTestId('quiz-continue-btn'));
@@ -102,12 +102,12 @@ describe('MultipleChoiceQuizModal', () => {
     fireEvent.press(getByTestId('quiz-option-0'));
     fireEvent.press(getByTestId('quiz-check-btn'));
 
-    expect(getByText('Chính xác! 🎉')).toBeTruthy();
+    expect(getByText('Correct! 🎉')).toBeTruthy();
 
     // Finish quiz -> opens summary modal
     fireEvent.press(getByTestId('quiz-continue-btn'));
 
-    expect(getByText('Tuyệt đỉnh! 🌟')).toBeTruthy();
+    expect(getByText('Outstanding! 🌟')).toBeTruthy();
     expect(getByText('2 / 2')).toBeTruthy();
 
     // Claim reward & close
@@ -141,7 +141,7 @@ describe('MultipleChoiceQuizModal', () => {
     fireEvent.press(getByTestId('quiz-option-0'));
     fireEvent.press(getByTestId('quiz-check-btn'));
 
-    expect(getByText('Chưa đúng rồi!')).toBeTruthy();
+    expect(getByText('Incorrect!')).toBeTruthy();
     expect(getAllByText('Xin chào').length).toBeGreaterThanOrEqual(1);
   });
 
@@ -160,7 +160,7 @@ describe('MultipleChoiceQuizModal', () => {
     // Tap top close button
     fireEvent.press(getByTestId('quiz-close-btn'));
 
-    expect(getByText('Thoát bài luyện tập?')).toBeTruthy();
+    expect(getByText('Quit Practice Session?')).toBeTruthy();
 
     // Tap Resume
     fireEvent.press(getByTestId('resume-quiz-btn'));

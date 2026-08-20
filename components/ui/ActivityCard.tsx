@@ -53,8 +53,8 @@ export function ActivityCard({
     : colors.lavenderMist;
 
   const headerLabel = typeLabel
-    ? `Bài ${orderNumber} • ${typeLabel}`
-    : `Bài ${orderNumber}`;
+    ? `Lesson ${orderNumber} • ${typeLabel}`
+    : `Lesson ${orderNumber}`;
 
   return (
     <TouchableOpacity
@@ -89,7 +89,7 @@ export function ActivityCard({
                 }}
                 className="text-[10px]"
               >
-                Đang học
+                In Progress
               </Text>
             </View>
           )}
@@ -104,7 +104,7 @@ export function ActivityCard({
                 }}
                 className="text-[10px]"
               >
-                Đã xong
+                Completed
               </Text>
             </View>
           )}
@@ -134,7 +134,7 @@ export function ActivityCard({
                 }}
                 className="text-xs"
               >
-                {`${questionsCount} câu hỏi`}
+                {`${questionsCount} ${questionsCount === 1 ? 'question' : 'questions'}`}
               </Text>
             </View>
           )}
@@ -164,7 +164,7 @@ export function ActivityCard({
                 }}
                 className="text-xs opacity-80"
               >
-                {`${estimatedMinutes} phút`}
+                {`${estimatedMinutes} mins`}
               </Text>
             </View>
           )}

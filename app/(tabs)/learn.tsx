@@ -24,9 +24,9 @@ import type { QuizResultSummary } from '@/hooks/useMultipleChoiceQuiz';
 import type { PracticeActivityType } from '@/types/learning';
 
 const FILTER_OPTIONS: { type: PracticeActivityType; label: string }[] = [
-  { type: 'all', label: 'Tất cả' },
-  { type: 'multiple_choice', label: 'Trắc nghiệm' },
-  { type: 'translation', label: 'Ghép câu' },
+  { type: 'all', label: 'All' },
+  { type: 'multiple_choice', label: 'Quiz' },
+  { type: 'translation', label: 'Sentence' },
 ];
 
 export default function LearnScreen() {
@@ -44,6 +44,7 @@ export default function LearnScreen() {
   } = useLessonsData();
 
   const {
+    selectedLanguage,
     activeUnit: practiceActiveUnit,
     practiceLessons,
     filteredPracticeLessons,
@@ -231,7 +232,7 @@ export default function LearnScreen() {
                         }}
                         className="px-4 py-2 rounded-full border"
                         accessibilityRole="button"
-                        accessibilityLabel={`Lọc theo ${opt.label}`}
+                        accessibilityLabel={`Filter by ${opt.label}`}
                       >
                         <Text
                           style={{
@@ -256,13 +257,13 @@ export default function LearnScreen() {
                       style={{ fontFamily: 'Fredoka_700Bold', color: colors.cream }}
                       className="text-lg text-center mb-1"
                     >
-                      Chưa có bài tập luyện tập
+                      No practice exercises yet
                     </Text>
                     <Text
                       style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.lavenderMist }}
                       className="text-xs text-center opacity-80"
                     >
-                      Các bài tập cho chủ đề này sẽ được cập nhật sớm!
+                      Exercises for this unit will be added soon!
                     </Text>
                   </View>
                 ) : (
@@ -280,7 +281,7 @@ export default function LearnScreen() {
                             key={`${lesson.id}-mc`}
                             testID={`practice-card-mc-${lesson.id}`}
                             orderNumber={lesson.order}
-                            typeLabel="Trắc nghiệm"
+                            typeLabel="Quiz"
                             title={lesson.title}
                             questionsCount={mcCount || lesson.activitiesCount}
                             xpReward={lesson.xp_reward}
@@ -298,7 +299,7 @@ export default function LearnScreen() {
                             key={`${lesson.id}-tr`}
                             testID={`practice-card-tr-${lesson.id}`}
                             orderNumber={lesson.order}
-                            typeLabel="Ghép câu dịch"
+                            typeLabel="Sentence Builder"
                             title={lesson.title}
                             questionsCount={trCount}
                             xpReward={lesson.xp_reward}
@@ -337,6 +338,7 @@ export default function LearnScreen() {
             lessonTitle={selectedPracticeLesson.title}
             questions={activeTranslationActivities}
             baseXpReward={selectedPracticeLesson.xp_reward}
+            languageId={selectedLanguage}
             onClose={clearSelectedPracticeLesson}
             onCompleted={handleQuizCompleted}
           />
