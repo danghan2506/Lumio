@@ -14,6 +14,7 @@ import {
   PlusJakartaSans_700Bold,
 } from "@expo-google-fonts/plus-jakarta-sans";
 import { JetBrainsMono_500Medium } from "@expo-google-fonts/jetbrains-mono";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
 import { useLanguageStore } from "@/store/useLanguageStore";
 import type { Session } from "@supabase/supabase-js";
@@ -77,19 +78,21 @@ export default function RootLayout() {
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Stack.Screen name="index" />
-      <Stack.Screen name="onboarding" />
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen
-        name="lesson/[id]"
-        options={{ presentation: 'fullScreenModal', gestureEnabled: true }}
-      />
-    </Stack>
+    <SafeAreaProvider>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        <Stack.Screen name="index" />
+        <Stack.Screen name="onboarding" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="lesson/[id]"
+          options={{ presentation: 'fullScreenModal', gestureEnabled: true }}
+        />
+      </Stack>
+    </SafeAreaProvider>
   );
 }

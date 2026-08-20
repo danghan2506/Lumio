@@ -15,9 +15,9 @@ describe('QuizExitConfirmDialog', () => {
       />
     );
 
-    expect(getByText('Thoát bài luyện tập?')).toBeTruthy();
+    expect(getByText('Quit Practice Session?')).toBeTruthy();
     expect(
-      getByText('Tiến trình làm bài hiện tại sẽ không được lưu và bạn sẽ chưa nhận được XP. Bạn có chắc muốn thoát?')
+      getByText('Your current progress will not be saved and you will not earn XP. Are you sure you want to quit?')
     ).toBeTruthy();
 
     fireEvent.press(getByTestId('resume-quiz-btn'));

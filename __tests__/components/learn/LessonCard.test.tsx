@@ -20,7 +20,7 @@ describe('LessonCard', () => {
     );
 
     expect(getByText('Basic Greetings')).toBeTruthy();
-    expect(getByText('Bài 1')).toBeTruthy();
+    expect(getByText('Lesson 1')).toBeTruthy();
     expect(getByTestId('icon-play-outline')).toBeTruthy();
   });
 
@@ -35,8 +35,8 @@ describe('LessonCard', () => {
     );
 
     expect(getByText('Common Expressions')).toBeTruthy();
-    expect(getByText('Bài 2')).toBeTruthy();
-    expect(getByText('Đang học')).toBeTruthy();
+    expect(getByText('Lesson 2')).toBeTruthy();
+    expect(getByText('In Progress')).toBeTruthy();
     expect(getByTestId('icon-play-solid')).toBeTruthy();
   });
 
@@ -51,8 +51,8 @@ describe('LessonCard', () => {
     );
 
     expect(getByText('Alphabet & Sounds')).toBeTruthy();
-    expect(getByText('Bài 3')).toBeTruthy();
-    expect(getByText('Đã xong')).toBeTruthy();
+    expect(getByText('Lesson 3')).toBeTruthy();
+    expect(getByText('Completed')).toBeTruthy();
     expect(getByTestId('icon-checkmark')).toBeTruthy();
   });
 
@@ -66,7 +66,7 @@ describe('LessonCard', () => {
     );
 
     expect(getByText('+20 XP')).toBeTruthy();
-    expect(getByText('5 phút')).toBeTruthy();
+    expect(getByText('5 mins')).toBeTruthy();
   });
 
   it('triggers onPress callback when card is pressed regardless of status', () => {

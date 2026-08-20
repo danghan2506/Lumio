@@ -1,0 +1,49 @@
+@startuml
+!theme plain
+title Sequence Diagram — Target Language Selection Persistence
+
+autonumber
+actor Learner
+participant "Language Selection Screen" as Screen
+participant "Language Store
+(Zustand + AsyncStorage)" as Store
+participant "Progress API
+(lib/api)" as Api
+participant "Supabase Client" as Client
+participant "Supabase RPC
+set_active_language" as Rpc
+database "languages" as Languages
+database "user_languages" as UserLanguages
+participant "Expo Router" as Router
+
+note over Screen, Api
+Target integration: the current screen persists selection locally;
+this diagram documents the intended server persistence flow.
+end note
+
+Learner -> Screen: Choose target language and continue
+Screen -> Api: setActiveLanguage(languageId)
+Api -> Client: rpc("set_active_language", languageId)
+Client -> Rpc: Authenticated RPC request
+Rpc -> Rpc: Resolve authenticated user from auth.uid()
+Rpc -> Languages: Verify languageId exists
+
+alt Language is valid and user is authenticated
+  Languages --> Rpc: Language exists
+  Rpc -> UserLanguages: Deactivate current active language
+  Rpc -> UserLanguages: Upsert selected language as active
+  UserLanguages --> Rpc: Transaction committed
+  Rpc --> Client: Success
+  Client --> Api: Success
+  Api --> Screen: Persistence confirmed
+  Screen -> Store: setSelectedLanguage(languageId)
+  Store -> Store: Persist local selection for startup routing
+  Screen -> Router: replace("/(tabs)")
+  Router --> Learner: Show learning dashboard
+else Missing session or invalid language
+  Rpc --> Client: RPC error
+  Client --> Api: Error
+  Api --> Screen: Error
+  Screen --> Learner: Keep selection screen and show feedback
+end
+@enduml

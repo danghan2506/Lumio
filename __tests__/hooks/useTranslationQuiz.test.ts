@@ -100,6 +100,32 @@ describe('useTranslationQuiz', () => {
       expect(result.current.progress).toBe(0);
       expect(result.current.isQuizFinished).toBe(false);
     });
+
+    it('populates availableChips dynamically when questions update from empty to loaded array (async load)', () => {
+      let currentProps: UseTranslationQuizParams = {
+        questions: [],
+        baseXpReward: 10,
+      };
+
+      const { result, rerender } = renderHook(
+        (props: UseTranslationQuizParams) => useTranslationQuiz(props),
+        { initialProps: currentProps }
+      );
+
+      expect(result.current.totalQuestions).toBe(0);
+      expect(result.current.availableChips).toEqual([]);
+
+      // Simulate async load finishing
+      currentProps = {
+        questions: mockActivityItems,
+        baseXpReward: 10,
+      };
+      rerender(currentProps);
+
+      expect(result.current.totalQuestions).toBe(2);
+      expect(result.current.currentQuestion).toEqual(mockActivityItems[0].data);
+      expect(result.current.availableChips.length).toBeGreaterThan(0);
+    });
   });
 
   describe('Selecting and Deselecting Chips', () => {

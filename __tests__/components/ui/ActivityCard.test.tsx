@@ -20,11 +20,11 @@ describe('ActivityCard', () => {
     );
 
     expect(getByText('Basic Greetings')).toBeTruthy();
-    expect(getByText('Bài 1')).toBeTruthy();
+    expect(getByText('Lesson 1')).toBeTruthy();
     expect(getByTestId('icon-play-outline')).toBeTruthy();
   });
 
-  it('renders correctly for in_progress status with "Đang học" badge and solid play icon', () => {
+  it('renders correctly for in_progress status with "In Progress" badge and solid play icon', () => {
     const { getByText, getByTestId } = render(
       <ActivityCard
         {...defaultProps}
@@ -35,12 +35,12 @@ describe('ActivityCard', () => {
     );
 
     expect(getByText('Common Expressions')).toBeTruthy();
-    expect(getByText('Bài 2')).toBeTruthy();
-    expect(getByText('Đang học')).toBeTruthy();
+    expect(getByText('Lesson 2')).toBeTruthy();
+    expect(getByText('In Progress')).toBeTruthy();
     expect(getByTestId('icon-play-solid')).toBeTruthy();
   });
 
-  it('renders correctly for completed status with "Đã xong" badge and checkmark icon', () => {
+  it('renders correctly for completed status with "Completed" badge and checkmark icon', () => {
     const { getByText, getByTestId } = render(
       <ActivityCard
         {...defaultProps}
@@ -51,8 +51,8 @@ describe('ActivityCard', () => {
     );
 
     expect(getByText('Alphabet & Sounds')).toBeTruthy();
-    expect(getByText('Bài 3')).toBeTruthy();
-    expect(getByText('Đã xong')).toBeTruthy();
+    expect(getByText('Lesson 3')).toBeTruthy();
+    expect(getByText('Completed')).toBeTruthy();
     expect(getByTestId('icon-checkmark')).toBeTruthy();
   });
 
@@ -60,11 +60,11 @@ describe('ActivityCard', () => {
     const { getByText } = render(
       <ActivityCard
         {...defaultProps}
-        typeLabel="Trắc nghiệm"
+        typeLabel="Quiz"
       />
     );
 
-    expect(getByText('Bài 1 • Trắc nghiệm')).toBeTruthy();
+    expect(getByText('Lesson 1 • Quiz')).toBeTruthy();
   });
 
   it('renders metadata items (questions count, xpReward, estimatedMinutes) when provided', () => {
@@ -77,9 +77,9 @@ describe('ActivityCard', () => {
       />
     );
 
-    expect(getByText('4 câu hỏi')).toBeTruthy();
+    expect(getByText('4 questions')).toBeTruthy();
     expect(getByText('+20 XP')).toBeTruthy();
-    expect(getByText('5 phút')).toBeTruthy();
+    expect(getByText('5 mins')).toBeTruthy();
   });
 
   it('triggers onPress callback when card is pressed', () => {

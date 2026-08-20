@@ -3,13 +3,14 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { HeaderBar } from '@/components/home/HeaderBar';
 
 describe('HeaderBar', () => {
-  it('renders flag, personalized greeting, and streak flame count', () => {
+  it('renders flag, personalized greeting, and streak flame count with active state', () => {
     const { getByText } = render(
       <HeaderBar
         userName="Alex"
         languageFlag="🇪🇸"
         languageName="Spanish"
         streak={12}
+        isStreakActiveToday={true}
       />
     );
     expect(getByText('Hola, Alex! 👋')).toBeTruthy();
@@ -53,7 +54,7 @@ describe('HeaderBar', () => {
     const handleLanguagePress = jest.fn();
     const handleNotificationPress = jest.fn();
 
-    render(
+    const { getByTestId, getByText } = render(
       <HeaderBar
         userName="Alex"
         languageFlag="🇪🇸"
@@ -64,10 +65,10 @@ describe('HeaderBar', () => {
       />
     );
 
-    handleLanguagePress();
-    handleNotificationPress();
-
+    fireEvent.press(getByText('Hola, Alex! 👋'));
     expect(handleLanguagePress).toHaveBeenCalledTimes(1);
+
+    fireEvent.press(getByTestId('notification-button'));
     expect(handleNotificationPress).toHaveBeenCalledTimes(1);
   });
 });

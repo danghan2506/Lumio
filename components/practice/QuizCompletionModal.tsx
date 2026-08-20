@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme/colors';
 import { images } from '@/constants/images';
@@ -29,6 +30,7 @@ export function QuizCompletionModal({
   onClaim,
   saving = false,
 }: QuizCompletionModalProps) {
+  const insets = useSafeAreaInsets();
   if (!summary) return null;
 
   const { scoreTier, correctAnswersCount, totalQuestions, accuracy, calculatedXp } = summary;
@@ -44,17 +46,17 @@ export function QuizCompletionModal({
   // Header texts
   const titleText =
     scoreTier === 'perfect'
-      ? 'Tuyệt đỉnh! 🌟'
+      ? 'Outstanding! 🌟'
       : scoreTier === 'partial'
-      ? 'Làm tốt lắm! 👍'
-      : 'Đừng nản lòng! 💪';
+      ? 'Great Job! 👍'
+      : 'Keep Going! 💪';
 
   const subtitleText =
     scoreTier === 'perfect'
-      ? 'Bạn đã trả lời chính xác tất cả các câu hỏi!'
+      ? 'You answered all questions correctly!'
       : scoreTier === 'partial'
-      ? 'Bạn đã nắm được nội dung bài học, tiếp tục phát huy nhé!'
-      : 'Học ngoại ngữ cần sự kiên trì. Hãy thử lại để ghi nhớ tốt hơn!';
+      ? 'You have a good grasp of this lesson, keep it up!'
+      : 'Language learning takes practice. Try again to reinforce what you learned!';
 
   const isZeroScore = scoreTier === 'zero';
 
@@ -76,24 +78,17 @@ export function QuizCompletionModal({
             borderTopRightRadius: 36,
             borderTopWidth: 1,
             borderColor: 'rgba(255, 255, 255, 0.1)',
+            paddingBottom: Math.max(insets.bottom, 24),
           }}
           className="p-6 items-center shadow-2xl"
         >
           {/* Mascot Image */}
-          <View className="items-center mb-4 -mt-16">
-            <View
-              style={{
-                backgroundColor: colors.deepIndigo,
-                borderColor: `${colors.daylightAmber}40`,
-              }}
-              className="w-28 h-28 rounded-full border-4 items-center justify-center p-2 shadow-lg"
-            >
-              <Image
-                source={mascotSource}
-                style={{ width: 90, height: 90 }}
-                resizeMode="contain"
-              />
-            </View>
+          <View className="items-center mb-3 -mt-20">
+            <Image
+              source={mascotSource}
+              style={{ width: 140, height: 140 }}
+              resizeMode="contain"
+            />
           </View>
 
           {/* Title & Subtitle */}
@@ -170,7 +165,7 @@ export function QuizCompletionModal({
                 }}
                 className="text-[11px]"
               >
-                Câu trả lời đúng
+                Correct Answers
               </Text>
             </View>
 
@@ -196,7 +191,7 @@ export function QuizCompletionModal({
                   }}
                   className="text-xs"
                 >
-                  Thưởng XP
+                  XP Reward
                 </Text>
               </View>
               <Text
@@ -215,7 +210,7 @@ export function QuizCompletionModal({
                 }}
                 className="text-[11px]"
               >
-                {calculatedXp > 0 ? 'Kinh nghiệm' : 'Chưa nhận XP'}
+                {calculatedXp > 0 ? 'Experience Points' : 'No XP Earned'}
               </Text>
             </View>
           </View>
@@ -224,7 +219,7 @@ export function QuizCompletionModal({
           <View className="w-full space-y-3">
             {isZeroScore ? (
               <>
-                {/* 0% Score: Primary is "Luyện tập lại" */}
+                {/* 0% Score: Primary is "Try Again" */}
                 <TouchableOpacity
                   testID="retry-quiz-btn"
                   onPress={onRetry}
@@ -232,7 +227,7 @@ export function QuizCompletionModal({
                   style={{ backgroundColor: colors.lumioCoral }}
                   className="w-full py-4 rounded-2xl items-center shadow-lg mb-2.5 flex-row justify-center"
                   accessibilityRole="button"
-                  accessibilityLabel="Luyện tập lại"
+                  accessibilityLabel="Try again"
                 >
                   <Ionicons name="refresh" size={18} color={colors.cream} style={{ marginRight: 6 }} />
                   <Text
@@ -242,7 +237,7 @@ export function QuizCompletionModal({
                     }}
                     className="text-base"
                   >
-                    Luyện tập lại
+                    Try Again
                   </Text>
                 </TouchableOpacity>
 
@@ -253,7 +248,7 @@ export function QuizCompletionModal({
                   activeOpacity={0.7}
                   className="w-full py-3 rounded-2xl items-center border border-white/10"
                   accessibilityRole="button"
-                  accessibilityLabel="Đóng"
+                  accessibilityLabel="Close"
                 >
                   <Text
                     style={{
@@ -262,13 +257,13 @@ export function QuizCompletionModal({
                     }}
                     className="text-sm"
                   >
-                    Đóng
+                    Close
                   </Text>
                 </TouchableOpacity>
               </>
             ) : (
               <>
-                {/* >0% Score: Primary is "Nhận thưởng & Hoàn thành" */}
+                {/* >0% Score: Primary is "Claim Rewards & Finish" */}
                 <TouchableOpacity
                   testID="claim-finish-btn"
                   onPress={onClaim}
@@ -277,7 +272,7 @@ export function QuizCompletionModal({
                   style={{ backgroundColor: colors.lumioCoral }}
                   className="w-full py-4 rounded-2xl items-center shadow-lg mb-2.5 flex-row justify-center"
                   accessibilityRole="button"
-                  accessibilityLabel="Nhận thưởng và hoàn thành"
+                  accessibilityLabel="Claim rewards and finish"
                 >
                   {saving ? (
                     <ActivityIndicator size="small" color={colors.cream} />
@@ -290,7 +285,7 @@ export function QuizCompletionModal({
                         }}
                         className="text-base mr-2"
                       >
-                        Nhận thưởng & Hoàn thành
+                        Claim Rewards & Finish
                       </Text>
                       <Ionicons name="checkmark-done" size={18} color={colors.cream} />
                     </>
@@ -305,7 +300,7 @@ export function QuizCompletionModal({
                   activeOpacity={0.7}
                   className="w-full py-3 rounded-2xl items-center border border-white/10 flex-row justify-center"
                   accessibilityRole="button"
-                  accessibilityLabel="Luyện tập lại"
+                  accessibilityLabel="Try again"
                 >
                   <Ionicons name="refresh" size={14} color={colors.lavenderMist} style={{ marginRight: 6 }} />
                   <Text
@@ -315,7 +310,7 @@ export function QuizCompletionModal({
                     }}
                     className="text-sm"
                   >
-                    Luyện tập lại
+                    Try Again
                   </Text>
                 </TouchableOpacity>
               </>

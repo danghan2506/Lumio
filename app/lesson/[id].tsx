@@ -9,7 +9,7 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
@@ -69,6 +69,10 @@ function AnimatedButton({ children, onPress, className, style, disabled, testID 
 }
 
 export default function AudioLessonScreen() {
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, 44);
+  const bottomInset = Math.max(insets.bottom, 16);
+
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { lesson, language, loading, error } = useLessonAudioDetails(id || '');
@@ -144,7 +148,7 @@ export default function AudioLessonScreen() {
   React.useEffect(() => {
     if (lesson) {
       setTutorMessage(lesson.ai_teacher_prompt || `Hello! Let's practice ${language?.name || 'language'} greetings today. Talk to me and I'll help you out.`);
-      setTutorTranslation('Xin chào! Hôm nay chúng ta hãy cùng luyện tập giao tiếp. Hãy nói chuyện với tôi nhé!');
+      setTutorTranslation("Hello! Let's practice speaking today. Feel free to talk to me!");
     }
   }, [lesson, language]);
 
@@ -181,7 +185,7 @@ export default function AudioLessonScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.deepIndigo }}>
+    <View style={{ flex: 1, backgroundColor: colors.deepIndigo, paddingTop: topInset, paddingBottom: bottomInset }}>
       {/* ─── Connecting / Joining Overlay ─── */}
       {(status === 'connecting' || status === 'joining') && (
         <View
@@ -325,7 +329,7 @@ export default function AudioLessonScreen() {
         >
           <Text style={{ fontSize: 14, marginRight: 6 }}>{language?.flag || '🌐'}</Text>
           <Text style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.lavenderMist, fontSize: 11 }}>
-            {language?.name || 'Language'} • Bài {lesson.order}: {lesson.title}
+            {language?.name || 'Language'} • Lesson {lesson.order}: {lesson.title}
           </Text>
         </View>
       </View>
@@ -603,22 +607,12 @@ export default function AudioLessonScreen() {
             }}
           >
             {/* Mascot header */}
-            <View style={{ alignItems: 'center', marginTop: -52, marginBottom: 16 }}>
-              <View
-                style={{
-                  width: 88,
-                  height: 88,
-                  borderRadius: 44,
-                  backgroundColor: '#1A1432',
-                  borderWidth: 4,
-                  borderColor: 'rgba(94,90,128,0.3)',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  padding: 6,
-                }}
-              >
-                <Image source={images.lumiCelebration} style={{ width: 72, height: 72, borderRadius: 36 }} resizeMode="contain" />
-              </View>
+            <View style={{ alignItems: 'center', marginTop: -64, marginBottom: 12 }}>
+              <Image
+                source={images.lumiCelebration}
+                style={{ width: 130, height: 130 }}
+                resizeMode="contain"
+              />
             </View>
 
             <Text style={{ fontFamily: 'Fredoka_700Bold', color: colors.cream, fontSize: 24, textAlign: 'center', marginBottom: 4 }}>
@@ -722,6 +716,6 @@ export default function AudioLessonScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }

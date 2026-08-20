@@ -33,27 +33,27 @@ const SLIDES: SlideData[] = [
     badge: "AI VOICE TUTOR",
     badgeBg: "rgba(255, 107, 87, 0.15)",
     badgeColor: colors.lumioCoral,
-    title: "Học giao tiếp cùng Lumi",
+    title: "Speak with Lumi",
     subtitle:
-      "Luyện phản xạ nói tiếng Anh/Tây Ban Nha tự nhiên 24/7 với Trợ lý AI thông minh.",
+      "Practice speaking naturally 24/7 with your smart AI tutor.",
   },
   {
     id: "2",
     badge: "SPACED REPETITION",
     badgeBg: "rgba(53, 208, 160, 0.15)",
     badgeColor: colors.mint,
-    title: "Học từ vựng thông minh",
+    title: "Smart Vocabulary Learning",
     subtitle:
-      "Ghi nhớ từ vựng lâu hơn gấp 5 lần nhờ phương pháp lặp lại ngắt quãng khoa học.",
+      "Remember words 5x longer with science-backed spaced repetition.",
   },
   {
     id: "3",
     badge: "STREAKS & REWARDS",
     badgeBg: "rgba(255, 183, 77, 0.15)",
     badgeColor: colors.daylightAmber,
-    title: "Duy trì thói quen & Streak",
+    title: "Build Streaks & Habits",
     subtitle:
-      "Tích lũy điểm thưởng, giữ vững thói quen và cảm nhận sự tiến bộ mỗi ngày.",
+      "Earn reward points, keep your streak alive, and feel your progress daily.",
   },
 ];
 
@@ -536,7 +536,7 @@ export default function OnboardingScreen() {
                 color: colors.slate,
               }}
             >
-              Bỏ qua
+              Skip
             </Text>
           </Pressable>
         ) : null}
@@ -668,7 +668,7 @@ export default function OnboardingScreen() {
                 color: colors.cream,
               }}
             >
-              Tiếp theo
+              Next
             </Text>
           </Pressable>
         ) : (
@@ -690,7 +690,7 @@ export default function OnboardingScreen() {
                   color: colors.cream,
                 }}
               >
-                Bắt đầu ngay
+                Get Started
               </Text>
             </Pressable>
           </View>

@@ -1,7 +1,6 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import HomeScreen from '@/app/(tabs)/index';
-import { useRouter } from 'expo-router';
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
@@ -10,20 +9,56 @@ jest.mock('expo-router', () => ({
   }),
 }));
 
-jest.mock('@/hooks/useAuth', () => ({
-  useAuth: () => ({
-    session: null,
-    user: null,
-    loading: false,
-    signOut: jest.fn(),
-  }),
-}));
+const mockRefresh = jest.fn();
+const mockDashboardData = {
+  userName: 'Alex',
+  avatarUrl: null,
+  activeLanguage: {
+    id: 'es',
+    name: 'Spanish',
+    nativeName: 'Español',
+    flag: '🇪🇸',
+    learnerLanguage: 'vi',
+  },
+  streak: 12,
+  isStreakActiveToday: true,
+  dailyGoal: {
+    currentXp: 15,
+    targetXp: 20,
+    isCompleted: false,
+  },
+  continueLesson: {
+    lessonId: 'es-unit-1-lesson-1',
+    lessonTitle: 'Greetings & Introductions',
+    unitTitle: 'Unit 1',
+    unitOrder: 1,
+    xpReward: 10,
+    estimatedMinutes: 5,
+    isCourseCompleted: false,
+  },
+  todaysPlan: [
+    {
+      id: 'plan-1',
+      type: 'lesson' as const,
+      title: 'Lesson: Greetings',
+      subtitle: 'Unit 1 • 5 mins',
+      completed: false,
+      active: true,
+      lessonId: 'es-unit-1-lesson-1',
+    },
+  ],
+  aiTopicLessonId: 'es-unit-1-lesson-1',
+  aiTopicTitle: 'Greetings & Introductions',
+};
 
-jest.mock('@react-native-async-storage/async-storage', () => ({
-  getItem: jest.fn(() => Promise.resolve(null)),
-  setItem: jest.fn(() => Promise.resolve(null)),
-  removeItem: jest.fn(() => Promise.resolve(null)),
-  clear: jest.fn(() => Promise.resolve(null)),
+jest.mock('@/hooks/useDashboardData', () => ({
+  useDashboardData: () => ({
+    data: mockDashboardData,
+    loading: false,
+    refreshing: false,
+    error: null,
+    refresh: mockRefresh,
+  }),
 }));
 
 jest.mock('react-native-safe-area-context', () => {
@@ -41,34 +76,26 @@ describe('HomeScreen', () => {
     jest.clearAllMocks();
   });
 
-  it('renders HeaderBar, DailyGoalCard, HeroContinueCard, TodaysPlanList, and AiVideoHighlightCard', () => {
+  it('renders dynamic HeaderBar, DailyGoalCard, HeroContinueCard, TodaysPlanList, and AiVideoHighlightCard', () => {
     const { getByText } = render(<HomeScreen />);
 
-    // HeaderBar
     expect(getByText(/Hola, Alex! 👋/i)).toBeTruthy();
-
-    // DailyGoalCard
     expect(getByText('Daily goal')).toBeTruthy();
     expect(getByText('15')).toBeTruthy();
     expect(getByText('/ 20 XP')).toBeTruthy();
-
-    // HeroContinueCard
     expect(getByText('CONTINUE LEARNING')).toBeTruthy();
-    expect(getByText('Spanish A1 • Unit 2')).toBeTruthy();
-
-    // TodaysPlanList
+    expect(getByText('Unit 1 • Greetings & Introductions')).toBeTruthy();
     expect(getByText("Today's plan")).toBeTruthy();
-    expect(getByText('Lesson: At the café')).toBeTruthy();
-
-    // AiVideoHighlightCard
+    expect(getByText('Lesson: Greetings')).toBeTruthy();
     expect(getByText('AI Video Call')).toBeTruthy();
+    expect(getByText('Topic: Greetings & Introductions')).toBeTruthy();
   });
 
-  it('navigates to lesson when Continue button is pressed', () => {
+  it('navigates to the real lesson ID when Continue button is pressed', () => {
     const { getByText } = render(<HomeScreen />);
     const continueBtn = getByText('Continue');
     fireEvent(continueBtn, 'press');
-    expect(mockPush).toHaveBeenCalledWith('/lesson/cafe-1');
+    expect(mockPush).toHaveBeenCalledWith('/lesson/es-unit-1-lesson-1');
   });
 
   it('navigates to learn tab when language badge is pressed', () => {
@@ -78,11 +105,11 @@ describe('HomeScreen', () => {
     expect(mockPush).toHaveBeenCalledWith('/(tabs)/learn');
   });
 
-  it('navigates to ai-teacher tab when AI Video Call button is pressed', () => {
-    const { getByText } = render(<HomeScreen />);
-    const startCallBtn = getByText('AI Video Call');
+  it('navigates to lesson with AI context when AI Video Call button is pressed', () => {
+    const { getByTestId } = render(<HomeScreen />);
+    const startCallBtn = getByTestId('start-call-card');
     fireEvent(startCallBtn, 'press');
-    expect(mockPush).toHaveBeenCalledWith('/(tabs)/ai-teacher');
+    expect(mockPush).toHaveBeenCalledWith('/lesson/es-unit-1-lesson-1');
   });
 });
 

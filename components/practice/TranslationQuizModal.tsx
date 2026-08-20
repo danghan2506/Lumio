@@ -7,7 +7,7 @@ import {
   ScrollView,
   StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme/colors';
 import type { TranslationActivityItem, LanguageId } from '@/types/learning';
@@ -39,6 +39,10 @@ export function TranslationQuizModal({
   onClose,
   onCompleted,
 }: TranslationQuizModalProps) {
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, 44);
+  const bottomInset = Math.max(insets.bottom, 16);
+
   const [savingProgress, setSavingProgress] = useState(false);
 
   const {
@@ -98,42 +102,85 @@ export function TranslationQuizModal({
       onRequestClose={requestExit}
     >
       <StatusBar barStyle="light-content" backgroundColor={colors.deepIndigo} />
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.deepIndigo }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.deepIndigo,
+          paddingTop: topInset,
+          paddingBottom: bottomInset,
+        }}
+      >
         {/* Top Navigation & Progress Header */}
-        <View className="px-4 py-3 flex-row items-center justify-between border-b border-white/10">
+        <View
+          style={{
+            paddingHorizontal: 16,
+            paddingTop: 8,
+            paddingBottom: 14,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottomWidth: 1,
+            borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+          }}
+        >
           {/* Close / Exit Button */}
           <TouchableOpacity
             testID="translation-quiz-close-btn"
             onPress={requestExit}
             activeOpacity={0.7}
-            className="w-10 h-10 rounded-full bg-white/10 items-center justify-center mr-3"
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 12,
+            }}
             accessibilityRole="button"
-            accessibilityLabel="Đóng bài luyện tập ghép câu"
+            accessibilityLabel="Close sentence builder quiz"
           >
             <Ionicons name="close" size={22} color={colors.cream} />
           </TouchableOpacity>
 
           {/* Progress Bar Track */}
-          <View className="flex-1 h-3.5 bg-white/10 rounded-full overflow-hidden mr-3">
+          <View
+            style={{
+              flex: 1,
+              height: 14,
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              borderRadius: 999,
+              overflow: 'hidden',
+              marginRight: 12,
+            }}
+          >
             <View
               testID="translation-quiz-progress-bar"
               style={{
                 width: `${Math.max(5, Math.round(progress * 100))}%`,
                 backgroundColor: colors.daylightAmber,
+                height: '100%',
+                borderRadius: 999,
               }}
-              className="h-full rounded-full"
             />
           </View>
 
           {/* Question Counter */}
-          <View className="px-2.5 py-1 rounded-full bg-white/10">
+          <View
+            style={{
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              borderRadius: 999,
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            }}
+          >
             <Text
               testID="translation-quiz-counter"
               style={{
                 fontFamily: 'PlusJakartaSans_600SemiBold',
                 color: colors.lavenderMist,
+                fontSize: 12,
               }}
-              className="text-xs"
             >
               {`${currentIndex + 1}/${Math.max(1, totalQuestions)}`}
             </Text>
@@ -143,7 +190,7 @@ export function TranslationQuizModal({
         {/* Scrollable Content Area */}
         <ScrollView
           className="flex-1 px-5"
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'space-between', paddingBottom: 24 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
           showsVerticalScrollIndicator={false}
         >
           {/* Top Section: Prompt & Source Text */}
@@ -155,7 +202,7 @@ export function TranslationQuizModal({
               }}
               className="text-xs uppercase tracking-wider mb-1.5"
             >
-              {`Luyện tập • ${lessonTitle}`}
+              {`Practice • ${lessonTitle}`}
             </Text>
 
             <Text
@@ -165,7 +212,7 @@ export function TranslationQuizModal({
               }}
               className="text-sm mb-3.5"
             >
-              Sắp xếp các từ để tạo thành câu dịch đúng:
+              Arrange the words to form the correct sentence:
             </Text>
 
             {/* Source Sentence Box */}
@@ -203,8 +250,15 @@ export function TranslationQuizModal({
                       : `${colors.lumioCoral}80`
                     : 'rgba(255, 255, 255, 0.15)',
                   minHeight: 110,
+                  borderWidth: 1.5,
+                  borderStyle: 'dashed',
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: 16,
+                  borderRadius: 24,
                 }}
-                className="p-4 rounded-3xl border border-dashed flex-row flex-wrap items-center gap-2"
               >
                 {selectedChips.length === 0 ? (
                   <View className="w-full py-4 items-center justify-center">
@@ -216,7 +270,7 @@ export function TranslationQuizModal({
                       }}
                       className="text-xs text-center"
                     >
-                      Chạm vào các từ bên dưới để ghép câu
+                      Tap the words below to build your sentence
                     </Text>
                   </View>
                 ) : (
@@ -234,22 +288,29 @@ export function TranslationQuizModal({
                             ? colors.mint
                             : colors.lumioCoral
                           : 'rgba(94, 90, 128, 0.6)',
+                        borderWidth: 1.5,
+                        paddingHorizontal: 14,
+                        paddingVertical: 10,
+                        borderRadius: 16,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        minHeight: 44,
                       }}
-                      className="px-4 py-2.5 rounded-2xl border flex-row items-center shadow-sm"
                       accessibilityRole="button"
-                      accessibilityLabel={`Bỏ từ ${chip.text}`}
+                      accessibilityLabel={`Remove ${chip.text}`}
                     >
                       <Text
                         style={{
                           fontFamily: 'PlusJakartaSans_600SemiBold',
                           color: colors.cream,
+                          fontSize: 16,
+                          marginRight: 4,
                         }}
-                        className="text-base mr-1"
                       >
                         {chip.text}
                       </Text>
                       {!isAnswerChecked && (
-                        <Ionicons name="close" size={14} color={colors.lavenderMist} />
+                        <Ionicons name="close-circle" size={16} color={colors.lavenderMist} />
                       )}
                     </TouchableOpacity>
                   ))
@@ -266,34 +327,46 @@ export function TranslationQuizModal({
                 }}
                 className="text-xs uppercase tracking-wider mb-3 text-center"
               >
-                Ngân hàng từ vựng
+                Word Bank
               </Text>
 
               <View
                 testID="translation-word-bank"
-                className="flex-row flex-wrap justify-center gap-2.5"
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                  gap: 10,
+                }}
               >
                 {availableChips.map((chip) => {
                   const isSelected = chip.isSelected;
 
                   if (isSelected) {
-                    // Dimmed placeholder to preserve layout stability
+                    // Dimmed placeholder to preserve layout stability without layout jumping
                     return (
                       <View
                         key={`bank-placeholder-${chip.id}`}
                         style={{
                           minHeight: 48,
+                          paddingHorizontal: 16,
+                          paddingVertical: 12,
+                          borderRadius: 16,
+                          borderWidth: 1.5,
+                          borderStyle: 'dashed',
                           backgroundColor: 'rgba(255, 255, 255, 0.04)',
                           borderColor: 'rgba(255, 255, 255, 0.08)',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          opacity: 0.3,
                         }}
-                        className="px-4 py-3 rounded-2xl border border-dashed items-center justify-center opacity-30"
                       >
                         <Text
                           style={{
                             fontFamily: 'PlusJakartaSans_600SemiBold',
-                            color: 'transparent',
+                            fontSize: 16,
+                            opacity: 0,
                           }}
-                          className="text-base"
                         >
                           {chip.text}
                         </Text>
@@ -310,19 +383,29 @@ export function TranslationQuizModal({
                       activeOpacity={0.8}
                       style={{
                         minHeight: 48,
+                        paddingHorizontal: 16,
+                        paddingVertical: 12,
+                        borderRadius: 16,
+                        borderWidth: 1.5,
                         backgroundColor: 'rgba(30, 41, 59, 0.9)',
                         borderColor: 'rgba(94, 90, 128, 0.5)',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.2,
+                        shadowRadius: 4,
+                        elevation: 2,
                       }}
-                      className="px-4 py-3 rounded-2xl border items-center justify-center shadow-sm"
                       accessibilityRole="button"
-                      accessibilityLabel={`Chọn từ ${chip.text}`}
+                      accessibilityLabel={`Select ${chip.text}`}
                     >
                       <Text
                         style={{
                           fontFamily: 'PlusJakartaSans_600SemiBold',
                           color: colors.cream,
+                          fontSize: 16,
                         }}
-                        className="text-base"
                       >
                         {chip.text}
                       </Text>
@@ -334,7 +417,7 @@ export function TranslationQuizModal({
           </View>
 
           {/* Bottom Action / Feedback Area */}
-          <View className="pt-2">
+          <View className="pt-2 mt-auto">
             {!isAnswerChecked ? (
               <TouchableOpacity
                 testID="translation-check-btn"
@@ -347,7 +430,7 @@ export function TranslationQuizModal({
                 }}
                 className="w-full py-4 rounded-full items-center shadow-lg"
                 accessibilityRole="button"
-                accessibilityLabel="Kiểm tra đáp án"
+                accessibilityLabel="Check answer"
               >
                 <Text
                   style={{
@@ -356,7 +439,7 @@ export function TranslationQuizModal({
                   }}
                   className="text-base"
                 >
-                  Kiểm tra
+                  Check
                 </Text>
               </TouchableOpacity>
             ) : (
@@ -393,7 +476,7 @@ export function TranslationQuizModal({
                     }}
                     className="text-lg"
                   >
-                    {isCorrect ? 'Chính xác! 🎉' : 'Chưa chính xác!'}
+                    {isCorrect ? 'Correct! 🎉' : 'Incorrect!'}
                   </Text>
                 </View>
 
@@ -406,7 +489,7 @@ export function TranslationQuizModal({
                       }}
                       className="text-xs mb-0.5"
                     >
-                      Đáp án đúng là:
+                      Correct answer:
                     </Text>
                     <Text
                       style={{
@@ -427,19 +510,24 @@ export function TranslationQuizModal({
                   style={{
                     backgroundColor: isCorrect ? colors.mint : colors.lumioCoral,
                   }}
-                  className="w-full py-3.5 rounded-full items-center shadow-lg mt-1.5"
+                  className="w-full py-3.5 rounded-full items-center shadow-lg mt-1.5 flex-row justify-center"
                   accessibilityRole="button"
-                  accessibilityLabel="Tiếp tục"
+                  accessibilityLabel="Continue"
                 >
                   <Text
                     style={{
                       fontFamily: 'PlusJakartaSans_700Bold',
                       color: isCorrect ? colors.deepIndigo : colors.cream,
                     }}
-                    className="text-base"
+                    className="text-base mr-2"
                   >
-                    Tiếp tục
+                    {currentIndex + 1 >= totalQuestions ? 'View Results' : 'Continue'}
                   </Text>
+                  <Ionicons
+                    name="arrow-forward"
+                    size={18}
+                    color={isCorrect ? colors.deepIndigo : colors.cream}
+                  />
                 </TouchableOpacity>
               </View>
             )}
@@ -464,7 +552,7 @@ export function TranslationQuizModal({
             saving={savingProgress}
           />
         )}
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }

@@ -37,7 +37,7 @@ export default function RegisterScreen() {
               marginBottom: 6,
             }}
           >
-            Tạo tài khoản mới 🎉
+            Create an Account 🎉
           </Text>
           <Text
             style={{
@@ -47,7 +47,7 @@ export default function RegisterScreen() {
               textAlign: 'center',
             }}
           >
-            Bắt đầu hành trình học ngôn ngữ cùng Lumi
+            Start your language learning journey with Lumi
           </Text>
         </View>
 
@@ -75,7 +75,7 @@ export default function RegisterScreen() {
               color: colors.slate,
             }}
           >
-            Đã có tài khoản?{' '}
+            Already have an account?{' '}
           </Text>
           <Pressable onPress={() => router.push('/(auth)/login' as Href)}>
             <Text
@@ -85,7 +85,7 @@ export default function RegisterScreen() {
                 color: colors.lumioCoral,
               }}
             >
-              Đăng nhập
+              Sign in
             </Text>
           </Pressable>
         </View>
