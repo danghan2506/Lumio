@@ -96,8 +96,8 @@ export default function HomeScreen() {
           onItemPress={(item) => {
             if (item.lessonId) {
               router.push(`/lesson/${item.lessonId}` as any);
-            } else if (item.type === 'ai_conversation') {
-              router.push('/(tabs)/ai-teacher');
+            } else if (item.type === 'vocabulary') {
+              router.push('/(tabs)/vocabulary' as any);
             } else {
               router.push('/(tabs)/learn');
             }
@@ -111,7 +111,7 @@ export default function HomeScreen() {
             if (data?.aiTopicLessonId) {
               router.push(`/lesson/${data.aiTopicLessonId}` as any);
             } else {
-              router.push('/(tabs)/ai-teacher');
+              router.push('/(tabs)/learn');
             }
           }}
         />

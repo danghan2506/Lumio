@@ -131,6 +131,7 @@ describe('lib/api database helpers', () => {
         p_interval_days: 1,
         p_due_at: '2026-08-09T10:00:00Z',
         p_minutes_practiced: 2,
+        p_xp_earned: 0,
       });
     });
 
@@ -155,6 +156,7 @@ describe('lib/api database helpers', () => {
         p_interval_days: 0,
         p_due_at: '2026-08-08T10:00:00Z',
         p_minutes_practiced: 0,
+        p_xp_earned: 0,
       });
     });
 
@@ -174,6 +176,34 @@ describe('lib/api database helpers', () => {
           dueAt: '2026-08-09T10:00:00Z',
         })
       ).rejects.toThrow('RPC error');
+    });
+
+    it('passes p_xp_earned to the RPC function', async () => {
+      (supabase.rpc as jest.Mock).mockResolvedValueOnce({ data: null, error: null });
+
+      await recordVocabularyReview({
+        vocabularyId: 'vocab-1',
+        lessonId: 'lesson-1',
+        status: 'learning',
+        isCorrect: true,
+        easeFactor: 2.5,
+        intervalDays: 1,
+        dueAt: '2026-08-21T00:00:00.000Z',
+        minutesPracticed: 2,
+        xpEarned: 5,
+      });
+
+      expect(supabase.rpc).toHaveBeenCalledWith('record_vocabulary_review', {
+        p_vocabulary_id: 'vocab-1',
+        p_lesson_id: 'lesson-1',
+        p_status: 'learning',
+        p_is_correct: true,
+        p_ease_factor: 2.5,
+        p_interval_days: 1,
+        p_due_at: '2026-08-21T00:00:00.000Z',
+        p_minutes_practiced: 2,
+        p_xp_earned: 5,
+      });
     });
   });
 

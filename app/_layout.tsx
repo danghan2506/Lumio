@@ -92,6 +92,10 @@ export default function RootLayout() {
           name="lesson/[id]"
           options={{ presentation: 'fullScreenModal', gestureEnabled: true }}
         />
+        <Stack.Screen
+          name="vocabulary/review"
+          options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
+        />
       </Stack>
     </SafeAreaProvider>
   );

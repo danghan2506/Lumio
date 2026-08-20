@@ -66,6 +66,7 @@ export interface RecordVocabularyReviewParams {
   intervalDays: number;
   dueAt: string;
   minutesPracticed?: number;
+  xpEarned?: number;
 }
 
 export async function recordVocabularyReview(
@@ -80,6 +81,7 @@ export async function recordVocabularyReview(
     p_interval_days: params.intervalDays,
     p_due_at: params.dueAt,
     p_minutes_practiced: params.minutesPracticed ?? 0,
+    p_xp_earned: params.xpEarned ?? 0,
   });
   if (error) {
     throw new Error(error.message);
