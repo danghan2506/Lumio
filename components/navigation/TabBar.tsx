@@ -32,17 +32,11 @@ const TAB_CONFIGS: Record<string, TabConfig> = {
     activeIcon: "book",
     inactiveIcon: "book-outline",
   },
-  "ai-teacher": {
-    name: "ai-teacher",
-    label: "AI Teacher",
-    activeIcon: "sparkles",
-    inactiveIcon: "sparkles-outline",
-  },
-  chat: {
-    name: "chat",
-    label: "Chat",
-    activeIcon: "chatbubbles",
-    inactiveIcon: "chatbubbles-outline",
+  vocabulary: {
+    name: "vocabulary",
+    label: "Vocab",
+    activeIcon: "layers",
+    inactiveIcon: "layers-outline",
   },
   profile: {
     name: "profile",
@@ -143,7 +137,11 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             });
 
             if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name, route.params);
+              if (route.params !== undefined) {
+                navigation.navigate(route.name, route.params);
+              } else {
+                navigation.navigate(route.name);
+              }
             }
           };
 
@@ -163,7 +161,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               accessibilityRole="button"
               accessibilityState={isFocused ? { selected: true } : {}}
               accessibilityLabel={options.tabBarAccessibilityLabel}
-              testID={options.tabBarButtonTestID}
+              testID={options.tabBarButtonTestID || `tab-${route.name}`}
               onPress={onPress}
               onLongPress={onLongPress}
               style={{
