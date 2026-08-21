@@ -1,13 +1,14 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { colors } from '@/theme/colors';
 import type { VocabularyWithProgress } from '@/types/vocabulary';
 
 export interface VocabularyListItemProps {
   item: VocabularyWithProgress;
+  onPress?: () => void;
 }
 
-export const VocabularyListItem: React.FC<VocabularyListItemProps> = ({ item }) => {
+export const VocabularyListItem: React.FC<VocabularyListItemProps> = ({ item, onPress }) => {
   const renderStatusBadge = () => {
     switch (item.status) {
       case 'mastered':
@@ -32,7 +33,12 @@ export const VocabularyListItem: React.FC<VocabularyListItemProps> = ({ item }) 
   };
 
   return (
-    <View className="bg-white rounded-2xl p-4 border border-lavender-mist mb-3 shadow-sm">
+    <Pressable
+      testID={`vocab-item-${item.id}`}
+      onPress={onPress}
+      disabled={!onPress}
+      className="bg-white rounded-2xl p-4 border border-lavender-mist mb-3 shadow-sm active:opacity-90 active:scale-[0.99]"
+    >
       {/* Top Header: Word + IPA + Status */}
       <View className="flex-row items-start justify-between mb-1.5">
         <View className="flex-1 mr-2">
@@ -81,6 +87,6 @@ export const VocabularyListItem: React.FC<VocabularyListItemProps> = ({ item }) 
           )}
         </View>
       )}
-    </View>
+    </Pressable>
   );
 };

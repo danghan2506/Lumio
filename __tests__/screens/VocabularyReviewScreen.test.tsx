@@ -4,8 +4,10 @@ import { BackHandler } from 'react-native';
 import VocabularyReviewScreen from '@/app/vocabulary/review';
 
 const mockBack = jest.fn();
+let mockLocalSearchParams: { wordId?: string } = {};
 jest.mock('expo-router', () => ({
   useRouter: () => ({ back: mockBack }),
+  useLocalSearchParams: () => mockLocalSearchParams,
 }));
 
 const mockRecordReview = jest.fn();
@@ -15,12 +17,13 @@ jest.mock('@/hooks/useVocabularyData', () => ({
   useVocabularyData: () => mockUseVocabularyData(),
 }));
 
+const mockInsets = { top: 47, right: 0, bottom: 34, left: 0 };
 jest.mock('react-native-safe-area-context', () => {
   const React = require('react');
   const { View } = require('react-native');
   return {
     SafeAreaView: ({ children, style }: any) => <View style={style}>{children}</View>,
-    useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+    useSafeAreaInsets: () => mockInsets,
   };
 });
 
@@ -244,5 +247,19 @@ describe('VocabularyReviewScreen', () => {
 
     const { getAllByText } = render(<VocabularyReviewScreen />);
     expect(getAllByText('Adventure').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('prioritizes word matching wordId param as the first card in session queue', () => {
+    mockLocalSearchParams = { wordId: 'v-2' };
+    mockUseVocabularyData.mockReturnValue({
+      dueWords: mockDueWords,
+      vocabularies: mockDueWords,
+      recordReview: mockRecordReview,
+      loading: false,
+    });
+
+    const { getAllByText } = render(<VocabularyReviewScreen />);
+    // Courage is v-2, should be the active card first instead of Adventure (v-1)
+    expect(getAllByText('Courage').length).toBeGreaterThanOrEqual(1);
   });
 });

@@ -5,6 +5,9 @@ import VocabularyScreen from '@/app/(tabs)/vocabulary';
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
+  useFocusEffect: (callback: () => void) => {
+    callback();
+  },
 }));
 
 const mockRefresh = jest.fn();
@@ -124,7 +127,7 @@ describe('VocabularyScreen', () => {
     act(() => {
       fireEvent.press(retryBtn);
     });
-    expect(mockRefresh).toHaveBeenCalledTimes(1);
+    expect(mockRefresh).toHaveBeenCalled();
   });
 
   it('renders vocabulary list and stats correctly when loaded', () => {
@@ -190,6 +193,29 @@ describe('VocabularyScreen', () => {
     });
 
     expect(mockPush).toHaveBeenCalledWith('/vocabulary/review');
+  });
+
+  it('navigates to /vocabulary/review with wordId param when clicking a vocabulary item', () => {
+    mockUseVocabularyData.mockReturnValue({
+      vocabularies: mockVocabularies,
+      dueWords: [mockVocabularies[0]],
+      stats: { totalCount: 3, dueCount: 1, learningCount: 1, masteredCount: 1, retentionRate: 100 },
+      loading: false,
+      refreshing: false,
+      error: null,
+      refresh: mockRefresh,
+    });
+
+    const { getByTestId } = render(<VocabularyScreen />);
+    const vocabItem = getByTestId('vocab-item-v-1');
+    act(() => {
+      fireEvent.press(vocabItem);
+    });
+
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/vocabulary/review',
+      params: { wordId: 'v-1' },
+    });
   });
 
   it('filters vocabulary items by search query', () => {

@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, FlatList, RefreshControl, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { TabScreenWrapper } from '@/components/navigation/TabScreenWrapper';
 import { useVocabularyData } from '@/hooks/useVocabularyData';
@@ -18,6 +18,12 @@ export default function VocabularyScreen() {
   const router = useRouter();
   const { vocabularies, dueWords, stats, loading, refreshing, error, refresh } =
     useVocabularyData();
+
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh])
+  );
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<VocabularyFilterType>('all');
@@ -107,7 +113,17 @@ export default function VocabularyScreen() {
           <FlatList
             data={filteredVocabularies}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <VocabularyListItem item={item} />}
+            renderItem={({ item }) => (
+              <VocabularyListItem
+                item={item}
+                onPress={() =>
+                  router.push({
+                    pathname: '/vocabulary/review',
+                    params: { wordId: item.id },
+                  } as any)
+                }
+              />
+            )}
             contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
             refreshControl={
               <RefreshControl
