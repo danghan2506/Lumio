@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Pressable, BackHandler } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { View, Text, Pressable, BackHandler, Image } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useVocabularyData } from '@/hooks/useVocabularyData';
 import { FlipFlashcard } from '@/components/vocabulary/FlipFlashcard';
 import { ReviewExitConfirmDialog } from '@/components/vocabulary/ReviewExitConfirmDialog';
 import { ReviewCompletionModal } from '@/components/vocabulary/ReviewCompletionModal';
 import { colors } from '@/theme/colors';
+import { images } from '@/constants/images';
 import type { SrsGrade } from '@/lib/srs';
 import type { VocabularyWithProgress } from '@/types/vocabulary';
 
@@ -15,6 +16,11 @@ const SESSION_BATCH_SIZE = 15;
 
 export default function VocabularyReviewScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ wordId?: string }>();
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, 44);
+  const bottomInset = Math.max(insets.bottom, 16);
+
   const { dueWords, vocabularies, recordReview, loading } = useVocabularyData();
 
   const [sessionQueue, setSessionQueue] = useState<VocabularyWithProgress[]>([]);
@@ -34,11 +40,21 @@ export default function VocabularyReviewScreen() {
   useEffect(() => {
     if (!loading && sessionQueue.length === 0) {
       const source = dueWords.length > 0 ? dueWords : vocabularies;
+      if (params.wordId) {
+        const target = vocabularies.find((v) => v.id === params.wordId);
+        if (target) {
+          const others = source.filter((v) => v.id !== params.wordId);
+          const batch = [target, ...others].slice(0, SESSION_BATCH_SIZE);
+          setSessionQueue(batch);
+          setSessionStats((prev) => ({ ...prev, totalCards: batch.length }));
+          return;
+        }
+      }
       const batch = source.slice(0, SESSION_BATCH_SIZE);
       setSessionQueue(batch);
       setSessionStats((prev) => ({ ...prev, totalCards: batch.length }));
     }
-  }, [loading, dueWords, vocabularies, sessionQueue.length]);
+  }, [loading, dueWords, vocabularies, sessionQueue.length, params.wordId]);
 
   // Hardware back button handler for Android
   useEffect(() => {
@@ -52,8 +68,11 @@ export default function VocabularyReviewScreen() {
   }, []);
 
   const currentCard = sessionQueue[currentIndex];
+  const isSessionComplete = sessionQueue.length > 0 && currentIndex >= sessionQueue.length;
   const progressPercent =
-    sessionQueue.length > 0 ? ((currentIndex + 1) / sessionQueue.length) * 100 : 0;
+    sessionQueue.length > 0
+      ? Math.min(100, (Math.min(currentIndex + 1, sessionQueue.length) / sessionQueue.length) * 100)
+      : 0;
 
   const handleGradePress = useCallback(
     async (grade: SrsGrade) => {
@@ -75,9 +94,10 @@ export default function VocabularyReviewScreen() {
 
         setIsFlipped(false);
 
-        if (currentIndex + 1 < sessionQueue.length) {
-          setCurrentIndex((prev) => prev + 1);
-        } else {
+        const nextIdx = currentIndex + 1;
+        setCurrentIndex(nextIdx);
+
+        if (nextIdx >= sessionQueue.length) {
           setShowCompletionModal(true);
         }
       } catch (err) {
@@ -88,7 +108,14 @@ export default function VocabularyReviewScreen() {
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.deepIndigo }} edges={['top', 'bottom']}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: colors.deepIndigo,
+        paddingTop: topInset,
+        paddingBottom: bottomInset,
+      }}
+    >
       {/* Top Header Bar */}
       <View className="px-6 py-3 flex-row items-center justify-between">
         <Pressable
@@ -120,8 +147,31 @@ export default function VocabularyReviewScreen() {
 
       {/* Main Flashcard View */}
       <View className="flex-1 px-6 justify-center items-center">
-        {currentCard ? (
+        {isSessionComplete ? (
+          <View className="items-center justify-center px-6">
+            <View className="w-24 h-24 mb-4 items-center justify-center">
+              <Image
+                source={images.lumiCelebration}
+                style={{ width: 96, height: 96 }}
+                resizeMode="contain"
+              />
+            </View>
+            <Text
+              style={{ fontFamily: 'Fredoka_700Bold', color: colors.cream }}
+              className="text-2xl text-center mb-1.5"
+            >
+              Session Complete! 🎉
+            </Text>
+            <Text
+              style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.lavenderMist }}
+              className="text-sm text-center"
+            >
+              You’ve reviewed all cards in this batch!
+            </Text>
+          </View>
+        ) : currentCard ? (
           <FlipFlashcard
+            key={currentCard.id}
             item={currentCard}
             isFlipped={isFlipped}
             onFlip={() => setIsFlipped((prev) => !prev)}
@@ -138,9 +188,22 @@ export default function VocabularyReviewScreen() {
         )}
       </View>
 
-      {/* 4 SM-2 Rating Buttons */}
+      {/* Bottom Actions */}
       <View className="px-6 pb-6 pt-2">
-        {isFlipped ? (
+        {isSessionComplete ? (
+          <Pressable
+            testID="session-done-btn"
+            onPress={() => router.back()}
+            className="w-full py-4 rounded-2xl bg-lumio-coral items-center justify-center shadow-lg active:opacity-90 active:translate-y-0.5"
+          >
+            <Text
+              style={{ fontFamily: 'PlusJakartaSans_700Bold', color: colors.cream }}
+              className="text-base"
+            >
+              Back to Vocab Vault
+            </Text>
+          </Pressable>
+        ) : isFlipped ? (
           <View className="flex-row items-center justify-between space-x-2">
             {/* Again (Grade 1) */}
             <Pressable
@@ -260,6 +323,6 @@ export default function VocabularyReviewScreen() {
           router.back();
         }}
       />
-    </SafeAreaView>
+    </View>
   );
 }

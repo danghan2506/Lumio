@@ -1,5 +1,5 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, fireEvent } from '@testing-library/react-native';
 import { VocabularyListItem } from '@/components/vocabulary/VocabularyListItem';
 import type { VocabularyWithProgress } from '@/types/vocabulary';
 
@@ -30,5 +30,17 @@ describe('VocabularyListItem', () => {
     expect(getByText('Nhiệt tình')).toBeTruthy();
     expect(getByText('Learning')).toBeTruthy();
     expect(getByText('She is enthusiastic about learning.')).toBeTruthy();
+  });
+
+  it('calls onPress when clicked', () => {
+    const mockOnPress = jest.fn();
+    const { getByTestId } = render(
+      <VocabularyListItem item={mockItem} onPress={mockOnPress} />
+    );
+
+    const itemPressable = getByTestId(`vocab-item-${mockItem.id}`);
+    fireEvent.press(itemPressable);
+
+    expect(mockOnPress).toHaveBeenCalledTimes(1);
   });
 });

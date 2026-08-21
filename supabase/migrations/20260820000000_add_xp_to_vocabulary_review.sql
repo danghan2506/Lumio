@@ -1,3 +1,5 @@
+DROP FUNCTION IF EXISTS public.record_vocabulary_review(text, text, text, boolean, numeric, integer, timestamptz, integer);
+
 CREATE OR REPLACE FUNCTION public.record_vocabulary_review(
   p_vocabulary_id text,
   p_lesson_id text,

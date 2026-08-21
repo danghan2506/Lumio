@@ -22,13 +22,20 @@ export const FlipFlashcard: React.FC<FlipFlashcardProps> = ({
   onFlip,
 }) => {
   const rotateY = useSharedValue(0);
+  const prevIdRef = React.useRef(item.id);
 
   useEffect(() => {
+    if (prevIdRef.current !== item.id) {
+      prevIdRef.current = item.id;
+      rotateY.value = 0;
+      return;
+    }
+
     rotateY.value = withSpring(isFlipped ? 180 : 0, {
       stiffness: 120,
       damping: 18,
     });
-  }, [isFlipped, rotateY]);
+  }, [isFlipped, item.id, rotateY]);
 
   const frontAnimatedStyle = useAnimatedStyle(() => {
     const spin = `${rotateY.value}deg`;
