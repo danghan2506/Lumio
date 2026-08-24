@@ -13,7 +13,7 @@ import { colors } from '@/theme/colors';
 import { images } from '@/constants/images';
 
 export interface MascotStageProps {
-  callStatus: 'connecting' | 'joining' | 'joined' | 'error';
+  callStatus: 'idle' | 'connecting' | 'joining' | 'joined' | 'ended' | 'error';
   teacherStatus: 'idle' | 'connecting' | 'connected' | 'failed';
   isMuted: boolean;
   onRetryTeacher?: () => void;
@@ -92,6 +92,7 @@ export function MascotStage({
     }
 
     if (
+      callStatus === 'idle' ||
       callStatus === 'connecting' ||
       callStatus === 'joining' ||
       teacherStatus === 'connecting'

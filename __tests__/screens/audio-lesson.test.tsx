@@ -5,9 +5,10 @@ import { recordLessonProgress } from '@/lib/api';
 import type { LessonCompleteEvent } from '@/types/stream';
 
 const mockBack = jest.fn();
+const mockReplace = jest.fn();
 
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ back: mockBack }),
+  useRouter: () => ({ back: mockBack, replace: mockReplace }),
   useLocalSearchParams: () => ({ id: 'les-1' }),
 }));
 
@@ -102,7 +103,7 @@ jest.mock('@expo/vector-icons', () => {
   return { Ionicons: (props: any) => React.createElement('Ionicons', props) };
 });
 
-describe('AudioLessonScreen stream call states', () => {
+describe('AudioLessonScreen mascot-first UI architecture', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockStatus = 'connecting';
@@ -118,6 +119,17 @@ describe('AudioLessonScreen stream call states', () => {
     expect(getByText('alex@example.com')).toBeTruthy();
   });
 
+  it('renders lesson header with back button, lesson info and reward', () => {
+    mockStatus = 'joined';
+    const { getByText, getByTestId } = render(<AudioLessonScreen />);
+    expect(getByText(/Lesson 1: Basic Greetings/i)).toBeTruthy();
+    expect(getByText('+10 XP')).toBeTruthy();
+
+    const backBtn = getByTestId('lesson-back-btn');
+    fireEvent.press(backBtn);
+    expect(mockBack).toHaveBeenCalled();
+  });
+
   it('shows error card and retry triggers retry()', () => {
     mockStatus = 'error';
     const { getByText } = render(<AudioLessonScreen />);
@@ -126,13 +138,36 @@ describe('AudioLessonScreen stream call states', () => {
     expect(mockRetry).toHaveBeenCalled();
   });
 
+  it('renders mascot stage with Lumi listening status when joined and teacher is connected', () => {
+    mockStatus = 'joined';
+    mockAgentStatus = 'connected';
+    mockIsMuted = false;
+    const { getByText } = render(<AudioLessonScreen />);
+    expect(getByText(/Lumi is listening/i)).toBeTruthy();
+  });
+
   it('muted mic button reflects isMuted and press triggers toggleMute', () => {
     mockStatus = 'joined';
     mockIsMuted = true;
-    const { getByTestId } = render(<AudioLessonScreen />);
+    const { getByTestId, getByText } = render(<AudioLessonScreen />);
+    expect(getByText(/Microphone muted/i)).toBeTruthy();
     expect(getByTestId('mic-toggle')).toBeTruthy();
     fireEvent.press(getByTestId('mic-toggle'));
     expect(mockToggleMute).toHaveBeenCalled();
+  });
+
+  it('toggles captions card visibility when captions button is pressed', () => {
+    mockStatus = 'joined';
+    const { getByTestId, queryByTestId } = render(<AudioLessonScreen />);
+
+    // Default: showCaptions is true -> card is visible
+    expect(getByTestId('captions-slot-card')).toBeTruthy();
+    expect(queryByTestId('captions-slot-placeholder')).toBeNull();
+
+    // Toggle off
+    fireEvent.press(getByTestId('captions-toggle'));
+    expect(queryByTestId('captions-slot-card')).toBeNull();
+    expect(getByTestId('captions-slot-placeholder')).toBeTruthy();
   });
 
   it('does not render an end-call button (auto-completion only)', () => {
@@ -141,9 +176,9 @@ describe('AudioLessonScreen stream call states', () => {
     expect(queryByTestId('end-call')).toBeNull();
   });
 
-  it('records progress and shows the summary on lesson_complete', async () => {
+  it('records progress and shows the summary modal with claim rewards navigation on lesson_complete', async () => {
     mockStatus = 'joined';
-    const { getByText } = render(<AudioLessonScreen />);
+    const { getByText, getByTestId } = render(<AudioLessonScreen />);
 
     await act(async () => {
       mockOnLessonComplete?.({
@@ -163,19 +198,41 @@ describe('AudioLessonScreen stream call states', () => {
       minutesPracticed: 2,
     });
     expect(getByText('Lesson Completed!')).toBeTruthy();
+
+    // Fill feedback and claim rewards
+    const feedbackInput = getByTestId('feedback-input');
+    fireEvent.changeText(feedbackInput, 'Great AI tutor pacing!');
+    expect(feedbackInput.props.value).toBe('Great AI tutor pacing!');
+
+    const claimBtn = getByTestId('claim-rewards-btn');
+    fireEvent.press(claimBtn);
+    expect(mockReplace).toHaveBeenCalledWith('/(tabs)/learn');
   });
 
   it('blocks navigation and shows a retry when progress recording fails', async () => {
     mockStatus = 'joined';
     (recordLessonProgress as jest.Mock).mockRejectedValueOnce(new Error('DB down'));
-    const { getByText } = render(<AudioLessonScreen />);
+    const { getByText, getByTestId } = render(<AudioLessonScreen />);
 
     await act(async () => {
       mockOnLessonComplete?.({ type: 'lesson_complete', lesson_id: 'les-1', xp_earned: 10, minutes_practiced: 2 });
     });
 
     expect(getByText(/could not save/i)).toBeTruthy();
-    expect(getByText(/retry/i)).toBeTruthy();
+    const retryBtn = getByTestId('retry-progress-btn');
+    expect(retryBtn).toBeTruthy();
+
+    // Verify claim rewards button is disabled during error
+    const claimBtn = getByTestId('claim-rewards-btn');
+    fireEvent.press(claimBtn);
+    expect(mockReplace).not.toHaveBeenCalled();
+
+    // Clicking retry attempts to record progress again
+    (recordLessonProgress as jest.Mock).mockResolvedValueOnce(undefined);
+    await act(async () => {
+      fireEvent.press(retryBtn);
+    });
+    expect(recordLessonProgress).toHaveBeenCalledTimes(2);
   });
 
   it('shows teacher failed state and retry button', () => {
