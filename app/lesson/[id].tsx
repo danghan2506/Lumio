@@ -8,6 +8,7 @@ import { useLessonAudioDetails } from '@/hooks/useLessonAudioDetails';
 import { useAuth } from '@/hooks/useAuth';
 import { useStreamLessonCall } from '@/hooks/useStreamLessonCall';
 import { useStreamLessonAgent } from '@/hooks/useStreamLessonAgent';
+import { useLiveCaptions } from '@/hooks/useLiveCaptions';
 import { recordLessonProgress } from '@/lib/api';
 import type { LessonCompleteEvent } from '@/types/stream';
 import {
@@ -40,7 +41,7 @@ export default function AudioLessonScreen() {
     handleLessonCompleteRef.current?.(payload);
   }, []);
 
-  const { isMuted, status, errorMessage, retry, toggleMute, leave, callType, callId } =
+  const { isMuted, status, errorMessage, retry, toggleMute, leave, callType, callId, call } =
     useStreamLessonCall({
       lessonId: id || '',
       languageId: language?.id ?? '',
@@ -49,6 +50,11 @@ export default function AudioLessonScreen() {
       enabled: Boolean(user && session && lesson && language),
       onLessonComplete: completionProxy,
     });
+
+  const { captionText, isActive: captionsActive } = useLiveCaptions({
+    call,
+    enabled: showCaptions,
+  });
 
   const teacher = useStreamLessonAgent({
     lessonId: id || '',
@@ -318,6 +324,8 @@ export default function AudioLessonScreen() {
           <LessonCaptionsSlot
             languageName={language?.name}
             showCaptions={showCaptions}
+            captionText={captionText}
+            isLive={captionsActive}
           />
         </View>
       </View>
