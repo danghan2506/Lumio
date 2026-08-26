@@ -30,6 +30,7 @@ export function useStreamLessonCall(params: UseStreamLessonCallParams) {
     callType: string;
     callId: string;
   } | null>(null);
+  const [call, setCall] = useState<Call | null>(null);
   const callRef = useRef<Call | null>(null);
   const clientRef = useRef<StreamVideoClient | null>(null);
   const onLessonCompleteRef = useRef(onLessonComplete);
@@ -81,6 +82,7 @@ export function useStreamLessonCall(params: UseStreamLessonCallParams) {
         reuseInstance: true,
       });
       callRef.current = call;
+      setCall(call);
       completionHandledRef.current = false;
       unsubscribeCustomRef.current = call.on('custom', (event) => {
         const payload = event.custom;
@@ -127,6 +129,7 @@ export function useStreamLessonCall(params: UseStreamLessonCallParams) {
   const leave = useCallback(async () => {
     const call = callRef.current;
     callRef.current = null;
+    setCall(null);
     unsubscribeCustomRef.current?.();
     unsubscribeCustomRef.current = null;
     if (call && call.state.callingState !== CallingState.LEFT) {
@@ -163,6 +166,7 @@ export function useStreamLessonCall(params: UseStreamLessonCallParams) {
     errorMessage,
     callType: callMeta?.callType ?? null,
     callId: callMeta?.callId ?? null,
+    call,
     join,
     retry,
     toggleMute,
