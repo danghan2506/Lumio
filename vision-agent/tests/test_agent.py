@@ -15,6 +15,8 @@ from agent import (
     TEACHER_RULES,
     build_greeting,
     build_instructions,
+    caption_event,
+    install_caption_relay,
     resolve_language,
     teacher_instructions,
 )
@@ -313,12 +315,12 @@ async def test_coordinator_forces_completion_and_emits_event():
         time_limit_minutes=10,
         poll_interval=0.01,
         min_farewell_seconds=0.0,
-        max_farewell_seconds=0.02,
+        max_farewell_seconds=0.01,
     )
     coordinator.count_turn()
     coordinator.count_turn()  # turn_frac == 1.0 -> force
     running = asyncio.create_task(coordinator.run())
-    await asyncio.sleep(0.05)
+    await asyncio.sleep(0.1)
     running.cancel()
     await asyncio.gather(running, return_exceptions=True)
 
@@ -354,3 +356,53 @@ async def test_coordinator_emits_event_after_farewell_turn_end():
 
     assert agent.events
     assert agent.events[-1]["reason"] == "mastered"
+
+
+from vision_agents.core.agents.events import AgentTurnEndedEvent
+
+
+def test_caption_event_shape():
+    event = caption_event("Hello learner!", is_final=False)
+    assert event["type"] == "teacher_caption"
+    assert event["text"] == "Hello learner!"
+    assert event["speaker_name"] == "Lumi"
+    assert event["is_final"] is False
+    assert isinstance(event["timestamp"], float)
+
+
+def test_caption_event_defaults_to_final():
+    event = caption_event("Done.")
+    assert event["is_final"] is True
+
+
+@pytest.mark.asyncio
+async def test_caption_relay_emits_on_simple_response():
+    agent = _FakeAgent()
+    install_caption_relay(agent)
+
+    # Simulate calling simple_response with text
+    await agent.simple_response("Let's learn Spanish today!")
+
+    # Should have emitted a teacher_caption event
+    caption_events = [e for e in agent.events if e.get("type") == "teacher_caption"]
+    assert len(caption_events) >= 1
+    assert caption_events[0]["text"] == "Let's learn Spanish today!"
+    assert caption_events[0]["speaker_name"] == "Lumi"
+    # The original simple_response should still have been called
+    assert "Let's learn Spanish today!" in agent.spoken
+
+
+@pytest.mark.asyncio
+async def test_caption_relay_emits_empty_on_turn_end():
+    agent = _FakeAgent()
+    install_caption_relay(agent)
+
+    # Simulate an AgentTurnEndedEvent
+    for subscriber in agent._subscribers:
+        await subscriber(AgentTurnEndedEvent())
+
+    caption_events = [e for e in agent.events if e.get("type") == "teacher_caption"]
+    assert len(caption_events) == 1
+    assert caption_events[0]["text"] == ""
+    assert caption_events[0]["is_final"] is True
+

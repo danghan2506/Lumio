@@ -67,6 +67,52 @@ def completion_payload(lesson_id, xp_earned, minutes_practiced, reason=None):
     return payload
 
 
+def caption_event(text, *, is_final=True):
+    """Build a teacher_caption custom event payload."""
+    return {
+        "type": "teacher_caption",
+        "text": text,
+        "speaker_name": "Lumi",
+        "is_final": is_final,
+        "timestamp": time.time(),
+    }
+
+
+def install_caption_relay(agent):
+    """Subscribe to agent turn events and relay speech text as caption custom events.
+
+    Emits ``teacher_caption`` custom events so the mobile client can display
+    live subtitles of what the AI teacher says.
+
+    Strategy:
+    - Wrap ``agent.simple_response`` to capture the text prompt and emit it
+      as a caption before the audio plays.
+    - On ``AgentTurnEndedEvent``, emit an empty final event so the client
+      starts its auto-clear timer.
+    """
+    _original_simple_response = agent.simple_response
+
+    async def _captioned_simple_response(text=None, **kwargs):
+        if text:
+            try:
+                await agent.send_custom_event(
+                    caption_event(text, is_final=False)
+                )
+            except Exception:
+                pass  # Never disrupt audio for caption delivery
+        return await _original_simple_response(text=text, **kwargs)
+
+    agent.simple_response = _captioned_simple_response
+
+    @agent.subscribe
+    async def _on_agent_turn_end(event):
+        if isinstance(event, AgentTurnEndedEvent):
+            try:
+                await agent.send_custom_event(caption_event("", is_final=True))
+            except Exception:
+                pass  # Never disrupt audio for caption delivery
+
+
 def should_send_completion_event(turn_ended_since_request, elapsed_seconds, min_seconds=MIN_FAREWELL_SECONDS, max_seconds=MAX_FAREWELL_SECONDS):
     """Send once the farewell turn ended past a min gap, or as a hard cap."""
     if elapsed_seconds >= max_seconds:
@@ -412,6 +458,7 @@ async def join_call(agent: Agent, call_type: str, call_id: str, **kwargs) -> Non
     agent.llm.set_instructions(agent.instructions)
 
     coordinator = install_completion(agent, custom_data)
+    install_caption_relay(agent)
 
     async with agent.join(call):
         completion = asyncio.create_task(coordinator.run())
