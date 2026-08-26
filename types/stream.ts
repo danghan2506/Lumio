@@ -40,3 +40,16 @@ export interface LessonCompleteEvent {
   minutes_practiced: number;
   reason?: 'mastered' | 'time_limit' | 'turn_limit';
 }
+
+export interface TeacherCaptionEvent {
+  type: 'teacher_caption';
+  /** The caption text the teacher is currently speaking */
+  text: string;
+  /** Speaker display name */
+  speaker_name: string;
+  /** Whether this is the final caption for the current utterance */
+  is_final: boolean;
+  /** Unix timestamp (seconds) when this caption was generated */
+  timestamp: number;
+}
+
