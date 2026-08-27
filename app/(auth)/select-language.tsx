@@ -14,6 +14,7 @@ import { languages } from '@/data/languages';
 import { LanguageCard } from '@/components/ui/LanguageCard';
 import { images } from '@/constants/images';
 import { useLanguageStore } from '@/store/useLanguageStore';
+import { setActiveLanguage } from '@/lib/api';
 import type { LanguageId } from '@/types/learning';
 
 export default function SelectLanguageScreen() {
@@ -21,13 +22,23 @@ export default function SelectLanguageScreen() {
   const setSelectedLanguage = useLanguageStore((s) => s.setSelectedLanguage);
   const [selectedLang, setSelectedLang] = useState<LanguageId>('en');
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     setSelectedLanguage(selectedLang);
+    try {
+      await setActiveLanguage(selectedLang);
+    } catch (err) {
+      console.warn('Failed to sync language to server:', err);
+    }
     router.replace('/');
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
     setSelectedLanguage('en');
+    try {
+      await setActiveLanguage('en');
+    } catch (err) {
+      console.warn('Failed to sync language to server:', err);
+    }
     router.replace('/');
   };
 
