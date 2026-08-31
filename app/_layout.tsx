@@ -57,10 +57,15 @@ export default function RootLayout() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event: string, session: Session | null) => {
         const inAuthGroup = segments[0] === "(auth)";
+        const hasSelectedLanguage = useLanguageStore.getState().hasSelectedLanguage;
+        // Password recovery establishes a session on the reset screen via
+        // setSession(); the user must stay there to enter a new password.
+        const onResetPassword = segments[1] === "reset-password";
 
         if (session) {
-          const hasSelectedLanguage = useLanguageStore.getState().hasSelectedLanguage;
-
+          if (onResetPassword) {
+            return;
+          }
           if (!hasSelectedLanguage) {
             // Local store is empty — try to hydrate from Supabase
             if (isHydratingRef.current) return;

@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { parseAuthTokens } from "@/lib/authCallback";
 import { colors } from "@/theme/colors";
 import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
@@ -19,16 +20,9 @@ export default function AuthCallbackScreen() {
       if (!url) return;
 
       try {
-        const parsed = new URL(url);
-        const params = new URLSearchParams(parsed.hash.slice(1));
-        const accessToken = params.get("access_token");
-        const refreshToken = params.get("refresh_token");
-
-        if (accessToken && refreshToken) {
-          const { error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
+        const tokens = parseAuthTokens(url);
+        if (tokens) {
+          const { error } = await supabase.auth.setSession(tokens);
 
           if (!error) {
             router.replace("/");
