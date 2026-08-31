@@ -52,8 +52,14 @@ export default function RootLayout() {
       (_event: string, session: Session | null) => {
         const inAuthGroup = segments[0] === "(auth)";
         const hasSelectedLanguage = useLanguageStore.getState().hasSelectedLanguage;
+        // Password recovery establishes a session on the reset screen via
+        // setSession(); the user must stay there to enter a new password.
+        const onResetPassword = segments[1] === "reset-password";
 
         if (session) {
+          if (onResetPassword) {
+            return;
+          }
           if (!hasSelectedLanguage) {
             // First time: go to language selection (if not already there)
             if (segments[1] !== "select-language") {

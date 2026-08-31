@@ -77,7 +77,12 @@ export default function LoginScreen() {
             marginBottom: 20,
           }}
         >
-          <LoginForm onSuccess={() => {}} />
+          <LoginForm
+            onSuccess={() => {}}
+            onForgotPassword={() =>
+              router.push("/(auth)/forgot-password" as Href)
+            }
+          />
           <SocialAuthGroup />
         </View>
 
