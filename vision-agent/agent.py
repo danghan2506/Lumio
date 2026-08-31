@@ -26,6 +26,7 @@ from vision_agents.core.instructions import Instructions
 from vision_agents.plugins import gemini, getstream
 
 _timing_log = logging.getLogger("lumi.timing")
+_completion_log = logging.getLogger("lumi.completion")
 
 
 FAREWELL_INSTRUCTION = (
@@ -231,26 +232,33 @@ class CompletionCoordinator:
         try:
             while not self._event_sent:
                 await asyncio.sleep(self._poll_interval)
-                if not self._requested:
-                    stage = completion_stage(
-                        self._turn_count,
-                        self._elapsed(),
-                        self._turn_limit,
-                        self._time_limit_minutes,
-                    )
-                    if stage == "nudge" and not self._nudged:
-                        self._nudged = True
-                        await self._agent.simple_response(self._nudge_text(), interrupt=False)
-                    elif stage == "force":
-                        await self._force_complete()
-                    continue
-                if should_send_completion_event(
-                    self._turn_ended_since_request,
-                    self._wait_since_request(),
-                    self._min_farewell_seconds,
-                    self._max_farewell_seconds,
-                ):
-                    await self._send_event()
+                try:
+                    if not self._requested:
+                        stage = completion_stage(
+                            self._turn_count,
+                            self._elapsed(),
+                            self._turn_limit,
+                            self._time_limit_minutes,
+                        )
+                        if stage == "nudge" and not self._nudged:
+                            self._nudged = True
+                            await self._agent.simple_response(self._nudge_text(), interrupt=False)
+                        elif stage == "force":
+                            await self._force_complete()
+                        continue
+                    if should_send_completion_event(
+                        self._turn_ended_since_request,
+                        self._wait_since_request(),
+                        self._min_farewell_seconds,
+                        self._max_farewell_seconds,
+                    ):
+                        await self._send_event()
+                except asyncio.CancelledError:
+                    raise
+                except Exception:
+                    # Never let a transient send/speak failure kill completion:
+                    # the loop retries on the next tick.
+                    _completion_log.exception("Completion coordinator tick failed")
         except asyncio.CancelledError:
             pass
 
@@ -364,7 +372,8 @@ TEACHER_RULES = (
     "- Introduce target-language words slowly with clear English translations.\n"
     "- Listen carefully to the user's response, adapt your next explanation accordingly, and ask the student to repeat or try again.\n"
     "- Spoken-only dialogue: no markdown, no bullet lists, no emojis.\n"
-    "- If the learner's speech is unclear or inaudible, gently ask them to repeat or try again."
+    "- If the learner's speech is unclear or inaudible, gently ask them to repeat or try again.\n"
+    "- When the learner has practiced all of the lesson's goals, vocabulary, and phrases, you MUST call the complete_lesson tool to end the lesson. Never say goodbye or announce the lesson is over without calling that tool first."
 )
 
 
