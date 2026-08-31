@@ -1,4 +1,4 @@
-import { getUserProfileOverview, uploadUserAvatar } from '../../lib/api';
+import { getUserProfileOverview, uploadUserAvatar, updateUserDisplayName } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
 import { languages } from '../../data/languages';
 
@@ -349,6 +349,35 @@ describe('lib/api profile aggregation and avatar upload', () => {
 
       await expect(uploadUserAvatar(mockUserId, mockImageUri)).rejects.toThrow(
         'Failed to update profile row'
+      );
+    });
+  });
+
+  describe('updateUserDisplayName', () => {
+    const mockUserId = 'user-test-123';
+
+    const setupUpdateMock = (response: { data: any; error: any }) => {
+      const mockUpdateEq = jest.fn().mockResolvedValue(response);
+      const mockUpdate = jest.fn().mockReturnValue({ eq: mockUpdateEq });
+      (supabase.from as jest.Mock).mockReturnValue({ update: mockUpdate });
+      return { mockUpdate, mockUpdateEq };
+    };
+
+    it('updates display_name on profiles table for the given user id', async () => {
+      const { mockUpdate, mockUpdateEq } = setupUpdateMock({ data: null, error: null });
+
+      await updateUserDisplayName(mockUserId, 'Alex Johnson');
+
+      expect(supabase.from).toHaveBeenCalledWith('profiles');
+      expect(mockUpdate).toHaveBeenCalledWith({ display_name: 'Alex Johnson' });
+      expect(mockUpdateEq).toHaveBeenCalledWith('id', mockUserId);
+    });
+
+    it('throws an error when the profiles update fails', async () => {
+      setupUpdateMock({ data: null, error: { message: 'RLS update denied' } });
+
+      await expect(updateUserDisplayName(mockUserId, 'Alex')).rejects.toThrow(
+        'RLS update denied'
       );
     });
   });

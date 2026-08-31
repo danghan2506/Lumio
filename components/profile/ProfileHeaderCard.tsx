@@ -6,6 +6,8 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +23,7 @@ export interface ProfileHeaderCardProps {
   joinedDate: string;
   uploadingAvatar?: boolean;
   onAvatarChange?: (uri: string) => Promise<void> | void;
+  onDisplayNameChange?: (name: string) => Promise<void> | void;
 }
 
 export function formatJoinedDate(dateStr: string): string {
@@ -45,9 +48,14 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
   joinedDate,
   uploadingAvatar = false,
   onAvatarChange,
+  onDisplayNameChange,
 }) => {
   const [copied, setCopied] = useState(false);
   const copyTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [nameDraft, setNameDraft] = useState(displayName);
+  const [savingName, setSavingName] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
 
   React.useEffect(() => {
     return () => {
@@ -59,6 +67,47 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
 
   const formattedDate = formatJoinedDate(joinedDate);
   const userInitial = displayName ? displayName.charAt(0).toUpperCase() : 'L';
+
+  const openEditModal = () => {
+    setNameDraft(displayName);
+    setNameError(null);
+    setEditModalVisible(true);
+  };
+
+  const closeEditModal = () => {
+    setEditModalVisible(false);
+    setNameError(null);
+  };
+
+  const handleSaveDisplayName = async () => {
+    const trimmed = nameDraft.trim();
+    if (trimmed.length === 0) {
+      setNameError('Display name cannot be empty.');
+      return;
+    }
+    if (trimmed.length > 30) {
+      setNameError('Display name must be 30 characters or fewer.');
+      return;
+    }
+    if (!onDisplayNameChange) {
+      closeEditModal();
+      return;
+    }
+    setSavingName(true);
+    setNameError(null);
+    try {
+      await onDisplayNameChange(trimmed);
+      closeEditModal();
+    } catch (err) {
+      setNameError(
+        err instanceof Error && err.message.length > 0
+          ? err.message
+          : 'Failed to update display name.'
+      );
+    } finally {
+      setSavingName(false);
+    }
+  };
 
   const handleCopyUserId = async () => {
     try {
@@ -225,18 +274,51 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
       </View>
 
       {/* User Information */}
-      <Text
+      <View
         style={{
-          fontFamily: 'Fredoka_700Bold',
-          fontSize: 22,
-          color: colors.cream,
-          textAlign: 'center',
-          letterSpacing: 0.44,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
           marginBottom: 4,
         }}
       >
-        {displayName || 'Lumio Learner'}
-      </Text>
+        <Text
+          style={{
+            fontFamily: 'Fredoka_700Bold',
+            fontSize: 22,
+            color: colors.cream,
+            textAlign: 'center',
+            letterSpacing: 0.44,
+          }}
+          numberOfLines={1}
+        >
+          {displayName || 'Lumio Learner'}
+        </Text>
+
+        {onDisplayNameChange ? (
+          <Pressable
+            testID="edit-display-name-button"
+            onPress={openEditModal}
+            accessibilityRole="button"
+            accessibilityLabel="Edit display name"
+            hitSlop={8}
+            style={({ pressed }) => ({
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              backgroundColor: 'rgba(234, 230, 255, 0.08)',
+              borderWidth: 1,
+              borderColor: 'rgba(94, 90, 128, 0.35)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: pressed ? 0.8 : 1,
+            })}
+          >
+            <Ionicons name="pencil" size={15} color={colors.daylightAmber} />
+          </Pressable>
+        ) : null}
+      </View>
 
       {email ? (
         <Text
@@ -314,6 +396,172 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
           {copied ? 'Copied!' : `ID: ${userId}`}
         </Text>
       </Pressable>
+
+      {/* Display Name Edit Modal */}
+      <Modal
+        testID="display-name-modal"
+        visible={editModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeEditModal}
+      >
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(36, 27, 74, 0.7)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingHorizontal: 24,
+          }}
+          onPress={closeEditModal}
+        >
+          <Pressable
+            style={{
+              width: '100%',
+              maxWidth: 360,
+              backgroundColor: colors.deepIndigo,
+              borderRadius: 24,
+              borderWidth: 1,
+              borderColor: 'rgba(94, 90, 128, 0.35)',
+              padding: 24,
+              gap: 16,
+            }}
+            onPress={() => {}}
+          >
+            {/* Title */}
+            <Text
+              style={{
+                fontFamily: 'Fredoka_700Bold',
+                fontSize: 20,
+                color: colors.cream,
+                letterSpacing: 0.4,
+              }}
+            >
+              Edit Name
+            </Text>
+
+            {/* Label */}
+            <Text
+              style={{
+                fontFamily: 'PlusJakartaSans_500Medium',
+                fontSize: 13,
+                color: colors.slate,
+              }}
+            >
+              Display name
+            </Text>
+
+            {/* Input */}
+            <View
+              style={{
+                borderRadius: 14,
+                borderWidth: 2,
+                borderColor: colors.lumioCoral,
+                backgroundColor: 'rgba(234, 230, 255, 0.06)',
+                paddingHorizontal: 16,
+              }}
+            >
+              <TextInput
+                testID="display-name-input"
+                value={nameDraft}
+                onChangeText={setNameDraft}
+                maxLength={30}
+                editable={!savingName}
+                placeholder="Your name"
+                placeholderTextColor={colors.slate}
+                accessibilityLabel="Display name input"
+                style={{
+                  fontFamily: 'PlusJakartaSans_500Medium',
+                  fontSize: 16,
+                  color: colors.cream,
+                  minHeight: 48,
+                  paddingVertical: 12,
+                }}
+              />
+            </View>
+
+            {/* Error */}
+            {nameError ? (
+              <Text
+                testID="display-name-error"
+                style={{
+                  fontFamily: 'PlusJakartaSans_500Medium',
+                  fontSize: 13,
+                  color: colors.lumioCoral,
+                }}
+              >
+                {nameError}
+              </Text>
+            ) : null}
+
+            {/* Actions */}
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <Pressable
+                testID="cancel-display-name-button"
+                onPress={closeEditModal}
+                disabled={savingName}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel editing display name"
+                style={({ pressed }) => ({
+                  flex: 1,
+                  minHeight: 48,
+                  borderRadius: 9999,
+                  borderWidth: 1.5,
+                  borderColor: colors.slate,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: pressed ? 0.8 : 1,
+                })}
+              >
+                <Text
+                  style={{
+                    fontFamily: 'PlusJakartaSans_700Bold',
+                    fontSize: 15,
+                    color: colors.cream,
+                  }}
+                >
+                  Cancel
+                </Text>
+              </Pressable>
+
+              <Pressable
+                testID="save-display-name-button"
+                onPress={handleSaveDisplayName}
+                disabled={savingName}
+                accessibilityRole="button"
+                accessibilityLabel="Save display name"
+                style={({ pressed }) => ({
+                  flex: 1,
+                  minHeight: 48,
+                  borderRadius: 9999,
+                  backgroundColor: colors.lumioCoral,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: pressed ? 0.85 : 1,
+                })}
+              >
+                {savingName ? (
+                  <ActivityIndicator
+                    testID="saving-display-name-indicator"
+                    size="small"
+                    color={colors.cream}
+                  />
+                ) : (
+                  <Text
+                    style={{
+                      fontFamily: 'PlusJakartaSans_700Bold',
+                      fontSize: 15,
+                      color: colors.cream,
+                    }}
+                  >
+                    Save
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 };
