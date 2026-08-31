@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import {
   getUserProfileOverview,
   uploadUserAvatar,
+  updateUserDisplayName,
   type UserProfileOverview,
 } from '@/lib/api';
 
@@ -26,7 +27,10 @@ export interface UseProfileDataReturn {
   isGuest: boolean;
   refresh: () => Promise<void>;
   updateAvatar: (imageUri: string) => Promise<string | null>;
+  updateDisplayName: (name: string) => Promise<void>;
 }
+
+export const DISPLAY_NAME_MAX_LENGTH = 30;
 
 export function useProfileData(): UseProfileDataReturn {
   const { user, loading: authLoading } = useAuth();
@@ -105,6 +109,41 @@ export function useProfileData(): UseProfileDataReturn {
     [userId]
   );
 
+  const updateDisplayName = useCallback(
+    async (name: string): Promise<void> => {
+      if (!userId) {
+        const authErr = 'You must be logged in to update your display name.';
+        setError(authErr);
+        throw new Error(authErr);
+      }
+
+      const trimmedName = name.trim();
+      if (trimmedName.length === 0) {
+        const emptyErr = 'Display name cannot be empty.';
+        setError(emptyErr);
+        throw new Error(emptyErr);
+      }
+      if (trimmedName.length > DISPLAY_NAME_MAX_LENGTH) {
+        const lengthErr = `Display name must be ${DISPLAY_NAME_MAX_LENGTH} characters or fewer.`;
+        setError(lengthErr);
+        throw new Error(lengthErr);
+      }
+
+      setError(null);
+      try {
+        await updateUserDisplayName(userId, trimmedName);
+        setProfileOverview((prev) =>
+          prev ? { ...prev, displayName: trimmedName } : null
+        );
+      } catch (err: unknown) {
+        const msg = getFriendlyErrorMessage(err, 'Failed to update display name.');
+        setError(msg);
+        throw new Error(msg);
+      }
+    },
+    [userId]
+  );
+
   return {
     profileOverview,
     loading: authLoading || loading,
@@ -114,5 +153,6 @@ export function useProfileData(): UseProfileDataReturn {
     isGuest: !userId,
     refresh,
     updateAvatar,
+    updateDisplayName,
   };
 }

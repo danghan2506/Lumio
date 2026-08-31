@@ -43,6 +43,7 @@ export default function ProfileScreen() {
     isGuest,
     refresh,
     updateAvatar,
+    updateDisplayName,
   } = useProfileData();
 
   const handleSignOut = async () => {
@@ -179,6 +180,9 @@ export default function ProfileScreen() {
                 uploadingAvatar={uploadingAvatar}
                 onAvatarChange={async (uri) => {
                   await updateAvatar(uri);
+                }}
+                onDisplayNameChange={async (name) => {
+                  await updateDisplayName(name);
                 }}
               />
 

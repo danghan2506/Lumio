@@ -256,6 +256,117 @@ describe('Profile Subcomponents', () => {
         expect(onAvatarChangeMock).not.toHaveBeenCalled();
       });
     });
+
+    describe('Display name editing', () => {
+      it('opens edit modal with pre-filled name when pencil button is pressed', () => {
+        const { getByTestId, getByDisplayValue } = render(
+          <ProfileHeaderCard
+            {...defaultProps}
+            onDisplayNameChange={jest.fn()}
+          />
+        );
+
+        fireEvent.press(getByTestId('edit-display-name-button'));
+
+        expect(getByTestId('display-name-modal')).toBeTruthy();
+        expect(getByDisplayValue('Alex Johnson')).toBeTruthy();
+      });
+
+      it('calls onDisplayNameChange with trimmed name and closes modal on save', async () => {
+        const onDisplayNameChangeMock = jest.fn().mockResolvedValue(undefined);
+        const { getByTestId, getByDisplayValue, queryByTestId } = render(
+          <ProfileHeaderCard
+            {...defaultProps}
+            onDisplayNameChange={onDisplayNameChangeMock}
+          />
+        );
+
+        fireEvent.press(getByTestId('edit-display-name-button'));
+        const input = getByDisplayValue('Alex Johnson');
+        fireEvent.changeText(input, '  Maria Garcia  ');
+
+        const saveBtn = getByTestId('save-display-name-button');
+        await act(async () => {
+          fireEvent.press(saveBtn);
+        });
+
+        expect(onDisplayNameChangeMock).toHaveBeenCalledWith('Maria Garcia');
+        expect(queryByTestId('display-name-modal')).toBeNull();
+      });
+
+      it('closes modal without calling callback on cancel', async () => {
+        const onDisplayNameChangeMock = jest.fn();
+        const { getByTestId, getByDisplayValue, queryByTestId } = render(
+          <ProfileHeaderCard
+            {...defaultProps}
+            onDisplayNameChange={onDisplayNameChangeMock}
+          />
+        );
+
+        fireEvent.press(getByTestId('edit-display-name-button'));
+        fireEvent.changeText(getByDisplayValue('Alex Johnson'), 'Something Else');
+
+        await act(async () => {
+          fireEvent.press(getByTestId('cancel-display-name-button'));
+        });
+
+        expect(onDisplayNameChangeMock).not.toHaveBeenCalled();
+        expect(queryByTestId('display-name-modal')).toBeNull();
+      });
+
+      it('shows inline error and keeps modal open when save fails', async () => {
+        const onDisplayNameChangeMock = jest
+          .fn()
+          .mockRejectedValue(new Error('Failed to update display name.'));
+        const { getByTestId, getByDisplayValue, getByText, queryByTestId } = render(
+          <ProfileHeaderCard
+            {...defaultProps}
+            onDisplayNameChange={onDisplayNameChangeMock}
+          />
+        );
+
+        fireEvent.press(getByTestId('edit-display-name-button'));
+        fireEvent.changeText(getByDisplayValue('Alex Johnson'), 'New Name');
+
+        await act(async () => {
+          fireEvent.press(getByTestId('save-display-name-button'));
+        });
+
+        expect(getByText('Failed to update display name.')).toBeTruthy();
+        expect(queryByTestId('display-name-modal')).not.toBeNull();
+      });
+
+      it('shows saving state while save is in progress', async () => {
+        let resolveSave!: () => void;
+        const onDisplayNameChangeMock = jest.fn(
+          () =>
+            new Promise<void>((resolve) => {
+              resolveSave = resolve;
+            })
+        );
+        const { getByTestId } = render(
+          <ProfileHeaderCard
+            {...defaultProps}
+            onDisplayNameChange={onDisplayNameChangeMock}
+          />
+        );
+
+        fireEvent.press(getByTestId('edit-display-name-button'));
+
+        let saveCall!: Promise<void>;
+        await act(async () => {
+          saveCall = Promise.resolve();
+          fireEvent.press(getByTestId('save-display-name-button'));
+        });
+
+        expect(getByTestId('saving-display-name-indicator')).toBeTruthy();
+
+        await act(async () => {
+          resolveSave();
+          await saveCall;
+        });
+      });
+    });
   });
 
   describe('ActiveLanguageCard', () => {

@@ -223,6 +223,27 @@ def test_farewell_instruction_says_lesson_complete():
     assert "farewell" in FAREWELL_INSTRUCTION.lower()
 
 
+def test_instructions_mention_complete_lesson_tool():
+    """The teacher instructions must tell the model to call complete_lesson.
+
+    Regression: the model ended lessons by *saying* a conversational goodbye
+    without ever invoking the tool, so no lesson_complete event was sent and
+    the client stayed on the lesson screen.
+    """
+    for instructions in (
+        DEFAULT_INSTRUCTIONS,
+        teacher_instructions("French"),
+        build_instructions({"aiTeacherPrompt": "Teach greetings."}, "Spanish"),
+        build_instructions({}, "Korean"),
+    ):
+        assert "complete_lesson" in instructions, (
+            "instructions must name the complete_lesson tool"
+        )
+        assert "tool" in instructions.lower(), (
+            "instructions must say complete_lesson is a tool to call"
+        )
+
+
 import asyncio
 
 from agent import CompletionCoordinator, FAREWELL_STOP_INSTRUCTION, install_completion
@@ -356,6 +377,48 @@ async def test_coordinator_emits_event_after_farewell_turn_end():
 
     assert agent.events
     assert agent.events[-1]["reason"] == "mastered"
+
+
+@pytest.mark.asyncio
+async def test_coordinator_retries_when_custom_event_send_fails():
+    """A transient send_custom_event failure must not kill the coordinator.
+
+    Regression: run() only caught CancelledError, so one failed send left the
+    lesson hanging forever on the client (no completion, no XP, no modal).
+    """
+    agent = _FakeAgent()
+    send_attempts = {"count": 0}
+    original_send = agent.send_custom_event
+
+    async def flaky_send(data):
+        send_attempts["count"] += 1
+        if send_attempts["count"] == 1:
+            raise ConnectionError("transient stream error")
+        await original_send(data)
+
+    agent.send_custom_event = flaky_send
+
+    coordinator = CompletionCoordinator(
+        agent,
+        lesson_id="l1",
+        xp_earned=20,
+        poll_interval=0.01,
+        min_farewell_seconds=0.0,
+        max_farewell_seconds=0.02,
+    )
+    coordinator.install_event_hooks()
+    assert coordinator.request_completion("mastered") is True
+    running = asyncio.create_task(coordinator.run())
+    await asyncio.sleep(0.01)
+    coordinator.mark_turn_ended()  # farewell turn finished
+    await asyncio.sleep(0.1)
+    running.cancel()
+    await asyncio.gather(running, return_exceptions=True)
+
+    # The event must eventually be delivered despite the first failure.
+    assert send_attempts["count"] >= 2
+    assert agent.events
+    assert agent.events[-1]["type"] == "lesson_complete"
 
 
 from vision_agents.core.agents.events import AgentTurnEndedEvent

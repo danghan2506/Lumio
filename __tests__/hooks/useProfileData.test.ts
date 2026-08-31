@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import {
   getUserProfileOverview,
   uploadUserAvatar,
+  updateUserDisplayName,
   type UserProfileOverview,
 } from '../../lib/api';
 
@@ -14,6 +15,7 @@ jest.mock('../../hooks/useAuth', () => ({
 jest.mock('../../lib/api', () => ({
   getUserProfileOverview: jest.fn(),
   uploadUserAvatar: jest.fn(),
+  updateUserDisplayName: jest.fn(),
 }));
 
 const mockOverview: UserProfileOverview = {
@@ -313,6 +315,121 @@ describe('useProfileData', () => {
       expect(caughtError).not.toBeNull();
       expect(caughtError?.message).toBe('You must be logged in to update your avatar.');
       expect(uploadUserAvatar).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updateDisplayName()', () => {
+    const mockUseAuthAuthenticated = () => {
+      (useAuth as jest.Mock).mockReturnValue({
+        user: { id: 'user-123' },
+        loading: false,
+        session: null,
+        signOut: jest.fn(),
+      });
+      (getUserProfileOverview as jest.Mock).mockResolvedValue(mockOverview);
+    };
+
+    it('calls updateUserDisplayName with trimmed name and updates profileOverview.displayName', async () => {
+      mockUseAuthAuthenticated();
+
+      const { result } = renderHook(() => useProfileData());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.updateDisplayName('  Maria Garcia  ');
+      });
+
+      expect(updateUserDisplayName).toHaveBeenCalledWith('user-123', 'Maria Garcia');
+      expect(result.current.profileOverview?.displayName).toBe('Maria Garcia');
+      expect(result.current.error).toBeNull();
+    });
+
+    it('rejects with friendly error and does not call API when name is empty or whitespace', async () => {
+      mockUseAuthAuthenticated();
+
+      const { result } = renderHook(() => useProfileData());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      let caughtError: Error | null = null;
+      await act(async () => {
+        try {
+          await result.current.updateDisplayName('   ');
+        } catch (err) {
+          caughtError = err as Error;
+        }
+      });
+
+      expect(caughtError).not.toBeNull();
+      expect(caughtError?.message).toBe('Display name cannot be empty.');
+      expect(updateUserDisplayName).not.toHaveBeenCalled();
+    });
+
+    it('rejects with friendly error when name exceeds 30 characters', async () => {
+      mockUseAuthAuthenticated();
+
+      const { result } = renderHook(() => useProfileData());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      let caughtError: Error | null = null;
+      await act(async () => {
+        try {
+          await result.current.updateDisplayName('a'.repeat(31));
+        } catch (err) {
+          caughtError = err as Error;
+        }
+      });
+
+      expect(caughtError).not.toBeNull();
+      expect(caughtError?.message).toBe('Display name must be 30 characters or fewer.');
+      expect(updateUserDisplayName).not.toHaveBeenCalled();
+    });
+
+    it('sets error state and preserves profileOverview when API update fails', async () => {
+      mockUseAuthAuthenticated();
+
+      const { result } = renderHook(() => useProfileData());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      (updateUserDisplayName as jest.Mock).mockRejectedValueOnce(
+        new Error('RLS update denied')
+      );
+
+      let caughtError: Error | null = null;
+      await act(async () => {
+        try {
+          await result.current.updateDisplayName('New Name');
+        } catch (err) {
+          caughtError = err as Error;
+        }
+      });
+
+      expect(caughtError?.message).toBe('RLS update denied');
+      expect(result.current.error).toBe('RLS update denied');
+      expect(result.current.profileOverview?.displayName).toBe('Alex Johnson');
+    });
+
+    it('throws friendly error when updateDisplayName is called without authenticated user', async () => {
+      (useAuth as jest.Mock).mockReturnValue({
+        user: null,
+        loading: false,
+        session: null,
+        signOut: jest.fn(),
+      });
+
+      const { result } = renderHook(() => useProfileData());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      let caughtError: Error | null = null;
+      await act(async () => {
+        try {
+          await result.current.updateDisplayName('New Name');
+        } catch (err) {
+          caughtError = err as Error;
+        }
+      });
+
+      expect(caughtError?.message).toBe('You must be logged in to update your display name.');
+      expect(updateUserDisplayName).not.toHaveBeenCalled();
     });
   });
 });

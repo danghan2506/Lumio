@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Stack, useRouter, useSegments, type Href } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import {
@@ -18,6 +18,9 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
 import { useLanguageStore } from "@/store/useLanguageStore";
 import type { Session } from "@supabase/supabase-js";
+import { getActiveLanguage } from "@/lib/api";
+import { useOnboardingStore } from "@/store/useOnboardingStore";
+import type { LanguageId } from "@/types/learning";
 
 import "../global.css";
 
@@ -26,6 +29,9 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments() as readonly string[];
+
+  const [isReady, setIsReady] = useState(false);
+  const isHydratingRef = useRef(false);
 
   const [loaded, error] = useFonts({
     Fredoka_500Medium,
@@ -39,12 +45,12 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (loaded || error) {
+    if ((loaded || error) && isReady) {
       SplashScreen.hideAsync();
     }
-  }, [loaded, error]);
+  }, [loaded, error, isReady]);
 
-  // Auth state listener: redirect based on session
+  // Auth state listener: redirect based on session, hydrate from Supabase
   useEffect(() => {
     if (!loaded && !error) return;
 
@@ -61,17 +67,60 @@ export default function RootLayout() {
             return;
           }
           if (!hasSelectedLanguage) {
-            // First time: go to language selection (if not already there)
-            if (segments[1] !== "select-language") {
-              router.replace("/(auth)/select-language");
-            }
-          } else if (inAuthGroup) {
-            // Returning user still on auth screen: go to app
+            // Local store is empty — try to hydrate from Supabase
+            if (isHydratingRef.current) return;
+            isHydratingRef.current = true;
+
+            getActiveLanguage()
+              .then((activeLanguage) => {
+                if (activeLanguage?.language_id) {
+                  // User has a language in DB — hydrate stores and go to app
+                  useLanguageStore.setState({
+                    selectedLanguage: activeLanguage.language_id as LanguageId,
+                    hasSelectedLanguage: true,
+                  });
+                  useOnboardingStore.setState({
+                    hasSeenOnboarding: true,
+                  });
+                  router.replace("/(tabs)" as Href);
+                } else {
+                  // No language in DB — first-time setup
+                  if (segments[1] !== "select-language") {
+                    router.replace("/(auth)/select-language");
+                  }
+                }
+              })
+              .catch(() => {
+                // DB fetch failed — fall through to language selection
+                if (segments[1] !== "select-language") {
+                  router.replace("/(auth)/select-language");
+                }
+              })
+              .finally(() => {
+                isHydratingRef.current = false;
+                setIsReady(true);
+              });
+            return;
+          }
+
+          // Local store has language — go to app if still on auth screens
+          if (inAuthGroup) {
             router.replace("/(tabs)" as Href);
           }
-        } else if (!session && !inAuthGroup) {
-          // Not logged in and not on auth screen → go to login
-          router.replace("/(auth)/login");
+          setIsReady(true);
+        } else {
+          // Signed out — reset stores and go to login
+          useLanguageStore.setState({
+            selectedLanguage: null,
+            hasSelectedLanguage: false,
+          });
+          useOnboardingStore.setState({
+            hasSeenOnboarding: false,
+          });
+          if (!inAuthGroup) {
+            router.replace("/(auth)/login");
+          }
+          setIsReady(true);
         }
       }
     );
