@@ -15,6 +15,7 @@ import {
   generateDailyPlan,
 } from '@/lib/dashboardHelpers';
 import { languages } from '@/data/languages';
+import { resolveDisplayName } from '@/lib/displayName';
 import type { LanguageId, Language } from '@/types/learning';
 import type { UnitRow, DailyActivity } from '@/types/database.types';
 import type { DashboardData, UseDashboardDataReturn } from '@/types/home';
@@ -86,13 +87,12 @@ export function useDashboardData(): UseDashboardDataReturn {
 
         // Compute processed data
         const profile = profileRes.data;
-        const rawName =
-          profile?.display_name ||
-          (user?.user_metadata?.full_name as string) ||
-          (user?.user_metadata?.name as string) ||
-          user?.email?.split('@')[0] ||
-          'Learner';
-        const userName = rawName.split(' ')[0] || 'Learner';
+        const userName = resolveDisplayName(
+          profile?.display_name,
+          user?.user_metadata?.full_name as string | undefined,
+          user?.user_metadata?.name as string | undefined,
+          user?.email
+        );
         const avatarUrl = profile?.avatar_url || (user?.user_metadata?.avatar_url as string) || null;
 
         const { streak, isStreakActiveToday } = calculateStreak(activities, todayStr);

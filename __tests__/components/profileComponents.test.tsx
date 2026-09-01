@@ -318,7 +318,7 @@ describe('Profile Subcomponents', () => {
         const onDisplayNameChangeMock = jest
           .fn()
           .mockRejectedValue(new Error('Failed to update display name.'));
-        const { getByTestId, getByDisplayValue, getByText, queryByTestId } = render(
+        const { getByTestId, getByDisplayValue, getAllByText, queryByTestId } = render(
           <ProfileHeaderCard
             {...defaultProps}
             onDisplayNameChange={onDisplayNameChangeMock}
@@ -332,7 +332,8 @@ describe('Profile Subcomponents', () => {
           fireEvent.press(getByTestId('save-display-name-button'));
         });
 
-        expect(getByText('Failed to update display name.')).toBeTruthy();
+        // Error surfaces in both the inline modal error and the toast feedback
+        expect(getAllByText('Failed to update display name.')).toHaveLength(2);
         expect(queryByTestId('display-name-modal')).not.toBeNull();
       });
 
@@ -365,6 +366,27 @@ describe('Profile Subcomponents', () => {
           resolveSave();
           await saveCall;
         });
+      });
+
+      it('shows success toast and closes modal when save succeeds', async () => {
+        const onDisplayNameChangeMock = jest.fn().mockResolvedValue(undefined);
+        const { getByTestId, queryByTestId } = render(
+          <ProfileHeaderCard
+            {...defaultProps}
+            onDisplayNameChange={onDisplayNameChangeMock}
+          />
+        );
+
+        fireEvent.press(getByTestId('edit-display-name-button'));
+        await act(async () => {
+          fireEvent.press(getByTestId('save-display-name-button'));
+        });
+
+        expect(onDisplayNameChangeMock).toHaveBeenCalledWith('Alex Johnson');
+        expect(queryByTestId('display-name-modal')).toBeNull();
+        expect(getByTestId('toast-message').props.children).toBe(
+          'Display name updated ✓'
+        );
       });
     });
   });

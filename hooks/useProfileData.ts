@@ -6,6 +6,7 @@ import {
   updateUserDisplayName,
   type UserProfileOverview,
 } from '@/lib/api';
+import { resolveDisplayName } from '@/lib/displayName';
 
 const DEFAULT_ERROR_MESSAGE = 'Unable to load profile. Please try again.';
 

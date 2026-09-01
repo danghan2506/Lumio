@@ -13,6 +13,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
+import { Toast, useToast } from '@/components/ui/Toast';
 import { colors } from '@/theme/colors';
 
 export interface ProfileHeaderCardProps {
@@ -56,6 +57,7 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
   const [nameDraft, setNameDraft] = useState(displayName);
   const [savingName, setSavingName] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
+  const toast = useToast();
 
   React.useEffect(() => {
     return () => {
@@ -98,12 +100,14 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
     try {
       await onDisplayNameChange(trimmed);
       closeEditModal();
+      toast.show({ message: 'Display name updated ✓', type: 'success' });
     } catch (err) {
-      setNameError(
+      const message =
         err instanceof Error && err.message.length > 0
           ? err.message
-          : 'Failed to update display name.'
-      );
+          : 'Failed to update display name.';
+      setNameError(message);
+      toast.show({ message, type: 'error' });
     } finally {
       setSavingName(false);
     }
@@ -396,6 +400,9 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
           {copied ? 'Copied!' : `ID: ${userId}`}
         </Text>
       </Pressable>
+
+      {/* In-app toast feedback (success/error) */}
+      <Toast ref={toast.ref} />
 
       {/* Display Name Edit Modal */}
       <Modal

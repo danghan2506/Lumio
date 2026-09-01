@@ -19,6 +19,7 @@ import {
 } from '@/components/profile';
 import { useProfileData } from '@/hooks/useProfileData';
 import { useAuth } from '@/hooks/useAuth';
+import { resolveDisplayName } from '@/lib/displayName';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { languages } from '@/data/languages';
 import { colors } from '@/theme/colors';
@@ -223,7 +224,12 @@ export default function ProfileScreen() {
               <ProfileHeaderCard
                 userId={user?.id ?? 'guest'}
                 email={user?.email ?? null}
-                displayName={user?.user_metadata?.full_name ?? 'Guest Learner'}
+                displayName={resolveDisplayName(
+                  null,
+                  user?.user_metadata?.full_name as string | undefined,
+                  user?.user_metadata?.name as string | undefined,
+                  user?.email
+                )}
                 avatarUrl={null}
                 joinedDate={user?.created_at ?? new Date().toISOString()}
                 uploadingAvatar={false}

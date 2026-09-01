@@ -75,7 +75,7 @@ describe('useDashboardData', () => {
 
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBeNull();
-    expect(result.current.data?.userName).toBe('Alex');
+    expect(result.current.data?.userName).toBe('Alex Rider');
     expect(result.current.data?.avatarUrl).toBe('https://example.com/avatar.png');
     expect(result.current.data?.continueLesson?.lessonId).toBe('l2');
     expect(result.current.data?.dailyGoal.currentXp).toBe(15);
@@ -101,7 +101,24 @@ describe('useDashboardData', () => {
 
     await act(async () => {});
 
-    expect(result.current.data?.userName).toBe('John');
+    expect(result.current.data?.userName).toBe('John Doe');
+  });
+
+  it('falls back to email prefix when profile and metadata names are missing', async () => {
+    (supabase.from as jest.Mock).mockReturnValueOnce({
+      select: jest.fn(() => ({
+        eq: jest.fn(() => ({
+          maybeSingle: jest.fn(() => Promise.resolve({ data: { display_name: null, avatar_url: null }, error: null })),
+        })),
+      })),
+    });
+    mockAuthUser = { id: 'test-user-id', email: 'danghan1213@gmail.com', user_metadata: {} };
+
+    const { result } = renderHook(() => useDashboardData());
+
+    await act(async () => {});
+
+    expect(result.current.data?.userName).toBe('danghan1213');
   });
 
   it('short-circuits unit fetching when an incomplete lesson is encountered', async () => {
@@ -162,7 +179,7 @@ describe('useDashboardData', () => {
     expect(result.current.error).toBe('Database query failed');
   });
 
-  it('handles guest/logged out users gracefully', async () => {
+  it('handles guest/logged out users gracefully with default display name', async () => {
     mockAuthUser = null;
 
     const { result } = renderHook(() => useDashboardData());
@@ -171,6 +188,6 @@ describe('useDashboardData', () => {
 
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBeNull();
-    expect(result.current.data?.userName).toBe('Learner');
+    expect(result.current.data?.userName).toBe('Lumio Learner');
   });
 });
