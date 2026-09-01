@@ -13,6 +13,7 @@ import {
   calculateStreak,
   findContinueLesson,
   generateDailyPlan,
+  getTodayDateString,
 } from '@/lib/dashboardHelpers';
 import { languages } from '@/data/languages';
 import { resolveDisplayName } from '@/lib/displayName';
@@ -22,17 +23,7 @@ import type { DashboardData, UseDashboardDataReturn } from '@/types/home';
 
 const DEFAULT_LANGUAGE_ID: LanguageId = 'en';
 
-export function getTodayDateString(): string {
-  try {
-    return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
-  } catch {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-}
+export { getTodayDateString } from '@/lib/dashboardHelpers';
 
 export function useDashboardData(): UseDashboardDataReturn {
   const { user, loading: authLoading } = useAuth();
