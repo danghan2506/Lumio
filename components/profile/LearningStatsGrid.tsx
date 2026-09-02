@@ -8,6 +8,7 @@ export interface LearningStatsGridProps {
   completedLessons: number;
   masteredWords: number;
   daysActive: number;
+  currentStreak: number;
 }
 
 interface StatItemProps {
@@ -98,6 +99,7 @@ export const LearningStatsGrid: React.FC<LearningStatsGridProps> = ({
   completedLessons,
   masteredWords,
   daysActive,
+  currentStreak,
 }) => {
   return (
     <View style={{ gap: 12 }}>
@@ -131,6 +133,17 @@ export const LearningStatsGrid: React.FC<LearningStatsGridProps> = ({
         <StatCard
           label="DAYS ACTIVE"
           value={daysActive}
+          iconName="calendar-outline"
+          iconColor={colors.mint}
+          iconBgColor="rgba(53, 208, 160, 0.15)"
+        />
+      </View>
+
+      {/* Row 3: Current Streak (full width, flame reserved for streak) */}
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <StatCard
+          label="CURRENT STREAK"
+          value={currentStreak}
           iconName="flame"
           iconColor={colors.daylightAmber}
           iconBgColor="rgba(255, 183, 77, 0.15)"

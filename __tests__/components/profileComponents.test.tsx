@@ -437,13 +437,14 @@ describe('Profile Subcomponents', () => {
   });
 
   describe('LearningStatsGrid', () => {
-    it('renders all 4 metrics correctly with formatted numbers and labels', () => {
+    it('renders all 5 metrics correctly with formatted numbers and labels', () => {
       const { getByText } = render(
         <LearningStatsGrid
           totalXp={1450}
           completedLessons={22}
           masteredWords={98}
           daysActive={15}
+          currentStreak={5}
         />
       );
 
@@ -458,6 +459,9 @@ describe('Profile Subcomponents', () => {
 
       expect(getByText('15')).toBeTruthy();
       expect(getByText('DAYS ACTIVE')).toBeTruthy();
+
+      expect(getByText('5')).toBeTruthy();
+      expect(getByText('CURRENT STREAK')).toBeTruthy();
     });
 
     it('renders zero values properly without crashing', () => {
@@ -467,11 +471,29 @@ describe('Profile Subcomponents', () => {
           completedLessons={0}
           masteredWords={0}
           daysActive={0}
+          currentStreak={0}
         />
       );
 
-      expect(getAllByText('0').length).toBe(4);
+      expect(getAllByText('0').length).toBe(5);
       expect(getByText('TOTAL XP')).toBeTruthy();
+    });
+
+    it('renders CURRENT STREAK card with flame icon and DAYS ACTIVE with calendar icon', () => {
+      const { getByText } = render(
+        <LearningStatsGrid
+          totalXp={120}
+          completedLessons={4}
+          masteredWords={10}
+          daysActive={7}
+          currentStreak={5}
+        />
+      );
+
+      expect(getByText('CURRENT STREAK')).toBeTruthy();
+      expect(getByText('5')).toBeTruthy();
+      expect(getByText('DAYS ACTIVE')).toBeTruthy();
+      expect(getByText('7')).toBeTruthy();
     });
   });
 
