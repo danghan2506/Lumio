@@ -1,6 +1,7 @@
 import { getUserProfileOverview, uploadUserAvatar, updateUserDisplayName } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
 import { languages } from '../../data/languages';
+import { getTodayDateString } from '../../lib/dashboardHelpers';
 
 jest.mock('../../lib/supabase', () => ({
   supabase: {
@@ -68,10 +69,23 @@ describe('lib/api profile aggregation and avatar upload', () => {
       { status: 'mastered' },
     ];
 
+    const todayStr = getTodayDateString();
+    // Build YMD from LOCAL date components, never toISOString() — the latter
+    // converts to UTC and shifts the day for machines outside UTC±12
+    // (e.g. UTC+13 noon = previous day in UTC), making these tests tz-flaky.
+    const toYMD = (offsetDays: number): string => {
+      const d = new Date(`${todayStr}T12:00:00`);
+      d.setDate(d.getDate() - offsetDays);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
     const mockDailyActivityRows = [
-      { activity_date: '2026-08-14' },
-      { activity_date: '2026-08-15' },
-      { activity_date: '2026-08-16' },
+      { activity_date: todayStr, xp_earned: 10, lessons_completed: 1, vocabulary_reviews: 0, minutes_practiced: 3 },
+      { activity_date: toYMD(1), xp_earned: 15, lessons_completed: 0, vocabulary_reviews: 5, minutes_practiced: 2 },
+      { activity_date: '2026-08-16', xp_earned: 5, lessons_completed: 1, vocabulary_reviews: 0, minutes_practiced: 1 },
     ];
 
     it('aggregates profile, active language, and calculates real stats correctly', async () => {
@@ -102,7 +116,8 @@ describe('lib/api profile aggregation and avatar upload', () => {
           totalXp: 90, // 30 + 45 + 15 + 0
           completedLessons: 2, // 2 completed
           masteredWords: 3, // 3 mastered
-          daysActive: 3, // 3 daily activity rows
+          daysActive: 3, // 3 rows with real activity
+          currentStreak: 2, // today + yesterday
         },
       });
 
@@ -165,7 +180,7 @@ describe('lib/api profile aggregation and avatar upload', () => {
       expect(overview?.activeLanguage).toBeNull();
     });
 
-    it('defaults daysActive to minimum 1 when user profile exists but daily_activity is empty', async () => {
+    it('reports daysActive 0 and currentStreak 0 for a user with no daily activity', async () => {
       setupSupabaseFromMock({
         profiles: { data: mockProfileRow, error: null },
         user_languages: { data: null, error: null },
@@ -181,8 +196,30 @@ describe('lib/api profile aggregation and avatar upload', () => {
         totalXp: 0,
         completedLessons: 0,
         masteredWords: 0,
-        daysActive: 1, // Minimum 1 day active for existing user
+        daysActive: 0,
+        currentStreak: 0,
       });
+    });
+
+    it('excludes all-zero activity rows from daysActive and currentStreak', async () => {
+      setupSupabaseFromMock({
+        profiles: { data: mockProfileRow, error: null },
+        user_languages: { data: null, error: null },
+        lesson_progress: { data: [], error: null },
+        vocabulary_progress: { data: [], error: null },
+        daily_activity: {
+          data: [
+            { activity_date: todayStr, xp_earned: 0, lessons_completed: 0, vocabulary_reviews: 0, minutes_practiced: 0 },
+            { activity_date: toYMD(1), xp_earned: 20, lessons_completed: 1, vocabulary_reviews: 0, minutes_practiced: 5 },
+          ],
+          error: null,
+        },
+      });
+
+      const overview = await getUserProfileOverview(mockUserId);
+
+      expect(overview?.stats.daysActive).toBe(1);
+      expect(overview?.stats.currentStreak).toBe(1); // yesterday only, not extended by the empty today row
     });
 
     it('handles null values for display_name and avatar_url', async () => {
