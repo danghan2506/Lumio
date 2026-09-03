@@ -2,6 +2,7 @@ import {
   calculateStreak,
   findContinueLesson,
   generateDailyPlan,
+  hasDailyActivity,
 } from '@/lib/dashboardHelpers';
 import type { DailyActivity, UnitRow } from '@/types/database.types';
 import type { LessonWithProgress } from '@/lib/api';
@@ -147,5 +148,38 @@ describe('generateDailyPlan', () => {
     // Task 3: Vocabulary completed (vocabulary_reviews >= 5)
     expect(plan[2].type).toBe('vocabulary');
     expect(plan[2].completed).toBe(true);
+  });
+});
+
+describe('hasDailyActivity', () => {
+  const baseRow = {
+    user_id: 'u1',
+    activity_date: '2026-09-01',
+    created_at: '',
+    updated_at: '',
+  };
+
+  it('returns true when xp_earned > 0', () => {
+    expect(hasDailyActivity({ ...baseRow, xp_earned: 10, lessons_completed: 0, vocabulary_reviews: 0, minutes_practiced: 0 })).toBe(true);
+  });
+
+  it('returns true when lessons_completed > 0', () => {
+    expect(hasDailyActivity({ ...baseRow, xp_earned: 0, lessons_completed: 1, vocabulary_reviews: 0, minutes_practiced: 0 })).toBe(true);
+  });
+
+  it('returns true when vocabulary_reviews > 0', () => {
+    expect(hasDailyActivity({ ...baseRow, xp_earned: 0, lessons_completed: 0, vocabulary_reviews: 3, minutes_practiced: 0 })).toBe(true);
+  });
+
+  it('returns true when minutes_practiced > 0', () => {
+    expect(hasDailyActivity({ ...baseRow, xp_earned: 0, lessons_completed: 0, vocabulary_reviews: 0, minutes_practiced: 2 })).toBe(true);
+  });
+
+  it('returns false for an all-zero row', () => {
+    expect(hasDailyActivity({ ...baseRow, xp_earned: 0, lessons_completed: 0, vocabulary_reviews: 0, minutes_practiced: 0 })).toBe(false);
+  });
+
+  it('returns false for undefined/null metric values', () => {
+    expect(hasDailyActivity({ ...baseRow })).toBe(false);
   });
 });

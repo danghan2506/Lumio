@@ -89,6 +89,7 @@ const mockOverview: UserProfileOverview = {
     completedLessons: 18,
     masteredWords: 85,
     daysActive: 12,
+    currentStreak: 4,
   },
 };
 

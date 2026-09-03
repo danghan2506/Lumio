@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { hasDailyActivity, calculateStreak, getTodayDateString } from './dashboardHelpers';
 import {
   Language,
   LanguageId,
@@ -491,6 +492,7 @@ export interface UserProfileStats {
   completedLessons: number;
   masteredWords: number;
   daysActive: number;
+  currentStreak: number;
 }
 
 export interface UserProfileOverview {
@@ -530,7 +532,7 @@ export async function getUserProfileOverview(
       .eq('user_id', userId),
     supabase
       .from('daily_activity')
-      .select('activity_date')
+      .select('*')
       .eq('user_id', userId),
   ]);
 
@@ -588,7 +590,12 @@ export async function getUserProfileOverview(
       ).length;
 
       const dailyActivities = dailyActivityRes.data ?? [];
-      const daysActive = Math.max(1, dailyActivities.length);
+      const activeActivities = dailyActivities.filter(hasDailyActivity);
+      const daysActive = activeActivities.length;
+      const { streak: currentStreak } = calculateStreak(
+        dailyActivities,
+        getTodayDateString()
+      );
 
       return {
         id: userId,
@@ -602,6 +609,7 @@ export async function getUserProfileOverview(
           completedLessons,
           masteredWords,
           daysActive,
+          currentStreak,
         },
       };
     } catch {
@@ -630,7 +638,12 @@ export async function getUserProfileOverview(
   ).length;
 
   const dailyActivities = dailyActivityRes.data ?? [];
-  const daysActive = Math.max(1, dailyActivities.length);
+  const activeActivities = dailyActivities.filter(hasDailyActivity);
+  const daysActive = activeActivities.length;
+  const { streak: currentStreak } = calculateStreak(
+    dailyActivities,
+    getTodayDateString()
+  );
 
   return {
     id: profile.id,
@@ -644,6 +657,7 @@ export async function getUserProfileOverview(
       completedLessons,
       masteredWords,
       daysActive,
+      currentStreak,
     },
   };
 }

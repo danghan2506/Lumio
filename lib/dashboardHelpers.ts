@@ -2,6 +2,33 @@ import type { DailyActivity, UnitRow } from '@/types/database.types';
 import type { LessonWithProgress } from '@/lib/api';
 import type { ContinueLessonInfo, DailyPlanItem } from '@/types/home';
 
+/** Single source of truth for the app's "learning day" timezone.
+ *  MUST match the timezone used in Supabase RPCs
+ *  (supabase/migrations/*_init_lumio_schema.sql, record_lesson_progress / record_vocabulary_review). */
+export const APP_TIMEZONE = 'Asia/Ho_Chi_Minh';
+
+/** A day counts toward streaks and daysActive only if the user did real work that day. */
+export function hasDailyActivity(act: DailyActivity): boolean {
+  return (
+    (act.xp_earned || 0) > 0 ||
+    (act.lessons_completed || 0) > 0 ||
+    (act.vocabulary_reviews || 0) > 0 ||
+    (act.minutes_practiced || 0) > 0
+  );
+}
+
+export function getTodayDateString(): string {
+  try {
+    return new Date().toLocaleDateString('en-CA', { timeZone: APP_TIMEZONE });
+  } catch {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+}
+
 export function calculateStreak(
   activities: DailyActivity[],
   todayStr: string
@@ -12,12 +39,7 @@ export function calculateStreak(
 
   const activeDates = new Set<string>();
   for (const act of activities) {
-    const hasActivity =
-      (act.xp_earned || 0) > 0 ||
-      (act.lessons_completed || 0) > 0 ||
-      (act.vocabulary_reviews || 0) > 0 ||
-      (act.minutes_practiced || 0) > 0;
-    if (hasActivity) {
+    if (hasDailyActivity(act)) {
       activeDates.add(act.activity_date);
     }
   }

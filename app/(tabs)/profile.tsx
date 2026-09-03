@@ -209,6 +209,7 @@ export default function ProfileScreen() {
                 completedLessons={profileOverview.stats.completedLessons}
                 masteredWords={profileOverview.stats.masteredWords}
                 daysActive={profileOverview.stats.daysActive}
+                currentStreak={profileOverview.stats.currentStreak}
               />
 
               {/* 4. Action Section (Sign out & Footer) */}
@@ -250,7 +251,8 @@ export default function ProfileScreen() {
                 totalXp={0}
                 completedLessons={0}
                 masteredWords={0}
-                daysActive={1}
+                daysActive={0}
+                currentStreak={0}
               />
 
               <ProfileActionSection
