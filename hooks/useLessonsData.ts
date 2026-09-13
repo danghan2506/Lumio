@@ -75,6 +75,7 @@ export function useLessonsData(options?: UseLessonsDataOptions): UseLessonsDataR
 
       activeUnitIdRef.current = unit.id;
       setActiveUnitState(unit);
+      setError(null);
       setLessons([]);
       try {
         const fetchedLessons = await getLessonsWithProgress(unit.id);

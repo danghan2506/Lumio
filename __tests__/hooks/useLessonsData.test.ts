@@ -307,6 +307,33 @@ describe('useLessonsData', () => {
       expect(result.current.lessons).toEqual(mockUnit1Lessons);
     });
 
+    it('clears existing error when setActiveUnit is called', async () => {
+      (getUnitsWithProgressSummary as jest.Mock).mockResolvedValueOnce({
+        units: mockUnits,
+        unitsProgress: mockUnitsProgress,
+      });
+      // Simulate initial lesson fetch failure for unit-2
+      (getLessonsWithProgress as jest.Mock).mockRejectedValueOnce(
+        new Error('Failed to load lessons for unit 2')
+      );
+
+      const { result } = renderHook(() => useLessonsData());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(result.current.error).toBe('Failed to load lessons for unit 2');
+      expect(result.current.lessons).toEqual([]);
+
+      // Now switch to unit-1 which succeeds
+      (getLessonsWithProgress as jest.Mock).mockResolvedValueOnce(mockUnit1Lessons);
+      await act(async () => {
+        result.current.setActiveUnit(mockUnits[0]);
+      });
+
+      await waitFor(() => expect(result.current.activeUnit).toEqual(mockUnits[0]));
+      expect(result.current.error).toBeNull();
+      expect(result.current.lessons).toEqual(mockUnit1Lessons);
+    });
+
     it('language switch resets activeUnit and refetches for the new language', async () => {
       (getUnitsWithProgressSummary as jest.Mock).mockResolvedValueOnce({
         units: mockUnits,
