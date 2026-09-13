@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import {
-  getUnitsFromDB,
+  getUnitsWithProgressSummary,
   getPracticeLessons,
   getMultipleChoiceActivities,
   getTranslationActivities,
   sanitizeMultipleChoiceData,
+  type UnitProgressSummary,
 } from '@/lib/api';
+import { getInitialActiveUnit } from '@/lib/unitNavigation';
 import { sanitizeTranslationData } from '@/lib/wordBankHelper';
 import { lessons as fallbackLessons } from '@/data/lessons';
 import { useLanguageStore } from '@/store/useLanguageStore';
@@ -18,13 +20,11 @@ import type {
 } from '@/types/learning';
 import type { UnitRow } from '@/types/database.types';
 
+export { getInitialActiveUnit } from '@/lib/unitNavigation';
+
 const DEFAULT_LANGUAGE: LanguageId = 'en';
 const LOAD_ERROR_MESSAGE = 'We could not load practice lessons right now. Pull down to try again.';
 const ACTIVITIES_ERROR_MESSAGE = 'We could not load questions for this lesson. Please try again.';
-
-export function getInitialActiveUnit(units: UnitRow[]): UnitRow | null {
-  return units[0] ?? null;
-}
 
 export function getFriendlyErrorMessage(error: unknown, fallbackMessage = LOAD_ERROR_MESSAGE): string {
   return error instanceof Error && error.message.trim().length > 0
@@ -36,6 +36,7 @@ export interface UsePracticeDataReturn {
   selectedLanguage: LanguageId;
   units: UnitRow[];
   activeUnit: UnitRow | null;
+  unitsProgress: Record<string, UnitProgressSummary>;
   practiceLessons: PracticeLessonItem[];
   filteredPracticeLessons: PracticeLessonItem[];
   filterType: PracticeActivityType;
@@ -50,6 +51,7 @@ export interface UsePracticeDataReturn {
   activeTranslationActivities: TranslationActivityItem[];
   loadingActivities: boolean;
   activitiesError: string | null;
+  setActiveUnit: (unit: UnitRow) => void;
   selectLessonForPractice: (lesson: PracticeLessonItem, type?: 'multiple_choice' | 'translation') => Promise<void>;
   selectLessonForTranslationPractice: (lesson: PracticeLessonItem) => Promise<void>;
   loadActivitiesForLesson: (lesson: PracticeLessonItem) => Promise<void>;
@@ -63,7 +65,8 @@ export interface UsePracticeDataReturn {
 export function usePracticeData(): UsePracticeDataReturn {
   const selectedLanguage = useLanguageStore((state) => state.selectedLanguage) ?? DEFAULT_LANGUAGE;
   const [units, setUnits] = useState<UnitRow[]>([]);
-  const [activeUnit, setActiveUnit] = useState<UnitRow | null>(null);
+  const [unitsProgress, setUnitsProgress] = useState<Record<string, UnitProgressSummary>>({});
+  const [activeUnit, setActiveUnitState] = useState<UnitRow | null>(null);
   const [practiceLessons, setPracticeLessons] = useState<PracticeLessonItem[]>([]);
   const [filterType, setFilterType] = useState<PracticeActivityType>('all');
   const [loading, setLoading] = useState(true);
@@ -78,32 +81,97 @@ export function usePracticeData(): UsePracticeDataReturn {
   const [loadingActivities, setLoadingActivities] = useState(false);
   const [activitiesError, setActivitiesError] = useState<string | null>(null);
 
+  const activeUnitIdRef = useRef<string | null>(null);
+
+  const clearSelectedPracticeLesson = useCallback(() => {
+    setSelectedPracticeLesson(null);
+    setSelectedPracticeActivityType(null);
+    setActiveLessonActivities([]);
+    setActiveTranslationActivities([]);
+    setActivitiesError(null);
+    setLoadingActivities(false);
+  }, []);
+
+  const setActiveUnit = useCallback(
+    async (unit: UnitRow) => {
+      if (unitsProgress[unit.id]?.isLocked) {
+        return;
+      }
+      if (unit.id === activeUnit?.id) {
+        return;
+      }
+
+      activeUnitIdRef.current = unit.id;
+      setActiveUnitState(unit);
+      setError(null);
+      setPracticeLessons([]);
+      clearSelectedPracticeLesson();
+
+      try {
+        const fetchedLessons = await getPracticeLessons(unit.id);
+        if (activeUnitIdRef.current === unit.id) {
+          setPracticeLessons(fetchedLessons);
+        }
+      } catch (loadError: unknown) {
+        if (activeUnitIdRef.current === unit.id) {
+          setError(getFriendlyErrorMessage(loadError, LOAD_ERROR_MESSAGE));
+          setPracticeLessons([]);
+        }
+      }
+    },
+    [unitsProgress, activeUnit?.id, clearSelectedPracticeLesson]
+  );
+
   const loadPracticeLessons = useCallback(async (isRefreshing = false) => {
     if (isRefreshing) {
       setRefreshing(true);
     } else {
       setLoading(true);
+      clearSelectedPracticeLesson();
     }
 
     try {
       setError(null);
-      const fetchedUnits = await getUnitsFromDB(selectedLanguage);
-      const firstUnit = getInitialActiveUnit(fetchedUnits);
-      const fetchedLessons = firstUnit ? await getPracticeLessons(firstUnit.id) : [];
+      const { units: fetchedUnits, unitsProgress: fetchedProgress } =
+        await getUnitsWithProgressSummary(selectedLanguage);
 
       setUnits(fetchedUnits);
-      setActiveUnit(firstUnit);
-      setPracticeLessons(fetchedLessons);
+      setUnitsProgress(fetchedProgress);
+
+      let unitToSelect: UnitRow | null = null;
+      if (isRefreshing && activeUnitIdRef.current) {
+        const existing = fetchedUnits.find((u) => u.id === activeUnitIdRef.current);
+        if (existing && !fetchedProgress[existing.id]?.isLocked) {
+          unitToSelect = existing;
+        }
+      }
+
+      if (!unitToSelect) {
+        unitToSelect = getInitialActiveUnit(fetchedUnits, fetchedProgress);
+      }
+
+      activeUnitIdRef.current = unitToSelect?.id ?? null;
+      setActiveUnitState(unitToSelect);
+
+      if (unitToSelect) {
+        const fetchedLessons = await getPracticeLessons(unitToSelect.id);
+        if (activeUnitIdRef.current === unitToSelect.id) {
+          setPracticeLessons(fetchedLessons);
+        }
+      } else {
+        setPracticeLessons([]);
+      }
     } catch (loadError: unknown) {
       setError(getFriendlyErrorMessage(loadError, LOAD_ERROR_MESSAGE));
       setPracticeLessons([]);
-      setActiveUnit(null);
+      setActiveUnitState(null);
       setUnits([]);
+      setUnitsProgress({});
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [selectedLanguage]);
+  }, [selectedLanguage, clearSelectedPracticeLesson]);
 
   useEffect(() => {
     void loadPracticeLessons(false);
@@ -267,15 +335,6 @@ export function usePracticeData(): UsePracticeDataReturn {
     await selectLessonForPractice(lesson, 'translation');
   }, [selectLessonForPractice]);
 
-  const clearSelectedPracticeLesson = useCallback(() => {
-    setSelectedPracticeLesson(null);
-    setSelectedPracticeActivityType(null);
-    setActiveLessonActivities([]);
-    setActiveTranslationActivities([]);
-    setActivitiesError(null);
-    setLoadingActivities(false);
-  }, []);
-
   const filteredPracticeLessons = useMemo(() => {
     if (filterType === 'multiple_choice') {
       return practiceLessons.filter((l) => (l.multipleChoiceActivitiesCount ?? l.activitiesCount) > 0);
@@ -290,6 +349,7 @@ export function usePracticeData(): UsePracticeDataReturn {
     selectedLanguage,
     units,
     activeUnit,
+    unitsProgress,
     practiceLessons,
     filteredPracticeLessons,
     filterType,
@@ -304,6 +364,7 @@ export function usePracticeData(): UsePracticeDataReturn {
     activeTranslationActivities,
     loadingActivities,
     activitiesError,
+    setActiveUnit,
     selectLessonForPractice,
     selectLessonForTranslationPractice,
     loadActivitiesForLesson: selectLessonForPractice,
