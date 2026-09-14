@@ -84,8 +84,12 @@ export default function HomeScreen() {
             onContinue={() => {
               if (data.continueLesson?.lessonId) {
                 router.push(`/lesson/${data.continueLesson.lessonId}` as any);
-              } else {
-                router.push('/(tabs)/learn');
+              } else if (data.continueLesson?.unitId) {
+                // Continue only ever points at in-progress/not-started lessons inside the learner's current unit — which is by definition unlocked under the Task 1 rule
+                router.push({
+                  pathname: '/(tabs)/learn',
+                  params: { unitId: data.continueLesson.unitId },
+                } as any);
               }
             }}
           />

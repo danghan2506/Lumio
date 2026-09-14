@@ -13,6 +13,7 @@ export interface DailyPlanItem {
 }
 
 export interface ContinueLessonInfo {
+  unitId: string;
   lessonId: string;
   lessonTitle: string;
   unitTitle: string;

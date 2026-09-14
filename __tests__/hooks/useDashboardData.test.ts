@@ -78,6 +78,7 @@ describe('useDashboardData', () => {
     expect(result.current.data?.userName).toBe('Alex Rider');
     expect(result.current.data?.avatarUrl).toBe('https://example.com/avatar.png');
     expect(result.current.data?.continueLesson?.lessonId).toBe('l2');
+    expect(result.current.data?.continueLesson?.unitId).toBe('unit-1');
     expect(result.current.data?.dailyGoal.currentXp).toBe(15);
     expect(result.current.data?.dailyGoal.targetXp).toBe(20);
     expect(result.current.data?.dailyGoal.isCompleted).toBe(false);

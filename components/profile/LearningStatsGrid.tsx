@@ -75,7 +75,7 @@ const StatCard: React.FC<StatItemProps> = ({
             marginBottom: 2,
           }}
         >
-          {value.toLocaleString()}
+          {value.toLocaleString('en-US')}
         </Text>
 
         <Text
