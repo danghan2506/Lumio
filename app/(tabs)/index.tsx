@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScrollView, RefreshControl, View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { HeaderBar } from '@/components/home/HeaderBar';
 import { DailyGoalCard } from '@/components/home/DailyGoalCard';
 import { HeroContinueCard } from '@/components/home/HeroContinueCard';
@@ -83,13 +83,13 @@ export default function HomeScreen() {
             isCourseCompleted={data.continueLesson.isCourseCompleted}
             onContinue={() => {
               if (data.continueLesson?.lessonId) {
-                router.push(`/lesson/${data.continueLesson.lessonId}` as any);
+                router.push(`/lesson/${data.continueLesson.lessonId}` as unknown as Href);
               } else if (data.continueLesson?.unitId) {
                 // Continue only ever points at in-progress/not-started lessons inside the learner's current unit — which is by definition unlocked under the Task 1 rule
                 router.push({
                   pathname: '/(tabs)/learn',
                   params: { unitId: data.continueLesson.unitId },
-                } as any);
+                } as unknown as Href);
               }
             }}
           />
@@ -99,9 +99,9 @@ export default function HomeScreen() {
           items={data?.todaysPlan ?? []}
           onItemPress={(item) => {
             if (item.lessonId) {
-              router.push(`/lesson/${item.lessonId}` as any);
+              router.push(`/lesson/${item.lessonId}` as unknown as Href);
             } else if (item.type === 'vocabulary') {
-              router.push('/(tabs)/vocabulary' as any);
+              router.push('/(tabs)/vocabulary' as unknown as Href);
             } else {
               router.push('/(tabs)/learn');
             }
@@ -113,7 +113,7 @@ export default function HomeScreen() {
           topicTitle={data?.aiTopicTitle}
           onStartCall={() => {
             if (data?.aiTopicLessonId) {
-              router.push(`/lesson/${data.aiTopicLessonId}` as any);
+              router.push(`/lesson/${data.aiTopicLessonId}` as unknown as Href);
             } else {
               router.push('/(tabs)/learn');
             }
