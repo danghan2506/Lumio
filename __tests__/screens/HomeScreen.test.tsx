@@ -28,6 +28,7 @@ const mockDashboardData = {
     isCompleted: false,
   },
   continueLesson: {
+    unitId: 'es-unit-1',
     lessonId: 'es-unit-1-lesson-1',
     lessonTitle: 'Greetings & Introductions',
     unitTitle: 'Unit 1',
@@ -96,6 +97,19 @@ describe('HomeScreen', () => {
     const continueBtn = getByText('Continue');
     fireEvent(continueBtn, 'press');
     expect(mockPush).toHaveBeenCalledWith('/lesson/es-unit-1-lesson-1');
+  });
+
+  it('navigates to learn tab with unitId when Continue button has no lessonId', () => {
+    const savedLessonId = mockDashboardData.continueLesson.lessonId;
+    (mockDashboardData.continueLesson as any).lessonId = '';
+    const { getByText } = render(<HomeScreen />);
+    const continueBtn = getByText('Continue');
+    fireEvent(continueBtn, 'press');
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/(tabs)/learn',
+      params: { unitId: 'es-unit-1' },
+    });
+    mockDashboardData.continueLesson.lessonId = savedLessonId;
   });
 
   it('navigates to learn tab when language badge is pressed', () => {

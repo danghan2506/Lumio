@@ -57,6 +57,7 @@ describe('findContinueLesson', () => {
     ];
     const result = findContinueLesson(unitsWithLessons);
     expect(result).toEqual({
+      unitId: 'unit-1',
       lessonId: 'l2',
       lessonTitle: 'Goodbye',
       unitTitle: 'Greetings',
@@ -84,6 +85,7 @@ describe('findContinueLesson', () => {
     ];
     const result = findContinueLesson(unitsWithLessons);
     expect(result).toEqual({
+      unitId: 'unit-2',
       lessonId: 'l3',
       lessonTitle: 'Numbers 1-10',
       unitTitle: 'Numbers',
@@ -106,12 +108,14 @@ describe('findContinueLesson', () => {
     const result = findContinueLesson(unitsWithLessons);
     expect(result?.isCourseCompleted).toBe(true);
     expect(result?.lessonId).toBe('l1');
+    expect(result?.unitId).toBe('unit-1');
   });
 });
 
 describe('generateDailyPlan', () => {
   it('generates 3 actionable daily plan tasks with proper completion states', () => {
     const continueLesson = {
+      unitId: 'unit-1',
       lessonId: 'l1',
       lessonTitle: 'Hello',
       unitTitle: 'Greetings',

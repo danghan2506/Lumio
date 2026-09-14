@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, type Href } from 'expo-router';
+import { useRouter, useLocalSearchParams, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { TabScreenWrapper } from '@/components/navigation/TabScreenWrapper';
 import { UnitHeader } from '@/components/learn/UnitHeader';
@@ -16,12 +16,14 @@ import { SegmentedToggle } from '@/components/learn/SegmentedToggle';
 import { ActivityCard } from '@/components/ui/ActivityCard';
 import { MultipleChoiceQuizModal } from '@/components/practice/MultipleChoiceQuizModal';
 import { TranslationQuizModal } from '@/components/practice/TranslationQuizModal';
+import { UnitSelectorModal } from '@/components/learn/UnitSelectorModal';
 import { useLessonsData } from '@/hooks/useLessonsData';
 import { usePracticeData } from '@/hooks/usePracticeData';
 import { recordLessonProgress } from '@/lib/api';
 import { colors } from '@/theme/colors';
 import type { QuizResultSummary } from '@/hooks/useMultipleChoiceQuiz';
 import type { PracticeActivityType } from '@/types/learning';
+import type { UnitRow } from '@/types/database.types';
 
 const FILTER_OPTIONS: { type: PracticeActivityType; label: string }[] = [
   { type: 'all', label: 'All' },
@@ -31,17 +33,29 @@ const FILTER_OPTIONS: { type: PracticeActivityType; label: string }[] = [
 
 export default function LearnScreen() {
   const router = useRouter();
+  const searchParams = useLocalSearchParams<{ unitId?: string | string[] }>();
+  const rawUnitId = searchParams.unitId;
+  const unitId = Array.isArray(rawUnitId) ? rawUnitId[0] : rawUnitId;
+
   const [activeTab, setActiveTab] = useState<'lessons' | 'practice'>('lessons');
+  const [showUnitSelector, setShowUnitSelector] = useState(false);
 
   const {
+    units,
+    unitsProgress,
     activeUnit: lessonsActiveUnit,
     lessons,
     completedCount,
     loading: lessonsLoading,
     refreshing: lessonsRefreshing,
     error: lessonsError,
+    canGoPrev,
+    canGoNext,
+    setActiveUnit: lessonsSetActiveUnit,
+    goToPrevUnit,
+    goToNextUnit,
     refresh: refreshLessons,
-  } = useLessonsData();
+  } = useLessonsData({ initialUnitId: unitId });
 
   const {
     selectedLanguage,
@@ -61,7 +75,38 @@ export default function LearnScreen() {
     loadingActivities,
     selectLessonForPractice,
     clearSelectedPracticeLesson,
+    setActiveUnit: practiceSetActiveUnit,
   } = usePracticeData();
+
+  const handleSelectUnit = useCallback(
+    (unit: UnitRow) => {
+      lessonsSetActiveUnit(unit);
+      practiceSetActiveUnit(unit);
+    },
+    [lessonsSetActiveUnit, practiceSetActiveUnit]
+  );
+
+  // Synchronize practice tab when lessonsActiveUnit changes (e.g. initial load or stepper)
+  useEffect(() => {
+    if (lessonsActiveUnit && practiceActiveUnit?.id !== lessonsActiveUnit.id && typeof practiceSetActiveUnit === 'function') {
+      void practiceSetActiveUnit(lessonsActiveUnit);
+    }
+  }, [lessonsActiveUnit, practiceActiveUnit?.id, practiceSetActiveUnit]);
+
+  // Synchronize when route unitId param changes
+  useEffect(() => {
+    if (unitId && units?.length > 0) {
+      const targetUnit = units.find((u) => u.id === unitId);
+      if (targetUnit && !unitsProgress?.[targetUnit.id]?.isLocked) {
+        if (lessonsActiveUnit?.id !== targetUnit.id && typeof lessonsSetActiveUnit === 'function') {
+          lessonsSetActiveUnit(targetUnit);
+        }
+        if (practiceActiveUnit?.id !== targetUnit.id && typeof practiceSetActiveUnit === 'function') {
+          practiceSetActiveUnit(targetUnit);
+        }
+      }
+    }
+  }, [unitId, units, unitsProgress, lessonsActiveUnit?.id, practiceActiveUnit?.id, lessonsSetActiveUnit, practiceSetActiveUnit]);
 
   const activeUnit = activeTab === 'lessons' ? lessonsActiveUnit : (practiceActiveUnit ?? lessonsActiveUnit);
   const isRefreshing = lessonsRefreshing || practiceRefreshing;
@@ -120,6 +165,11 @@ export default function LearnScreen() {
             unitNumber={activeUnit?.order ?? 1}
             completedCount={currentCompletedCount}
             totalCount={currentTotalCount}
+            canGoPrev={canGoPrev}
+            canGoNext={canGoNext}
+            onPrevPress={goToPrevUnit}
+            onNextPress={goToNextUnit}
+            onTitlePress={() => setShowUnitSelector(true)}
           />
 
           {/* Segmented Toggle (Lessons vs Practice) */}
@@ -343,6 +393,19 @@ export default function LearnScreen() {
             onCompleted={handleQuizCompleted}
           />
         )}
+
+        {/* Unit Selector Modal */}
+        <UnitSelectorModal
+          visible={showUnitSelector}
+          units={units}
+          activeUnitId={activeUnit?.id ?? null}
+          unitsProgress={unitsProgress}
+          onSelectUnit={(unit) => {
+            setShowUnitSelector(false);
+            handleSelectUnit(unit);
+          }}
+          onClose={() => setShowUnitSelector(false)}
+        />
       </TabScreenWrapper>
     </SafeAreaView>
   );

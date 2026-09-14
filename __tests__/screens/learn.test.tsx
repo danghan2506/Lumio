@@ -7,6 +7,7 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({
     push: mockPush,
   }),
+  useLocalSearchParams: () => ({}),
 }));
 
 const mockRefreshLessons = jest.fn();

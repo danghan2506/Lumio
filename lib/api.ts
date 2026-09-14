@@ -262,6 +262,137 @@ export async function getLessonsWithProgress(unitId: string): Promise<LessonWith
   }));
 }
 
+export interface UnitProgressSummary {
+  completedCount: number;
+  totalCount: number;
+  isCompleted: boolean;
+  isLocked: boolean;
+}
+
+/**
+ * Computes sequential lock states for an ordered list of units.
+ * Unit 1 is always unlocked. Each subsequent unit is unlocked if and only if
+ * its preceding unit was unlocked and completed.
+ *
+ * NOTE: isLocked is for UX progression guidance only (Duolingo-style path).
+ * It is NOT an access control or security mechanism. Supabase RLS remains authoritative.
+ */
+export function computeUnitLocks(
+  orderedUnits: UnitRow[],
+  completedByUnit: Record<string, boolean>
+): Record<string, boolean> {
+  const locks: Record<string, boolean> = {};
+  if (orderedUnits.length === 0) {
+    return locks;
+  }
+
+  // First unit is always unlocked
+  locks[orderedUnits[0].id] = false;
+
+  let canUnlockNext = Boolean(completedByUnit[orderedUnits[0].id]);
+
+  for (let i = 1; i < orderedUnits.length; i++) {
+    const unit = orderedUnits[i];
+    if (canUnlockNext) {
+      locks[unit.id] = false;
+      canUnlockNext = Boolean(completedByUnit[unit.id]);
+    } else {
+      locks[unit.id] = true;
+      canUnlockNext = false;
+    }
+  }
+
+  return locks;
+}
+
+/**
+ * Fetches all units for a given language along with their progress summaries.
+ * Uses batched queries (at most 3 queries total) to avoid N+1 per-unit query loops:
+ * 1. getUnitsFromDB(languageId)
+ * 2. supabase.from('lessons').select('id, unit_id').in('unit_id', unitIds)
+ * 3. getLessonProgressForLessons(allLessonIds)
+ *
+ * NOTE: isLocked is for UX progression guidance only (Duolingo-style path).
+ * It is NOT an access control or security mechanism. Supabase RLS remains authoritative.
+ */
+export async function getUnitsWithProgressSummary(languageId: string): Promise<{
+  units: UnitRow[];
+  unitsProgress: Record<string, UnitProgressSummary>;
+}> {
+  const units = await getUnitsFromDB(languageId as LanguageId);
+  if (units.length === 0) {
+    return {
+      units: [],
+      unitsProgress: {},
+    };
+  }
+
+  const unitIds = units.map((unit) => unit.id);
+  const { data: lessonsData, error: lessonsError } = await supabase
+    .from('lessons')
+    .select('id, unit_id')
+    .in('unit_id', unitIds);
+
+  if (lessonsError) {
+    throw new Error(lessonsError.message);
+  }
+
+  const lessons = lessonsData ?? [];
+  const unitLessonIdsMap = new Map<string, string[]>();
+  for (const unit of units) {
+    unitLessonIdsMap.set(unit.id, []);
+  }
+
+  for (const lesson of lessons) {
+    const lessonIds = unitLessonIdsMap.get(lesson.unit_id);
+    if (lessonIds) {
+      lessonIds.push(lesson.id);
+    }
+  }
+
+  const allLessonIds = lessons.map((lesson) => lesson.id);
+  const progressList = await getLessonProgressForLessons(allLessonIds);
+
+  const completedLessonIds = new Set<string>();
+  for (const progress of progressList) {
+    if (normalizeLessonProgressStatus(progress.status) === 'completed') {
+      completedLessonIds.add(progress.lesson_id);
+    }
+  }
+
+  const completedByUnit: Record<string, boolean> = {};
+  for (const unit of units) {
+    const lessonIds = unitLessonIdsMap.get(unit.id) ?? [];
+    const totalCount = lessonIds.length;
+    const completedCount = lessonIds.filter((id) => completedLessonIds.has(id)).length;
+    completedByUnit[unit.id] = totalCount > 0 && completedCount === totalCount;
+  }
+
+  const unitLocks = computeUnitLocks(units, completedByUnit);
+
+  const unitsProgress: Record<string, UnitProgressSummary> = {};
+  for (const unit of units) {
+    const lessonIds = unitLessonIdsMap.get(unit.id) ?? [];
+    const totalCount = lessonIds.length;
+    const completedCount = lessonIds.filter((id) => completedLessonIds.has(id)).length;
+    const isCompleted = totalCount > 0 && completedCount === totalCount;
+    const isLocked = unitLocks[unit.id] ?? true;
+
+    unitsProgress[unit.id] = {
+      completedCount,
+      totalCount,
+      isCompleted,
+      isLocked,
+    };
+  }
+
+  return {
+    units,
+    unitsProgress,
+  };
+}
+
+
 export function sanitizeMultipleChoiceData(data: unknown): MultipleChoiceData | null {
   if (typeof data !== 'object' || data === null || Array.isArray(data)) {
     return null;
