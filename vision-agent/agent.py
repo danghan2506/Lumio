@@ -23,6 +23,7 @@ from vision_agents.core.agents.events import (
 )
 from vision_agents.core.edge.events import AudioReceivedEvent
 from vision_agents.core.instructions import Instructions
+from vision_agents.core.llm import realtime
 from vision_agents.plugins import gemini, getstream
 
 _timing_log = logging.getLogger("lumi.timing")
@@ -80,30 +81,30 @@ def caption_event(text, *, is_final=True):
 
 
 def install_caption_relay(agent):
-    """Subscribe to agent turn events and relay speech text as caption custom events.
+    """Subscribe to LLM output and agent turn events to relay speech as caption custom events.
 
     Emits ``teacher_caption`` custom events so the mobile client can display
     live subtitles of what the AI teacher says.
 
     Strategy:
-    - Wrap ``agent.simple_response`` to capture the text prompt and emit it
-      as a caption before the audio plays.
+    - Consume ``agent.llm.output`` and emit each ``RealtimeAgentTranscript``
+      delta chunk as a non-final caption event (real-time streaming subtitles).
     - On ``AgentTurnEndedEvent``, emit an empty final event so the client
       starts its auto-clear timer.
+
+    Returns an async coroutine ``_relay_captions`` that must be run as a task
+    for the duration of the call.
     """
-    _original_simple_response = agent.simple_response
 
-    async def _captioned_simple_response(text=None, **kwargs):
-        if text:
-            try:
-                await agent.send_custom_event(
-                    caption_event(text, is_final=False)
-                )
-            except Exception:
-                pass  # Never disrupt audio for caption delivery
-        return await _original_simple_response(text=text, **kwargs)
-
-    agent.simple_response = _captioned_simple_response
+    async def _relay_captions():
+        async for event in agent.llm.output:
+            if isinstance(event, realtime.RealtimeAgentTranscript) and event.text:
+                try:
+                    await agent.send_custom_event(
+                        caption_event(event.text, is_final=False)
+                    )
+                except Exception:
+                    pass  # Never disrupt audio for caption delivery
 
     @agent.subscribe
     async def _on_agent_turn_end(event):
@@ -112,6 +113,8 @@ def install_caption_relay(agent):
                 await agent.send_custom_event(caption_event("", is_final=True))
             except Exception:
                 pass  # Never disrupt audio for caption delivery
+
+    return _relay_captions
 
 
 def should_send_completion_event(turn_ended_since_request, elapsed_seconds, min_seconds=MIN_FAREWELL_SECONDS, max_seconds=MAX_FAREWELL_SECONDS):
@@ -467,15 +470,17 @@ async def join_call(agent: Agent, call_type: str, call_id: str, **kwargs) -> Non
     agent.llm.set_instructions(agent.instructions)
 
     coordinator = install_completion(agent, custom_data)
-    install_caption_relay(agent)
+    relay_captions = install_caption_relay(agent)
 
     async with agent.join(call):
         completion = asyncio.create_task(coordinator.run())
+        caption_relay = asyncio.create_task(relay_captions())
         try:
             await agent.simple_response(text=build_greeting(custom_data, language))
             await agent.finish()
         finally:
             completion.cancel()
+            caption_relay.cancel()
 
 
 runner = Runner(AgentLauncher(create_agent=create_agent, join_call=join_call))
