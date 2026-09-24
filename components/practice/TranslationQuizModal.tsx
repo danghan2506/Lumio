@@ -492,7 +492,7 @@ export function TranslationQuizModal({
                     <Text
                       style={{
                         fontFamily: 'PlusJakartaSans_500Medium',
-                        color: colors.lavenderMist,
+                        color: colors.slate,
                       }}
                       className="text-xs mb-0.5"
                     >
@@ -501,7 +501,7 @@ export function TranslationQuizModal({
                     <Text
                       style={{
                         fontFamily: 'Fredoka_700Bold',
-                        color: colors.cream,
+                        color: colors.deepIndigo,
                       }}
                       className="text-sm"
                     >
