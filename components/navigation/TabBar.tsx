@@ -75,19 +75,22 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 
   return (
     <View
-      style={{
-        backgroundColor: colors.deepIndigo,
-        paddingBottom: Math.max(insets.bottom, 12),
-        paddingTop: 8,
-        paddingHorizontal: 12,
-        borderTopWidth: 1,
-        borderTopColor: "rgba(234, 230, 255, 0.08)",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
-        elevation: 8,
-      }}
+      testID="tab-bar-container"
+      style={[
+        {
+          backgroundColor: "rgba(255, 251, 244, 0.95)",
+          paddingBottom: Math.max(insets.bottom, 12),
+          paddingTop: 8,
+          paddingHorizontal: 12,
+          borderTopWidth: 1,
+          borderTopColor: "rgba(36, 27, 74, 0.06)",
+          shadowColor: "#241B4A",
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.04,
+          shadowRadius: 12,
+          elevation: 4,
+        },
+      ]}
     >
       <View
         onLayout={handleLayout}
@@ -108,7 +111,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 height: 48,
                 left: 4,
                 borderRadius: 24,
-                backgroundColor: "rgba(234, 230, 255, 0.12)",
+                backgroundColor: "rgba(255, 107, 87, 0.12)",
                 borderWidth: 1,
                 borderColor: "rgba(255, 107, 87, 0.3)",
               },
@@ -186,7 +189,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                     : "PlusJakartaSans_500Medium",
                   fontSize: 10,
                   lineHeight: 12,
-                  color: isFocused ? colors.cream : colors.slate,
+                  color: isFocused ? colors.deepIndigo : colors.slate,
                 }}
                 numberOfLines={1}
               >
