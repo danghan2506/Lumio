@@ -138,7 +138,10 @@ export default function LearnScreen() {
                 <ActivityIndicator size="large" color={colors.lumioCoral} />
               </View>
             ) : lessonsError ? (
-              <View className="mx-4 p-6 rounded-3xl bg-[#FAF7F0] border border-red-200 items-center justify-center shadow-sm">
+              <View
+                style={{ backgroundColor: colors.warmIvory }}
+                className="mx-4 p-6 rounded-3xl border border-red-200 items-center justify-center shadow-sm"
+              >
                 <Ionicons name="alert-circle-outline" size={32} color={colors.lumioCoral} style={{ marginBottom: 8 }} />
                 <Text
                   style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.deepIndigo }}
@@ -187,7 +190,10 @@ export default function LearnScreen() {
                 <ActivityIndicator size="large" color={colors.lumioCoral} />
               </View>
             ) : practiceError ? (
-              <View className="mx-4 p-6 rounded-3xl bg-[#FAF7F0] border border-red-200 items-center justify-center shadow-sm">
+              <View
+                style={{ backgroundColor: colors.warmIvory }}
+                className="mx-4 p-6 rounded-3xl border border-red-200 items-center justify-center shadow-sm"
+              >
                 <Ionicons name="alert-circle-outline" size={32} color={colors.lumioCoral} style={{ marginBottom: 8 }} />
                 <Text
                   style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.deepIndigo }}
@@ -252,7 +258,7 @@ export default function LearnScreen() {
                   <View
                     testID="practice-empty-state"
                     style={{
-                      backgroundColor: '#FAF7F0',
+                      backgroundColor: colors.warmIvory,
                       borderColor: 'rgba(36, 27, 74, 0.08)',
                     }}
                     className="mx-4 p-8 rounded-3xl border items-center justify-center shadow-sm"

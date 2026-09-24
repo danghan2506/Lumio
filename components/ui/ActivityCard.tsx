@@ -40,7 +40,7 @@ export function ActivityCard({
 
   // Status-dependent container style
   const containerStyle = {
-    backgroundColor: '#FAF7F0',
+    backgroundColor: colors.warmIvory,
     ...(isInProgress
       ? { borderColor: colors.lumioCoral, borderWidth: 1.5 }
       : isCompleted
