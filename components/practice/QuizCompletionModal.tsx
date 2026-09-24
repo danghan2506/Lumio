@@ -73,11 +73,11 @@ export function QuizCompletionModal({
       >
         <View
           style={{
-            backgroundColor: colors.deepIndigo,
+            backgroundColor: colors.warmIvory,
             borderTopLeftRadius: 36,
             borderTopRightRadius: 36,
             borderTopWidth: 1,
-            borderColor: 'rgba(255, 255, 255, 0.1)',
+            borderColor: 'rgba(36, 27, 74, 0.08)',
             paddingBottom: Math.max(insets.bottom, 24),
           }}
           className="p-6 items-center shadow-2xl"
@@ -95,7 +95,7 @@ export function QuizCompletionModal({
           <Text
             style={{
               fontFamily: 'Fredoka_700Bold',
-              color: colors.cream,
+              color: colors.deepIndigo,
             }}
             className="text-2xl text-center mb-1.5"
           >
@@ -105,7 +105,7 @@ export function QuizCompletionModal({
           <Text
             style={{
               fontFamily: 'PlusJakartaSans_500Medium',
-              color: colors.lavenderMist,
+              color: colors.slate,
             }}
             className="text-xs text-center uppercase tracking-wider mb-2"
           >
@@ -115,7 +115,7 @@ export function QuizCompletionModal({
           <Text
             style={{
               fontFamily: 'PlusJakartaSans_400Regular',
-              color: colors.lavenderMist,
+              color: colors.slate,
             }}
             className="text-sm text-center leading-5 mb-6 px-4"
           >
@@ -127,10 +127,10 @@ export function QuizCompletionModal({
             {/* Correct Answers Card */}
             <View
               style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                borderColor: 'rgba(255, 255, 255, 0.1)',
+                backgroundColor: 'rgba(36, 27, 74, 0.04)',
+                borderColor: 'rgba(36, 27, 74, 0.08)',
               }}
-              className="flex-1 p-3.5 rounded-2xl border items-center mr-2"
+              className="flex-1 p-3.5 rounded-2xl border items-center mr-2 shadow-sm"
             >
               <View className="flex-row items-center mb-1">
                 <Ionicons
@@ -152,7 +152,7 @@ export function QuizCompletionModal({
               <Text
                 style={{
                   fontFamily: 'Fredoka_700Bold',
-                  color: colors.cream,
+                  color: colors.deepIndigo,
                 }}
                 className="text-lg mb-0.5"
               >
@@ -172,10 +172,10 @@ export function QuizCompletionModal({
             {/* XP Earned Card */}
             <View
               style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                borderColor: 'rgba(255, 255, 255, 0.1)',
+                backgroundColor: 'rgba(36, 27, 74, 0.04)',
+                borderColor: 'rgba(36, 27, 74, 0.08)',
               }}
-              className="flex-1 p-3.5 rounded-2xl border items-center ml-2"
+              className="flex-1 p-3.5 rounded-2xl border items-center ml-2 shadow-sm"
             >
               <View className="flex-row items-center mb-1">
                 <Ionicons
@@ -246,14 +246,14 @@ export function QuizCompletionModal({
                   testID="claim-finish-btn"
                   onPress={onClaim}
                   activeOpacity={0.7}
-                  className="w-full py-3 rounded-2xl items-center border border-white/10"
+                  className="w-full py-3 rounded-2xl items-center border border-[rgba(36,27,74,0.12)] bg-[rgba(36,27,74,0.04)]"
                   accessibilityRole="button"
                   accessibilityLabel="Close"
                 >
                   <Text
                     style={{
                       fontFamily: 'PlusJakartaSans_600SemiBold',
-                      color: colors.slate,
+                      color: colors.deepIndigo,
                     }}
                     className="text-sm"
                   >
@@ -298,15 +298,15 @@ export function QuizCompletionModal({
                   onPress={onRetry}
                   disabled={saving}
                   activeOpacity={0.7}
-                  className="w-full py-3 rounded-2xl items-center border border-white/10 flex-row justify-center"
+                  className="w-full py-3 rounded-2xl items-center border border-[rgba(36,27,74,0.12)] bg-[rgba(36,27,74,0.04)] flex-row justify-center"
                   accessibilityRole="button"
                   accessibilityLabel="Try again"
                 >
-                  <Ionicons name="refresh" size={14} color={colors.lavenderMist} style={{ marginRight: 6 }} />
+                  <Ionicons name="refresh" size={14} color={colors.slate} style={{ marginRight: 6 }} />
                   <Text
                     style={{
                       fontFamily: 'PlusJakartaSans_600SemiBold',
-                      color: colors.lavenderMist,
+                      color: colors.deepIndigo,
                     }}
                     className="text-sm"
                   >
