@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   StatusBar,
+  ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -235,12 +236,12 @@ export function MultipleChoiceQuizModal({
                 const isSelected = selectedOption === index;
                 const isCorrectOption = currentQuestion.correctIndex === index;
 
-                let optionStyle: any = {
+                let optionStyle: ViewStyle = {
                   backgroundColor: colors.warmIvory,
                   borderColor: 'rgba(36, 27, 74, 0.08)',
                   borderWidth: 1,
                 };
-                let badgeBgStyle: any = { backgroundColor: 'rgba(36, 27, 74, 0.06)' };
+                let badgeBgStyle: ViewStyle = { backgroundColor: 'rgba(36, 27, 74, 0.06)' };
                 let badgeTextColor: string = colors.deepIndigo;
                 let rightIcon: React.ReactNode = null;
 
