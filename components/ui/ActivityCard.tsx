@@ -38,19 +38,22 @@ export function ActivityCard({
   const isCompleted = status === 'completed';
   const isInProgress = status === 'in_progress';
 
-  // Status-dependent container border
-  const borderColorStyle = isInProgress
-    ? { borderColor: colors.lumioCoral }
-    : isCompleted
-    ? { borderColor: `${colors.mint}40` }
-    : { borderColor: 'rgba(51, 65, 85, 0.4)' }; // slate-700/40
+  // Status-dependent container style
+  const containerStyle = {
+    backgroundColor: '#FAF7F0',
+    ...(isInProgress
+      ? { borderColor: colors.lumioCoral, borderWidth: 1.5 }
+      : isCompleted
+      ? { borderColor: 'rgba(53, 208, 160, 0.4)', borderWidth: 1 }
+      : { borderColor: 'rgba(36, 27, 74, 0.08)', borderWidth: 1 }),
+  };
 
   // Status-dependent header label color
   const labelColor = isCompleted
     ? colors.mint
     : isInProgress
     ? colors.lumioCoral
-    : colors.lavenderMist;
+    : colors.slate;
 
   const headerLabel = typeLabel
     ? `Lesson ${orderNumber} • ${typeLabel}`
@@ -61,8 +64,8 @@ export function ActivityCard({
       testID={testID}
       onPress={onPress}
       activeOpacity={0.8}
-      style={borderColorStyle}
-      className="mx-4 mb-3.5 p-4 rounded-3xl border bg-slate-900/60 flex-row items-center justify-between"
+      style={containerStyle}
+      className="mx-4 mb-3.5 p-4 rounded-3xl shadow-sm flex-row items-center justify-between"
       accessibilityRole="button"
       accessibilityLabel={`${headerLabel}: ${title}`}
     >
@@ -114,7 +117,7 @@ export function ActivityCard({
         <Text
           style={{
             fontFamily: 'Fredoka_700Bold',
-            color: colors.cream,
+            color: colors.deepIndigo,
           }}
           className="text-base mb-2"
           numberOfLines={2}
@@ -126,11 +129,11 @@ export function ActivityCard({
         <View className="flex-row items-center flex-wrap">
           {questionsCount !== undefined && (
             <View className="flex-row items-center mr-3">
-              <Ionicons name="help-circle-outline" size={12} color={colors.lavenderMist} style={{ marginRight: 4 }} />
+              <Ionicons name="help-circle-outline" size={12} color={colors.slate} style={{ marginRight: 4 }} />
               <Text
                 style={{
                   fontFamily: 'PlusJakartaSans_500Medium',
-                  color: colors.lavenderMist,
+                  color: colors.slate,
                 }}
                 className="text-xs"
               >
@@ -156,11 +159,11 @@ export function ActivityCard({
 
           {estimatedMinutes !== undefined && estimatedMinutes > 0 && (
             <View className="flex-row items-center">
-              <Ionicons name="time-outline" size={12} color={colors.lavenderMist} style={{ marginRight: 4 }} />
+              <Ionicons name="time-outline" size={12} color={colors.slate} style={{ marginRight: 4 }} />
               <Text
                 style={{
                   fontFamily: 'PlusJakartaSans_500Medium',
-                  color: colors.lavenderMist,
+                  color: colors.slate,
                 }}
                 className="text-xs opacity-80"
               >
@@ -193,10 +196,10 @@ export function ActivityCard({
 
         {status === 'not_started' && (
           <View
-            className="w-10 h-10 rounded-full bg-slate-800/60 items-center justify-center border border-slate-700/50"
+            className="w-10 h-10 rounded-full bg-[rgba(36,27,74,0.05)] items-center justify-center border border-[rgba(36,27,74,0.08)]"
             testID="icon-play-outline"
           >
-            <Ionicons name="play-outline" size={18} color={colors.lavenderMist} style={{ marginLeft: 2 }} />
+            <Ionicons name="play-outline" size={18} color={colors.deepIndigo} style={{ marginLeft: 2 }} />
           </View>
         )}
       </View>

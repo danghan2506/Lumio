@@ -91,4 +91,23 @@ describe('ActivityCard', () => {
     fireEvent.press(getByTestId('activity-card'));
     expect(handlePress).toHaveBeenCalledTimes(1);
   });
+
+  it('uses warm ivory background and deep indigo title on light canvas', () => {
+    const { getByTestId, getByText } = render(
+      <ActivityCard {...defaultProps} status="not_started" />
+    );
+    const card = getByTestId('activity-card');
+    expect(card.props.style).toEqual(
+      expect.objectContaining({
+        backgroundColor: '#FAF7F0',
+      })
+    );
+    const title = getByText('Basic Greetings');
+    expect(title.props.style).toEqual(
+      expect.objectContaining({
+        color: '#241B4A',
+      })
+    );
+  });
 });
+
