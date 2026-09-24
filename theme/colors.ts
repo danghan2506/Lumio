@@ -7,6 +7,7 @@ export const colors = {
   mintSoft: '#E6F9F3',
   lavenderMist: '#EAE6FF',
   cream: '#FFFBF4',
+  warmIvory: '#FAF7F0',
   slate: '#5E5A80',
   gradients: {
     canvas: ['#241B4A', '#4B3FA8'] as const,
