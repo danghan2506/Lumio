@@ -94,11 +94,12 @@ export function MultipleChoiceQuizModal({
       presentationStyle="fullScreen"
       onRequestClose={requestExit}
     >
-      <StatusBar barStyle="light-content" backgroundColor={colors.deepIndigo} />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.cream} />
       <View
+        testID="quiz-modal-container"
         style={{
           flex: 1,
-          backgroundColor: colors.deepIndigo,
+          backgroundColor: colors.cream,
           paddingTop: topInset,
           paddingBottom: bottomInset,
         }}
@@ -113,7 +114,7 @@ export function MultipleChoiceQuizModal({
             alignItems: 'center',
             justifyContent: 'space-between',
             borderBottomWidth: 1,
-            borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+            borderBottomColor: 'rgba(36, 27, 74, 0.08)',
           }}
         >
           {/* Close / Exit Button */}
@@ -125,7 +126,7 @@ export function MultipleChoiceQuizModal({
               width: 40,
               height: 40,
               borderRadius: 20,
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backgroundColor: 'rgba(36, 27, 74, 0.06)',
               alignItems: 'center',
               justifyContent: 'center',
               marginRight: 12,
@@ -133,7 +134,7 @@ export function MultipleChoiceQuizModal({
             accessibilityRole="button"
             accessibilityLabel="Close practice quiz"
           >
-            <Ionicons name="close" size={22} color={colors.cream} />
+            <Ionicons name="close" size={22} color={colors.deepIndigo} />
           </TouchableOpacity>
 
           {/* Progress Bar Track */}
@@ -141,7 +142,7 @@ export function MultipleChoiceQuizModal({
             style={{
               flex: 1,
               height: 14,
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backgroundColor: 'rgba(36, 27, 74, 0.08)',
               borderRadius: 999,
               overflow: 'hidden',
               marginRight: 12,
@@ -164,14 +165,14 @@ export function MultipleChoiceQuizModal({
               paddingHorizontal: 10,
               paddingVertical: 4,
               borderRadius: 999,
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backgroundColor: 'rgba(36, 27, 74, 0.06)',
             }}
           >
             <Text
               testID="quiz-counter"
               style={{
                 fontFamily: 'PlusJakartaSans_600SemiBold',
-                color: colors.lavenderMist,
+                color: colors.slate,
                 fontSize: 12,
               }}
             >
@@ -201,7 +202,7 @@ export function MultipleChoiceQuizModal({
             <Text
               style={{
                 fontFamily: 'PlusJakartaSans_500Medium',
-                color: colors.lavenderMist,
+                color: colors.slate,
               }}
               className="text-sm mb-4"
             >
@@ -211,16 +212,16 @@ export function MultipleChoiceQuizModal({
             {/* Question Text Box */}
             <View
               style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                borderColor: 'rgba(255, 255, 255, 0.1)',
+                backgroundColor: colors.warmIvory,
+                borderColor: 'rgba(36, 27, 74, 0.08)',
               }}
-              className="p-5 rounded-3xl border mb-6"
+              className="p-5 rounded-3xl border mb-6 shadow-sm"
             >
               <Text
                 testID="quiz-question-text"
                 style={{
                   fontFamily: 'Fredoka_700Bold',
-                  color: colors.cream,
+                  color: colors.deepIndigo,
                 }}
                 className="text-xl leading-7 text-center"
               >
@@ -234,31 +235,43 @@ export function MultipleChoiceQuizModal({
                 const isSelected = selectedOption === index;
                 const isCorrectOption = currentQuestion.correctIndex === index;
 
-                let optionBorder = 'border-white/10';
-                let optionBg = 'bg-slate-900/60';
-                let badgeBg = 'bg-white/10';
-                let badgeTextColor: string = colors.lavenderMist;
+                let optionStyle: any = {
+                  backgroundColor: colors.warmIvory,
+                  borderColor: 'rgba(36, 27, 74, 0.08)',
+                  borderWidth: 1,
+                };
+                let badgeBgStyle: any = { backgroundColor: 'rgba(36, 27, 74, 0.06)' };
+                let badgeTextColor: string = colors.deepIndigo;
                 let rightIcon: React.ReactNode = null;
 
                 if (isAnswerChecked) {
                   if (isCorrectOption) {
-                    optionBorder = 'border-[#35D0A0]';
-                    optionBg = 'bg-[#35D0A0]/20';
-                    badgeBg = 'bg-[#35D0A0]';
+                    optionStyle = {
+                      backgroundColor: 'rgba(53, 208, 160, 0.12)',
+                      borderColor: colors.mint,
+                      borderWidth: 1.5,
+                    };
+                    badgeBgStyle = { backgroundColor: colors.mint };
                     badgeTextColor = colors.deepIndigo;
                     rightIcon = <Ionicons name="checkmark-circle" size={22} color={colors.mint} />;
                   } else if (isSelected && !isCorrectOption) {
-                    optionBorder = 'border-[#FF6B57]';
-                    optionBg = 'bg-[#FF6B57]/20';
-                    badgeBg = 'bg-[#FF6B57]';
+                    optionStyle = {
+                      backgroundColor: 'rgba(255, 107, 87, 0.12)',
+                      borderColor: colors.lumioCoral,
+                      borderWidth: 1.5,
+                    };
+                    badgeBgStyle = { backgroundColor: colors.lumioCoral };
                     badgeTextColor = colors.cream;
                     rightIcon = <Ionicons name="close-circle" size={22} color={colors.lumioCoral} />;
                   }
                 } else if (isSelected) {
-                  optionBorder = 'border-[#FFB74D]';
-                  optionBg = 'bg-[#FFB74D]/15';
-                  badgeBg = 'bg-[#FFB74D]';
-                  badgeTextColor = colors.deepIndigo;
+                  optionStyle = {
+                    backgroundColor: 'rgba(255, 107, 87, 0.08)',
+                    borderColor: colors.lumioCoral,
+                    borderWidth: 1.5,
+                  };
+                  badgeBgStyle = { backgroundColor: colors.lumioCoral };
+                  badgeTextColor = colors.cream;
                 }
 
                 return (
@@ -267,13 +280,17 @@ export function MultipleChoiceQuizModal({
                     testID={`quiz-option-${index}`}
                     onPress={() => selectOption(index)}
                     activeOpacity={isAnswerChecked ? 1 : 0.75}
-                    className={`p-4 rounded-2xl border ${optionBorder} ${optionBg} flex-row items-center justify-between mb-3`}
+                    style={optionStyle}
+                    className="p-4 rounded-2xl flex-row items-center justify-between mb-3 shadow-sm"
                     accessibilityRole="radio"
                     accessibilityState={{ selected: isSelected }}
                     accessibilityLabel={`Option ${OPTION_LABELS[index]}: ${optionText}`}
                   >
                     <View className="flex-row items-center flex-1 mr-2">
-                      <View className={`w-8 h-8 rounded-xl ${badgeBg} items-center justify-center mr-3.5`}>
+                      <View
+                        style={badgeBgStyle}
+                        className="w-8 h-8 rounded-xl items-center justify-center mr-3.5"
+                      >
                         <Text
                           style={{
                             fontFamily: 'PlusJakartaSans_700Bold',
@@ -287,7 +304,7 @@ export function MultipleChoiceQuizModal({
                       <Text
                         style={{
                           fontFamily: 'PlusJakartaSans_600SemiBold',
-                          color: colors.cream,
+                          color: colors.deepIndigo,
                         }}
                         className="text-base flex-1"
                       >
@@ -334,7 +351,7 @@ export function MultipleChoiceQuizModal({
                   <Text
                     style={{
                       fontFamily: 'PlusJakartaSans_500Medium',
-                      color: colors.cream,
+                      color: colors.deepIndigo,
                     }}
                     className="text-sm mt-1"
                   >
@@ -352,7 +369,7 @@ export function MultipleChoiceQuizModal({
                 disabled={selectedOption === null}
                 activeOpacity={0.85}
                 style={{
-                  backgroundColor: selectedOption !== null ? colors.lumioCoral : 'rgba(255, 255, 255, 0.1)',
+                  backgroundColor: selectedOption !== null ? colors.lumioCoral : 'rgba(36, 27, 74, 0.08)',
                 }}
                 className="w-full py-4 rounded-2xl items-center shadow-lg"
                 accessibilityRole="button"
