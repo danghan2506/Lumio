@@ -49,4 +49,17 @@ describe('TabBar', () => {
 
     expect(mockNavigate).toHaveBeenCalledWith('vocabulary');
   });
+
+  it('applies light cream background and subtle border on container', () => {
+    const { getByTestId } = render(<TabBar {...mockProps} />);
+    const container = getByTestId('tab-bar-container');
+    expect(container.props.style).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          backgroundColor: 'rgba(255, 251, 244, 0.95)',
+          borderTopColor: 'rgba(36, 27, 74, 0.06)',
+        }),
+      ])
+    );
+  });
 });
