@@ -1,0 +1,41 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Chạy mỗi 6 giờ để giữ project active
+    # Cron: phút giờ ngày tháng thứ
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Cho phép chạy thủ công từ GitHub UI
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ping Supabase Database
+        run: |
+          echo "Pinging Supabase at $(date)"
+
+          # Thử ping REST API endpoint
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/")
+
+          echo "Response code: $response"
+
+          if [ "$response" -eq 200 ] || [ "$response" -eq 404 ]; then
+            echo "Supabase is alive!"
+            exit 0
+          else
+            echo "Unexpected response code: $response"
+            exit 1
+          fi
+
+      - name: Log Success
+        if: success()
+        run: echo "Successfully pinged Supabase at $(date)"
+
+      - name: Log Failure
+        if: failure()
+        run: echo "Failed to ping Supabase at $(date)"
