@@ -106,6 +106,7 @@ export function findContinueLesson(
   const selected = inProgressLesson ?? firstNotStartedLesson;
   if (selected) {
     return {
+      unitId: selected.unit.id,
       lessonId: selected.lesson.id,
       lessonTitle: selected.lesson.title,
       unitTitle: selected.unit.title,
@@ -118,6 +119,7 @@ export function findContinueLesson(
 
   if (lastCompletedLesson) {
     return {
+      unitId: lastCompletedLesson.unit.id,
       lessonId: lastCompletedLesson.lesson.id,
       lessonTitle: lastCompletedLesson.lesson.title,
       unitTitle: lastCompletedLesson.unit.title,

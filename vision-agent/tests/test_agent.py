@@ -252,12 +252,23 @@ from agent import CompletionCoordinator, FAREWELL_STOP_INSTRUCTION, install_comp
 class _FakeLLM:
     def __init__(self, fake):
         self.fake = fake
+        self._output_queue: asyncio.Queue = asyncio.Queue()
 
     def register_function(self, *, name=None, description=None):
         def decorator(fn):
             self.fake.functions[name or fn.__name__] = (description, fn)
             return fn
         return decorator
+
+    @property
+    def output(self):
+        async def _iter():
+            while True:
+                item = await self._output_queue.get()
+                if item is None:
+                    return
+                yield item
+        return _iter()
 
 
 class _FakeAgent:
@@ -439,20 +450,25 @@ def test_caption_event_defaults_to_final():
 
 
 @pytest.mark.asyncio
-async def test_caption_relay_emits_on_simple_response():
+async def test_caption_relay_emits_on_llm_transcript():
+    from vision_agents.core.llm import realtime as _realtime
+
     agent = _FakeAgent()
-    install_caption_relay(agent)
+    relay_captions = install_caption_relay(agent)
 
-    # Simulate calling simple_response with text
-    await agent.simple_response("Let's learn Spanish today!")
+    task = asyncio.create_task(relay_captions())
+    await agent.llm._output_queue.put(
+        _realtime.RealtimeAgentTranscript(mode="delta", text="Let's learn Spanish today!")
+    )
+    await asyncio.sleep(0)
+    task.cancel()
+    await asyncio.gather(task, return_exceptions=True)
 
-    # Should have emitted a teacher_caption event
     caption_events = [e for e in agent.events if e.get("type") == "teacher_caption"]
     assert len(caption_events) >= 1
     assert caption_events[0]["text"] == "Let's learn Spanish today!"
     assert caption_events[0]["speaker_name"] == "Lumi"
-    # The original simple_response should still have been called
-    assert "Let's learn Spanish today!" in agent.spoken
+    assert caption_events[0]["is_final"] is False
 
 
 @pytest.mark.asyncio

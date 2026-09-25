@@ -13,7 +13,7 @@ jest.mock('../../lib/supabase', () => ({
 }));
 
 jest.mock('../../lib/api', () => ({
-  getUnitsFromDB: jest.fn(),
+  getUnitsWithProgressSummary: jest.fn(),
   getPracticeLessons: jest.fn(),
   getMultipleChoiceActivities: jest.fn(),
   getTranslationActivities: jest.fn(),
@@ -27,10 +27,11 @@ import {
   getFriendlyErrorMessage,
 } from '../../hooks/usePracticeData';
 import {
-  getUnitsFromDB,
+  getUnitsWithProgressSummary,
   getPracticeLessons,
   getMultipleChoiceActivities,
   getTranslationActivities,
+  type UnitProgressSummary,
 } from '../../lib/api';
 import { useLanguageStore } from '../../store/useLanguageStore';
 import type { UnitRow, ActivityRow } from '../../types/database.types';
@@ -55,7 +56,28 @@ const mockUnits: UnitRow[] = [
     order: 2,
     created_at: '2026-01-01T00:00:00Z',
   },
+  {
+    id: 'unit-3',
+    language_id: 'en',
+    title: 'Unit 3: Colors',
+    description: 'Learn colors and shapes',
+    icon_emoji: '🎨',
+    order: 3,
+    created_at: '2026-01-01T00:00:00Z',
+  },
 ];
+
+const mockDefaultUnitsProgress: Record<string, UnitProgressSummary> = {
+  'unit-1': { completedCount: 0, totalCount: 2, isCompleted: false, isLocked: false },
+  'unit-2': { completedCount: 0, totalCount: 2, isCompleted: false, isLocked: false },
+  'unit-3': { completedCount: 0, totalCount: 2, isCompleted: false, isLocked: true },
+};
+
+const mockUnitsProgress: Record<string, UnitProgressSummary> = {
+  'unit-1': { completedCount: 2, totalCount: 2, isCompleted: true, isLocked: false },
+  'unit-2': { completedCount: 0, totalCount: 2, isCompleted: false, isLocked: false },
+  'unit-3': { completedCount: 0, totalCount: 2, isCompleted: false, isLocked: true },
+};
 
 const mockPracticeLessons: PracticeLessonItem[] = [
   {
@@ -81,6 +103,21 @@ const mockPracticeLessons: PracticeLessonItem[] = [
     multipleChoiceActivitiesCount: 0,
     translationActivitiesCount: 1,
     status: 'in_progress',
+  },
+];
+
+const mockUnit2PracticeLessons: PracticeLessonItem[] = [
+  {
+    id: 'les-3',
+    unit_id: 'unit-2',
+    order: 1,
+    title: 'Numbers 1-10 Practice',
+    xp_reward: 10,
+    estimated_minutes: 5,
+    activitiesCount: 2,
+    multipleChoiceActivitiesCount: 2,
+    translationActivitiesCount: 0,
+    status: 'not_started',
   },
 ];
 
@@ -159,6 +196,11 @@ describe('usePracticeData', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useLanguageStore.setState({ selectedLanguage: 'en', hasSelectedLanguage: true });
+    (getUnitsWithProgressSummary as jest.Mock).mockResolvedValue({
+      units: mockUnits,
+      unitsProgress: mockDefaultUnitsProgress,
+    });
+    (getPracticeLessons as jest.Mock).mockResolvedValue(mockPracticeLessons);
   });
 
   describe('Helper Functions', () => {
@@ -191,7 +233,10 @@ describe('usePracticeData', () => {
 
   describe('Initial Load Flow', () => {
     it('fetches units and practice lessons for default/selected language successfully', async () => {
-      (getUnitsFromDB as jest.Mock).mockResolvedValueOnce(mockUnits);
+      (getUnitsWithProgressSummary as jest.Mock).mockResolvedValueOnce({
+        units: mockUnits,
+        unitsProgress: mockDefaultUnitsProgress,
+      });
       (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockPracticeLessons);
 
       const { result } = renderHook(() => usePracticeData());
@@ -200,9 +245,10 @@ describe('usePracticeData', () => {
 
       await waitFor(() => expect(result.current.loading).toBe(false));
 
-      expect(getUnitsFromDB).toHaveBeenCalledWith('en');
+      expect(getUnitsWithProgressSummary).toHaveBeenCalledWith('en');
       expect(getPracticeLessons).toHaveBeenCalledWith('unit-1');
       expect(result.current.units).toEqual(mockUnits);
+      expect(result.current.unitsProgress).toEqual(mockDefaultUnitsProgress);
       expect(result.current.activeUnit).toEqual(mockUnits[0]);
       expect(result.current.practiceLessons).toEqual(mockPracticeLessons);
       expect(result.current.filteredPracticeLessons).toEqual(mockPracticeLessons);
@@ -217,22 +263,26 @@ describe('usePracticeData', () => {
     });
 
     it('handles empty units array without error', async () => {
-      (getUnitsFromDB as jest.Mock).mockResolvedValueOnce([]);
+      (getUnitsWithProgressSummary as jest.Mock).mockResolvedValueOnce({
+        units: [],
+        unitsProgress: {},
+      });
 
       const { result } = renderHook(() => usePracticeData());
 
       await waitFor(() => expect(result.current.loading).toBe(false));
 
-      expect(getUnitsFromDB).toHaveBeenCalledWith('en');
+      expect(getUnitsWithProgressSummary).toHaveBeenCalledWith('en');
       expect(getPracticeLessons).not.toHaveBeenCalled();
       expect(result.current.units).toEqual([]);
+      expect(result.current.unitsProgress).toEqual({});
       expect(result.current.activeUnit).toBeNull();
       expect(result.current.practiceLessons).toEqual([]);
       expect(result.current.error).toBeNull();
     });
 
-    it('sets error state when getUnitsFromDB fails', async () => {
-      (getUnitsFromDB as jest.Mock).mockRejectedValueOnce(new Error('DB Units Error'));
+    it('sets error state when getUnitsWithProgressSummary fails', async () => {
+      (getUnitsWithProgressSummary as jest.Mock).mockRejectedValueOnce(new Error('DB Units Error'));
 
       const { result } = renderHook(() => usePracticeData());
 
@@ -240,13 +290,17 @@ describe('usePracticeData', () => {
 
       expect(result.current.error).toBe('DB Units Error');
       expect(result.current.units).toEqual([]);
+      expect(result.current.unitsProgress).toEqual({});
       expect(result.current.activeUnit).toBeNull();
       expect(result.current.practiceLessons).toEqual([]);
       expect(result.current.loading).toBe(false);
     });
 
     it('sets error state when getPracticeLessons fails', async () => {
-      (getUnitsFromDB as jest.Mock).mockResolvedValueOnce(mockUnits);
+      (getUnitsWithProgressSummary as jest.Mock).mockResolvedValueOnce({
+        units: mockUnits,
+        unitsProgress: mockDefaultUnitsProgress,
+      });
       (getPracticeLessons as jest.Mock).mockRejectedValueOnce(new Error('Lessons Error'));
 
       const { result } = renderHook(() => usePracticeData());
@@ -261,7 +315,10 @@ describe('usePracticeData', () => {
 
   describe('Filtering Activity Types', () => {
     it('filters practice lessons by multiple_choice and translation correctly', async () => {
-      (getUnitsFromDB as jest.Mock).mockResolvedValueOnce(mockUnits);
+      (getUnitsWithProgressSummary as jest.Mock).mockResolvedValueOnce({
+        units: mockUnits,
+        unitsProgress: mockDefaultUnitsProgress,
+      });
       (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockPracticeLessons);
 
       const { result } = renderHook(() => usePracticeData());
@@ -291,7 +348,10 @@ describe('usePracticeData', () => {
 
   describe('selectLessonForPractice (Multiple Choice)', () => {
     it('fetches multiple choice activities and filters out invalid ones', async () => {
-      (getUnitsFromDB as jest.Mock).mockResolvedValueOnce(mockUnits);
+      (getUnitsWithProgressSummary as jest.Mock).mockResolvedValueOnce({
+        units: mockUnits,
+        unitsProgress: mockDefaultUnitsProgress,
+      });
       (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockPracticeLessons);
       (getMultipleChoiceActivities as jest.Mock).mockResolvedValueOnce(mockRawActivities);
 
@@ -321,7 +381,10 @@ describe('usePracticeData', () => {
 
   describe('selectLessonForTranslationPractice', () => {
     it('fetches translation activities and sanitizes them properly', async () => {
-      (getUnitsFromDB as jest.Mock).mockResolvedValueOnce(mockUnits);
+      (getUnitsWithProgressSummary as jest.Mock).mockResolvedValueOnce({
+        units: mockUnits,
+        unitsProgress: mockDefaultUnitsProgress,
+      });
       (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockPracticeLessons);
       (getTranslationActivities as jest.Mock).mockResolvedValueOnce(mockRawTranslationActivities);
 
@@ -361,7 +424,10 @@ describe('usePracticeData', () => {
     });
 
     it('sets activitiesError when getTranslationActivities fails', async () => {
-      (getUnitsFromDB as jest.Mock).mockResolvedValueOnce(mockUnits);
+      (getUnitsWithProgressSummary as jest.Mock).mockResolvedValueOnce({
+        units: mockUnits,
+        unitsProgress: mockDefaultUnitsProgress,
+      });
       (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockPracticeLessons);
       (getTranslationActivities as jest.Mock).mockRejectedValueOnce(
         new Error('Failed to fetch translation activities')
@@ -382,7 +448,10 @@ describe('usePracticeData', () => {
 
   describe('clearSelectedPracticeLesson', () => {
     it('clears selected practice lesson and all activities', async () => {
-      (getUnitsFromDB as jest.Mock).mockResolvedValueOnce(mockUnits);
+      (getUnitsWithProgressSummary as jest.Mock).mockResolvedValueOnce({
+        units: mockUnits,
+        unitsProgress: mockDefaultUnitsProgress,
+      });
       (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockPracticeLessons);
       (getTranslationActivities as jest.Mock).mockResolvedValueOnce(mockRawTranslationActivities);
 
@@ -406,6 +475,186 @@ describe('usePracticeData', () => {
       expect(result.current.activeTranslationActivities).toEqual([]);
       expect(result.current.activitiesError).toBeNull();
       expect(result.current.loadingActivities).toBe(false);
+    });
+  });
+
+  describe('Unit Navigation & setActiveUnit', () => {
+    it('calling setActiveUnit(unit2) refetches practice lessons for unit 2', async () => {
+      (getUnitsWithProgressSummary as jest.Mock).mockResolvedValueOnce({
+        units: mockUnits,
+        unitsProgress: mockDefaultUnitsProgress,
+      });
+      (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockPracticeLessons);
+
+      const { result } = renderHook(() => usePracticeData());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(result.current.activeUnit).toEqual(mockUnits[0]);
+      expect(getPracticeLessons).toHaveBeenCalledWith('unit-1');
+
+      (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockUnit2PracticeLessons);
+
+      await act(async () => {
+        result.current.setActiveUnit(mockUnits[1]);
+      });
+
+      await waitFor(() => expect(result.current.activeUnit).toEqual(mockUnits[1]));
+      expect(getPracticeLessons).toHaveBeenCalledWith('unit-2');
+      expect(result.current.practiceLessons).toEqual(mockUnit2PracticeLessons);
+    });
+
+    it('initial unit uses the progress-aware getInitialActiveUnit (first incomplete, not blindly units[0])', async () => {
+      // unit-1 is completed, unit-2 is incomplete
+      (getUnitsWithProgressSummary as jest.Mock).mockResolvedValueOnce({
+        units: mockUnits,
+        unitsProgress: mockUnitsProgress,
+      });
+      (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockUnit2PracticeLessons);
+
+      const { result } = renderHook(() => usePracticeData());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(getUnitsWithProgressSummary).toHaveBeenCalledWith('en');
+      expect(getPracticeLessons).toHaveBeenCalledWith('unit-2');
+      expect(result.current.activeUnit).toEqual(mockUnits[1]);
+      expect(result.current.practiceLessons).toEqual(mockUnit2PracticeLessons);
+      expect(result.current.unitsProgress).toEqual(mockUnitsProgress);
+    });
+
+    it('selecting a new unit clears stale activity state so previous questions never flash', async () => {
+      (getUnitsWithProgressSummary as jest.Mock).mockResolvedValueOnce({
+        units: mockUnits,
+        unitsProgress: mockDefaultUnitsProgress,
+      });
+      (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockPracticeLessons);
+      (getMultipleChoiceActivities as jest.Mock).mockResolvedValueOnce(mockRawActivities);
+
+      const { result } = renderHook(() => usePracticeData());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      // Select a lesson to start practice
+      await act(async () => {
+        await result.current.selectLessonForPractice(mockPracticeLessons[0]);
+      });
+
+      expect(result.current.selectedPracticeLesson).toEqual(mockPracticeLessons[0]);
+      expect(result.current.activeLessonActivities).toHaveLength(2);
+
+      // Now switch active unit to unit-2
+      (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockUnit2PracticeLessons);
+      await act(async () => {
+        result.current.setActiveUnit(mockUnits[1]);
+      });
+
+      await waitFor(() => expect(result.current.activeUnit).toEqual(mockUnits[1]));
+      // Stale activity state must be cleared
+      expect(result.current.selectedPracticeLesson).toBeNull();
+      expect(result.current.selectedPracticeActivityType).toBeNull();
+      expect(result.current.activeLessonActivities).toEqual([]);
+      expect(result.current.activeTranslationActivities).toEqual([]);
+      expect(result.current.activitiesError).toBeNull();
+      expect(result.current.loadingActivities).toBe(false);
+    });
+
+    it('setActiveUnit ignores locked units (no-op, UX-only gate)', async () => {
+      (getUnitsWithProgressSummary as jest.Mock).mockResolvedValueOnce({
+        units: mockUnits,
+        unitsProgress: mockUnitsProgress, // unit-3 is locked
+      });
+      (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockPracticeLessons);
+
+      const { result } = renderHook(() => usePracticeData());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      const initialUnit = result.current.activeUnit;
+
+      await act(async () => {
+        result.current.setActiveUnit(mockUnits[2]); // unit-3
+      });
+
+      expect(result.current.activeUnit).toEqual(initialUnit);
+      expect(getPracticeLessons).not.toHaveBeenCalledWith('unit-3');
+    });
+
+    it('setActiveUnit ignores selecting the already active unit', async () => {
+      (getUnitsWithProgressSummary as jest.Mock).mockResolvedValueOnce({
+        units: mockUnits,
+        unitsProgress: mockDefaultUnitsProgress,
+      });
+      (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockPracticeLessons);
+
+      const { result } = renderHook(() => usePracticeData());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(getPracticeLessons).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        result.current.setActiveUnit(mockUnits[0]);
+      });
+
+      expect(getPracticeLessons).toHaveBeenCalledTimes(1);
+    });
+
+    it('clears existing error when setActiveUnit is called', async () => {
+      (getUnitsWithProgressSummary as jest.Mock).mockResolvedValueOnce({
+        units: mockUnits,
+        unitsProgress: mockDefaultUnitsProgress,
+      });
+      (getPracticeLessons as jest.Mock).mockRejectedValueOnce(new Error('Failed to load lessons'));
+
+      const { result } = renderHook(() => usePracticeData());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(result.current.error).toBe('Failed to load lessons');
+
+      (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockUnit2PracticeLessons);
+      await act(async () => {
+        result.current.setActiveUnit(mockUnits[1]);
+      });
+
+      await waitFor(() => expect(result.current.activeUnit).toEqual(mockUnits[1]));
+      expect(result.current.error).toBeNull();
+      expect(result.current.practiceLessons).toEqual(mockUnit2PracticeLessons);
+    });
+
+    it('race condition guard: slower earlier request does not overwrite newer selection', async () => {
+      (getUnitsWithProgressSummary as jest.Mock).mockResolvedValueOnce({
+        units: mockUnits,
+        unitsProgress: mockDefaultUnitsProgress,
+      });
+      (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockPracticeLessons);
+
+      const { result } = renderHook(() => usePracticeData());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      let resolveUnit2!: (val: PracticeLessonItem[]) => void;
+      const unit2Promise = new Promise<PracticeLessonItem[]>((resolve) => {
+        resolveUnit2 = resolve;
+      });
+
+      (getPracticeLessons as jest.Mock).mockReturnValueOnce(unit2Promise);
+
+      // User selects unit-2
+      act(() => {
+        result.current.setActiveUnit(mockUnits[1]);
+      });
+
+      // User quickly changes mind and selects unit-1 back
+      (getPracticeLessons as jest.Mock).mockResolvedValueOnce(mockPracticeLessons);
+      await act(async () => {
+        result.current.setActiveUnit(mockUnits[0]);
+      });
+
+      await waitFor(() => expect(result.current.activeUnit).toEqual(mockUnits[0]));
+
+      // Now unit-2 finally resolves late
+      await act(async () => {
+        resolveUnit2(mockUnit2PracticeLessons);
+      });
+
+      // activeUnit and practiceLessons must remain unit-1's, not overwritten by late unit-2
+      expect(result.current.activeUnit).toEqual(mockUnits[0]);
+      expect(result.current.practiceLessons).toEqual(mockPracticeLessons);
     });
   });
 });

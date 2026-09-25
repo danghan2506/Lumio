@@ -29,6 +29,7 @@ describe('Home Types Contract', () => {
         isCompleted: false,
       },
       continueLesson: {
+        unitId: 'unit-1',
         lessonId: 'en-unit-1-lesson-1',
         lessonTitle: 'Hello',
         unitTitle: 'Greetings & Introductions',

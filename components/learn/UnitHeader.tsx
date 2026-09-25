@@ -9,6 +9,12 @@ export interface UnitHeaderProps {
   unitNumber: number;
   completedCount: number;
   totalCount: number;
+  canGoPrev?: boolean;
+  canGoNext?: boolean;
+  onPrevPress?: () => void;
+  onNextPress?: () => void;
+  onTitlePress?: () => void;
+  // Backward compatibility with existing callers
   onBackPress?: () => void;
   onBookmarkPress?: () => void;
 }
@@ -18,51 +24,88 @@ export function UnitHeader({
   unitNumber,
   completedCount,
   totalCount,
+  canGoPrev = true,
+  canGoNext = true,
+  onPrevPress,
+  onNextPress,
+  onTitlePress,
   onBackPress,
   onBookmarkPress,
 }: UnitHeaderProps) {
   const subtitle = `Unit ${unitNumber} • ${completedCount} / ${totalCount} lessons`;
+  const handlePrev = onPrevPress ?? onBackPress;
+  const handleNext = onNextPress ?? onBookmarkPress;
 
   return (
     <View className="mb-4">
       {/* Top Bar */}
       <View className="flex-row items-center justify-between px-4 py-2">
         <TouchableOpacity
-          onPress={onBackPress}
-          className="w-10 h-10 items-center justify-center rounded-full bg-slate-800/40"
+          onPress={handlePrev}
+          disabled={!canGoPrev}
+          className={`w-11 h-11 items-center justify-center rounded-full bg-slate-800/40 ${!canGoPrev ? 'opacity-30' : ''}`}
           activeOpacity={0.7}
-          testID="unit-header-back-button"
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          testID="unit-header-prev"
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel="Previous unit"
+          accessibilityState={{ disabled: !canGoPrev }}
         >
-          <Ionicons name="chevron-back" size={24} color={colors.cream} />
+          <View testID="unit-header-back-button" accessible={false}>
+            <Ionicons
+              name="chevron-back"
+              size={24}
+              color={canGoPrev ? colors.cream : colors.lavenderMist}
+            />
+          </View>
         </TouchableOpacity>
 
-        <View className="items-center flex-1 mx-2">
-          <Text
-            style={{ fontFamily: 'Fredoka_700Bold' }}
-            className="text-lg text-cream text-center"
-            numberOfLines={1}
-          >
-            {unitTitle}
-          </Text>
+        <TouchableOpacity
+          onPress={onTitlePress}
+          disabled={!onTitlePress}
+          testID="unit-header-title"
+          accessibilityRole="button"
+          accessibilityLabel="Select unit"
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          activeOpacity={0.7}
+          className="items-center flex-1 mx-2 py-1"
+        >
+          <View className="flex-row items-center justify-center">
+            <Text
+              style={{ fontFamily: 'Fredoka_700Bold' }}
+              className="text-lg text-cream text-center mr-1"
+              numberOfLines={1}
+            >
+              {unitTitle}
+            </Text>
+            <Ionicons name="chevron-down" size={16} color={colors.cream} />
+          </View>
           <Text
             style={{ fontFamily: 'PlusJakartaSans_500Medium' }}
             className="text-xs text-lavender-mist/70"
           >
             {subtitle}
           </Text>
-        </View>
+        </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={onBookmarkPress}
-          className="w-10 h-10 items-center justify-center rounded-full bg-slate-800/40"
+          onPress={handleNext}
+          disabled={!canGoNext}
+          className={`w-11 h-11 items-center justify-center rounded-full bg-slate-800/40 ${!canGoNext ? 'opacity-30' : ''}`}
           activeOpacity={0.7}
-          testID="unit-header-bookmark-button"
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          testID="unit-header-next"
           accessibilityRole="button"
-          accessibilityLabel="Bookmark unit"
+          accessibilityLabel="Next unit"
+          accessibilityState={{ disabled: !canGoNext }}
         >
-          <Ionicons name="bookmark-outline" size={20} color={colors.daylightAmber} />
+          <View testID="unit-header-bookmark-button" accessible={false}>
+            <Ionicons
+              name="chevron-forward"
+              size={24}
+              color={canGoNext ? colors.cream : colors.lavenderMist}
+            />
+          </View>
         </TouchableOpacity>
       </View>
 
