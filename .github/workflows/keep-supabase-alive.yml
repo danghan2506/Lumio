@@ -24,8 +24,8 @@ jobs:
 
           echo "Response code: $response"
 
-          if [ "$response" -eq 200 ] || [ "$response" -eq 404 ]; then
-            echo "Supabase is alive!"
+          if [ "$response" -eq 200 ] || [ "$response" -eq 401 ] || [ "$response" -eq 404 ]; then
+            echo "Supabase is alive! (HTTP $response)"
             exit 0
           else
             echo "Unexpected response code: $response"
