@@ -172,4 +172,23 @@ describe('MultipleChoiceQuizModal', () => {
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it('renders with warm cream canvas and warm ivory option cards', () => {
+    const { getByTestId } = render(
+      <MultipleChoiceQuizModal
+        visible={true}
+        lessonTitle="Greetings"
+        questions={mockQuestions}
+        onClose={jest.fn()}
+      />
+    );
+    const root = getByTestId('quiz-modal-container');
+    expect(root.props.style).toEqual(
+      expect.objectContaining({ backgroundColor: '#FFFBF4' })
+    );
+    const optionCard = getByTestId('quiz-option-0');
+    expect(optionCard.props.style).toEqual(
+      expect.objectContaining({ backgroundColor: '#FAF7F0' })
+    );
+  });
 });

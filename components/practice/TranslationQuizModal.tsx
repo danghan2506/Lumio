@@ -101,11 +101,12 @@ export function TranslationQuizModal({
       presentationStyle="fullScreen"
       onRequestClose={requestExit}
     >
-      <StatusBar barStyle="light-content" backgroundColor={colors.deepIndigo} />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.cream} />
       <View
+        testID="translation-modal-container"
         style={{
           flex: 1,
-          backgroundColor: colors.deepIndigo,
+          backgroundColor: colors.cream,
           paddingTop: topInset,
           paddingBottom: bottomInset,
         }}
@@ -120,7 +121,7 @@ export function TranslationQuizModal({
             alignItems: 'center',
             justifyContent: 'space-between',
             borderBottomWidth: 1,
-            borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+            borderBottomColor: 'rgba(36, 27, 74, 0.08)',
           }}
         >
           {/* Close / Exit Button */}
@@ -132,7 +133,7 @@ export function TranslationQuizModal({
               width: 40,
               height: 40,
               borderRadius: 20,
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backgroundColor: 'rgba(36, 27, 74, 0.06)',
               alignItems: 'center',
               justifyContent: 'center',
               marginRight: 12,
@@ -140,7 +141,7 @@ export function TranslationQuizModal({
             accessibilityRole="button"
             accessibilityLabel="Close sentence builder quiz"
           >
-            <Ionicons name="close" size={22} color={colors.cream} />
+            <Ionicons name="close" size={22} color={colors.deepIndigo} />
           </TouchableOpacity>
 
           {/* Progress Bar Track */}
@@ -148,7 +149,7 @@ export function TranslationQuizModal({
             style={{
               flex: 1,
               height: 14,
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backgroundColor: 'rgba(36, 27, 74, 0.08)',
               borderRadius: 999,
               overflow: 'hidden',
               marginRight: 12,
@@ -171,14 +172,14 @@ export function TranslationQuizModal({
               paddingHorizontal: 10,
               paddingVertical: 4,
               borderRadius: 999,
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backgroundColor: 'rgba(36, 27, 74, 0.06)',
             }}
           >
             <Text
               testID="translation-quiz-counter"
               style={{
                 fontFamily: 'PlusJakartaSans_600SemiBold',
-                color: colors.lavenderMist,
+                color: colors.slate,
                 fontSize: 12,
               }}
             >
@@ -208,7 +209,7 @@ export function TranslationQuizModal({
             <Text
               style={{
                 fontFamily: 'PlusJakartaSans_500Medium',
-                color: colors.lavenderMist,
+                color: colors.slate,
               }}
               className="text-sm mb-3.5"
             >
@@ -217,11 +218,12 @@ export function TranslationQuizModal({
 
             {/* Source Sentence Box */}
             <View
+              testID="translation-source-card"
               style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                borderColor: 'rgba(255, 255, 255, 0.1)',
+                backgroundColor: colors.warmIvory,
+                borderColor: 'rgba(36, 27, 74, 0.08)',
               }}
-              className="p-5 rounded-3xl border mb-5 flex-row items-center"
+              className="p-5 rounded-3xl border mb-5 flex-row items-center shadow-sm"
             >
               <View className="w-10 h-10 rounded-2xl bg-[#FF6B57]/15 border border-[#FF6B57]/30 items-center justify-center mr-3.5">
                 <Ionicons name="chatbubble-ellipses" size={20} color={colors.lumioCoral} />
@@ -230,7 +232,7 @@ export function TranslationQuizModal({
                 testID="translation-source-text"
                 style={{
                   fontFamily: 'Fredoka_700Bold',
-                  color: colors.cream,
+                  color: colors.deepIndigo,
                 }}
                 className="text-xl flex-1 leading-7"
               >
@@ -243,12 +245,12 @@ export function TranslationQuizModal({
               <View
                 testID="translation-answer-zone"
                 style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                  backgroundColor: 'rgba(255, 251, 244, 0.6)',
                   borderColor: isAnswerChecked
                     ? isCorrect
                       ? `${colors.mint}80`
                       : `${colors.lumioCoral}80`
-                    : 'rgba(255, 255, 255, 0.15)',
+                    : 'rgba(36, 27, 74, 0.15)',
                   minHeight: 110,
                   borderWidth: 1.5,
                   borderStyle: 'dashed',
@@ -282,12 +284,12 @@ export function TranslationQuizModal({
                       disabled={isAnswerChecked}
                       activeOpacity={0.7}
                       style={{
-                        backgroundColor: 'rgba(30, 41, 59, 0.95)',
+                        backgroundColor: colors.warmIvory,
                         borderColor: isAnswerChecked
                           ? isCorrect
                             ? colors.mint
                             : colors.lumioCoral
-                          : 'rgba(94, 90, 128, 0.6)',
+                          : 'rgba(36, 27, 74, 0.15)',
                         borderWidth: 1.5,
                         paddingHorizontal: 14,
                         paddingVertical: 10,
@@ -295,6 +297,11 @@ export function TranslationQuizModal({
                         flexDirection: 'row',
                         alignItems: 'center',
                         minHeight: 44,
+                        shadowColor: '#241B4A',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.04,
+                        shadowRadius: 2,
+                        elevation: 1,
                       }}
                       accessibilityRole="button"
                       accessibilityLabel={`Remove ${chip.text}`}
@@ -302,7 +309,7 @@ export function TranslationQuizModal({
                       <Text
                         style={{
                           fontFamily: 'PlusJakartaSans_600SemiBold',
-                          color: colors.cream,
+                          color: colors.deepIndigo,
                           fontSize: 16,
                           marginRight: 4,
                         }}
@@ -310,7 +317,7 @@ export function TranslationQuizModal({
                         {chip.text}
                       </Text>
                       {!isAnswerChecked && (
-                        <Ionicons name="close-circle" size={16} color={colors.lavenderMist} />
+                        <Ionicons name="close-circle" size={16} color={colors.slate} />
                       )}
                     </TouchableOpacity>
                   ))
@@ -354,8 +361,8 @@ export function TranslationQuizModal({
                           borderRadius: 16,
                           borderWidth: 1.5,
                           borderStyle: 'dashed',
-                          backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                          borderColor: 'rgba(255, 255, 255, 0.08)',
+                          backgroundColor: 'rgba(36, 27, 74, 0.03)',
+                          borderColor: 'rgba(36, 27, 74, 0.06)',
                           alignItems: 'center',
                           justifyContent: 'center',
                           opacity: 0.3,
@@ -387,15 +394,15 @@ export function TranslationQuizModal({
                         paddingVertical: 12,
                         borderRadius: 16,
                         borderWidth: 1.5,
-                        backgroundColor: 'rgba(30, 41, 59, 0.9)',
-                        borderColor: 'rgba(94, 90, 128, 0.5)',
+                        backgroundColor: colors.warmIvory,
+                        borderColor: 'rgba(36, 27, 74, 0.1)',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.2,
-                        shadowRadius: 4,
-                        elevation: 2,
+                        shadowColor: '#241B4A',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.04,
+                        shadowRadius: 3,
+                        elevation: 1,
                       }}
                       accessibilityRole="button"
                       accessibilityLabel={`Select ${chip.text}`}
@@ -403,7 +410,7 @@ export function TranslationQuizModal({
                       <Text
                         style={{
                           fontFamily: 'PlusJakartaSans_600SemiBold',
-                          color: colors.cream,
+                          color: colors.deepIndigo,
                           fontSize: 16,
                         }}
                       >
@@ -426,7 +433,7 @@ export function TranslationQuizModal({
                 activeOpacity={0.85}
                 style={{
                   backgroundColor:
-                    selectedChips.length === 0 ? 'rgba(255, 107, 87, 0.4)' : colors.lumioCoral,
+                    selectedChips.length === 0 ? 'rgba(36, 27, 74, 0.08)' : colors.lumioCoral,
                 }}
                 className="w-full py-4 rounded-full items-center shadow-lg"
                 accessibilityRole="button"
@@ -435,7 +442,7 @@ export function TranslationQuizModal({
                 <Text
                   style={{
                     fontFamily: 'PlusJakartaSans_700Bold',
-                    color: colors.cream,
+                    color: selectedChips.length === 0 ? colors.slate : colors.cream,
                   }}
                   className="text-base"
                 >
@@ -485,7 +492,7 @@ export function TranslationQuizModal({
                     <Text
                       style={{
                         fontFamily: 'PlusJakartaSans_500Medium',
-                        color: colors.lavenderMist,
+                        color: colors.slate,
                       }}
                       className="text-xs mb-0.5"
                     >
@@ -494,7 +501,7 @@ export function TranslationQuizModal({
                     <Text
                       style={{
                         fontFamily: 'Fredoka_700Bold',
-                        color: colors.cream,
+                        color: colors.deepIndigo,
                       }}
                       className="text-sm"
                     >

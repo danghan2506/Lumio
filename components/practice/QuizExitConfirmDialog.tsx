@@ -27,8 +27,8 @@ export function QuizExitConfirmDialog({
       >
         <View
           style={{
-            backgroundColor: colors.deepIndigo,
-            borderColor: 'rgba(255, 255, 255, 0.1)',
+            backgroundColor: colors.warmIvory,
+            borderColor: 'rgba(36, 27, 74, 0.08)',
           }}
           className="w-full max-w-sm rounded-3xl p-6 border items-center shadow-2xl"
         >
@@ -44,7 +44,7 @@ export function QuizExitConfirmDialog({
           <Text
             style={{
               fontFamily: 'Fredoka_700Bold',
-              color: colors.cream,
+              color: colors.deepIndigo,
             }}
             className="text-xl text-center mb-2"
           >
@@ -55,7 +55,7 @@ export function QuizExitConfirmDialog({
           <Text
             style={{
               fontFamily: 'PlusJakartaSans_400Regular',
-              color: colors.lavenderMist,
+              color: colors.slate,
             }}
             className="text-sm text-center leading-5 mb-6"
           >
@@ -90,16 +90,16 @@ export function QuizExitConfirmDialog({
               testID="confirm-exit-btn"
               onPress={onExit}
               activeOpacity={0.7}
-              className="w-full py-3 rounded-2xl items-center border border-white/10"
+              className="w-full py-3 rounded-2xl items-center border border-[rgba(36,27,74,0.12)] bg-[rgba(36,27,74,0.04)]"
               accessibilityRole="button"
               accessibilityLabel="Quit session"
             >
               <Text
                 style={{
                   fontFamily: 'PlusJakartaSans_600SemiBold',
-                  color: colors.slate,
+                  color: colors.deepIndigo,
                 }}
-                className="text-sm text-gray-400"
+                className="text-sm"
               >
                 Quit Session
               </Text>

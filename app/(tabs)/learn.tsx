@@ -145,7 +145,7 @@ export default function LearnScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.deepIndigo }}>
+    <SafeAreaView testID="learn-screen-safe-area" style={{ flex: 1, backgroundColor: colors.cream }}>
       <TabScreenWrapper>
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -155,7 +155,7 @@ export default function LearnScreen() {
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
               colors={[colors.lumioCoral]}
-              tintColor={colors.cream}
+              tintColor={colors.deepIndigo}
             />
           }
         >
@@ -188,27 +188,30 @@ export default function LearnScreen() {
                 <ActivityIndicator size="large" color={colors.lumioCoral} />
               </View>
             ) : lessonsError ? (
-              <View className="mx-4 p-6 rounded-3xl bg-red-950/40 border border-red-800/40 items-center justify-center">
+              <View
+                style={{ backgroundColor: colors.warmIvory }}
+                className="mx-4 p-6 rounded-3xl border border-red-200 items-center justify-center shadow-sm"
+              >
                 <Ionicons name="alert-circle-outline" size={32} color={colors.lumioCoral} style={{ marginBottom: 8 }} />
                 <Text
-                  style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.cream }}
+                  style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.deepIndigo }}
                   className="text-base text-center mb-2"
                 >
                   Failed to load lessons
                 </Text>
                 <Text
-                  style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.lavenderMist }}
+                  style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.slate }}
                   className="text-xs text-center mb-4 opacity-80"
                 >
                   {lessonsError}
                 </Text>
                 <TouchableOpacity
                   onPress={refreshLessons}
-                  className="px-5 py-2.5 rounded-full bg-slate-800 border border-slate-700"
+                  className="px-5 py-2.5 rounded-full bg-[rgba(36,27,74,0.06)] border border-[rgba(36,27,74,0.12)]"
                   activeOpacity={0.8}
                 >
                   <Text
-                    style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.cream }}
+                    style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.deepIndigo }}
                     className="text-xs"
                   >
                     Try again
@@ -237,27 +240,30 @@ export default function LearnScreen() {
                 <ActivityIndicator size="large" color={colors.lumioCoral} />
               </View>
             ) : practiceError ? (
-              <View className="mx-4 p-6 rounded-3xl bg-red-950/40 border border-red-800/40 items-center justify-center">
+              <View
+                style={{ backgroundColor: colors.warmIvory }}
+                className="mx-4 p-6 rounded-3xl border border-red-200 items-center justify-center shadow-sm"
+              >
                 <Ionicons name="alert-circle-outline" size={32} color={colors.lumioCoral} style={{ marginBottom: 8 }} />
                 <Text
-                  style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.cream }}
+                  style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.deepIndigo }}
                   className="text-base text-center mb-2"
                 >
                   Failed to load practice lessons
                 </Text>
                 <Text
-                  style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.lavenderMist }}
+                  style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.slate }}
                   className="text-xs text-center mb-4 opacity-80"
                 >
                   {practiceError}
                 </Text>
                 <TouchableOpacity
                   onPress={refreshPractice}
-                  className="px-5 py-2.5 rounded-full bg-slate-800 border border-slate-700"
+                  className="px-5 py-2.5 rounded-full bg-[rgba(36,27,74,0.06)] border border-[rgba(36,27,74,0.12)]"
                   activeOpacity={0.8}
                 >
                   <Text
-                    style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.cream }}
+                    style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.deepIndigo }}
                     className="text-xs"
                   >
                     Try again
@@ -277,8 +283,8 @@ export default function LearnScreen() {
                         onPress={() => setFilterType(opt.type)}
                         activeOpacity={0.8}
                         style={{
-                          backgroundColor: isSelected ? colors.lumioCoral : 'rgba(255, 255, 255, 0.06)',
-                          borderColor: isSelected ? colors.lumioCoral : 'rgba(255, 255, 255, 0.12)',
+                          backgroundColor: isSelected ? colors.lumioCoral : 'rgba(36, 27, 74, 0.05)',
+                          borderColor: isSelected ? colors.lumioCoral : 'rgba(36, 27, 74, 0.1)',
                         }}
                         className="px-4 py-2 rounded-full border"
                         accessibilityRole="button"
@@ -287,7 +293,7 @@ export default function LearnScreen() {
                         <Text
                           style={{
                             fontFamily: isSelected ? 'PlusJakartaSans_700Bold' : 'PlusJakartaSans_500Medium',
-                            color: isSelected ? colors.cream : colors.lavenderMist,
+                            color: isSelected ? colors.cream : colors.slate,
                           }}
                           className="text-xs"
                         >
@@ -299,18 +305,25 @@ export default function LearnScreen() {
                 </View>
 
                 {filteredPracticeLessons.length === 0 ? (
-                  <View className="mx-4 p-8 rounded-3xl bg-slate-900/60 border border-slate-700/40 items-center justify-center">
+                  <View
+                    testID="practice-empty-state"
+                    style={{
+                      backgroundColor: colors.warmIvory,
+                      borderColor: 'rgba(36, 27, 74, 0.08)',
+                    }}
+                    className="mx-4 p-8 rounded-3xl border items-center justify-center shadow-sm"
+                  >
                     <View className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 items-center justify-center mb-3">
                       <Ionicons name="sparkles" size={28} color={colors.daylightAmber} />
                     </View>
                     <Text
-                      style={{ fontFamily: 'Fredoka_700Bold', color: colors.cream }}
+                      style={{ fontFamily: 'Fredoka_700Bold', color: colors.deepIndigo }}
                       className="text-lg text-center mb-1"
                     >
                       No practice exercises yet
                     </Text>
                     <Text
-                      style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.lavenderMist }}
+                      style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.slate }}
                       className="text-xs text-center opacity-80"
                     >
                       Exercises for this unit will be added soon!

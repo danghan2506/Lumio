@@ -43,7 +43,7 @@ jest.mock('react-native-safe-area-context', () => {
   const { View } = require('react-native');
   return {
     SafeAreaProvider: ({ children }: any) => children,
-    SafeAreaView: ({ children, style }: any) => <View style={style}>{children}</View>,
+    SafeAreaView: ({ children, style, ...props }: any) => <View style={style} {...props}>{children}</View>,
     useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
   };
 });
@@ -302,4 +302,15 @@ describe('LearnScreen', () => {
 
     expect(mockRefreshLessons).toHaveBeenCalledTimes(1);
   });
+
+  it('renders with warm cream background on root SafeAreaView', () => {
+    const { getByTestId } = render(<LearnScreen />);
+    const safeArea = getByTestId('learn-screen-safe-area');
+    expect(safeArea.props.style).toEqual(
+      expect.objectContaining({
+        backgroundColor: '#FFFBF4',
+      })
+    );
+  });
 });
+
