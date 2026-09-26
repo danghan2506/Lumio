@@ -198,7 +198,7 @@ class CompletionCoordinator:
                 "goals, vocabulary, and phrases for this session. It ends the lesson."
             ),
         )
-        async def complete_lesson(**_kwargs) -> str:
+        async def complete_lesson() -> str:
             if not self.request_completion("mastered"):
                 return FAREWELL_STOP_INSTRUCTION
             return FAREWELL_INSTRUCTION
@@ -376,7 +376,7 @@ TEACHER_RULES = (
     "- Listen carefully to the user's response, adapt your next explanation accordingly, and ask the student to repeat or try again.\n"
     "- Spoken-only dialogue: no markdown, no bullet lists, no emojis.\n"
     "- If the learner's speech is unclear or inaudible, gently ask them to repeat or try again.\n"
-    "- When the learner has practiced all of the lesson's goals, vocabulary, and phrases, you MUST call the complete_lesson tool to end the lesson. Never say goodbye or announce the lesson is over without calling that tool first."
+    "- When the learner has practiced all of the lesson's goals, vocabulary, and phrases, immediately call the complete_lesson tool to finish the lesson and deliver your warm farewell."
 )
 
 

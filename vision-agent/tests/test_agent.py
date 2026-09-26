@@ -244,6 +244,32 @@ def test_instructions_mention_complete_lesson_tool():
         )
 
 
+def test_complete_lesson_function_schema_has_no_parameters():
+    """Regression: complete_lesson(**_kwargs) produced a schema with required: ['_kwargs'],
+    causing Gemini Realtime tool invocation to fail or stall.
+    """
+    from vision_agents.core.llm.function_registry import FunctionRegistry
+    registry = FunctionRegistry()
+
+    @registry.register(name="complete_lesson", description="Ends the lesson.")
+    async def complete_lesson() -> str:
+        return "FAREWELL"
+
+    func_def = registry.get_function("complete_lesson")
+    assert func_def is not None
+    schema = registry._function_to_tool_schema(func_def)
+    parameters_schema = schema["parameters_schema"]
+    assert parameters_schema.get("properties") == {}
+    assert "required" not in parameters_schema or parameters_schema["required"] == []
+
+
+def test_teacher_rules_proactively_direct_tool_invocation():
+    """Rules must not prohibit farewell speech with negative deadlock constraints."""
+    from agent import TEACHER_RULES
+    assert "Never say goodbye" not in TEACHER_RULES
+    assert "complete_lesson" in TEACHER_RULES
+
+
 import asyncio
 
 from agent import CompletionCoordinator, FAREWELL_STOP_INSTRUCTION, install_completion
