@@ -36,6 +36,7 @@ export function useStreamLessonCall(params: UseStreamLessonCallParams) {
   const onLessonCompleteRef = useRef(onLessonComplete);
   const unsubscribeCustomRef = useRef<(() => void) | null>(null);
   const completionHandledRef = useRef(false);
+  const isMountedRef = useRef(true);
   useEffect(() => {
     onLessonCompleteRef.current = onLessonComplete;
   }, [onLessonComplete]);
@@ -58,11 +59,13 @@ export function useStreamLessonCall(params: UseStreamLessonCallParams) {
         displayName,
         accessToken,
       });
+      if (!isMountedRef.current) return;
       setCallMeta({
         callType: sessionData.callType,
         callId: sessionData.callId,
       });
     } catch (err) {
+      if (!isMountedRef.current) return;
       setErrorMessage(
         err instanceof Error ? err.message : 'Could not start the audio call.'
       );
@@ -76,6 +79,10 @@ export function useStreamLessonCall(params: UseStreamLessonCallParams) {
         userId: sessionData.userId,
         token: sessionData.token,
       });
+      if (!isMountedRef.current) {
+        await disconnectStreamUser(client);
+        return;
+      }
       clientRef.current = client;
 
       const call = client.call(sessionData.callType, sessionData.callId, {
@@ -93,11 +100,15 @@ export function useStreamLessonCall(params: UseStreamLessonCallParams) {
       });
 
       setStatus('joining');
-      // The call was already created server-side; the SDK auto-starts audio
-      // routing (communicator) and applies mic/camera defaults on join().
       await call.join();
+      if (!isMountedRef.current) {
+        await call.leave().catch(() => {});
+        await disconnectStreamUser(client);
+        return;
+      }
       setStatus('joined');
     } catch (err) {
+      if (!isMountedRef.current) return;
       setErrorMessage(
         err instanceof Error ? err.message : 'Could not connect to the audio call.'
       );
@@ -145,10 +156,12 @@ export function useStreamLessonCall(params: UseStreamLessonCallParams) {
   }, [disconnect]);
 
   useEffect(() => {
+    isMountedRef.current = true;
     if (!enabled) return;
     void join();
 
     return () => {
+      isMountedRef.current = false;
       unsubscribeCustomRef.current?.();
       unsubscribeCustomRef.current = null;
       const call = callRef.current;

@@ -24,20 +24,23 @@ export function useStreamLessonAgent(params: UseStreamLessonAgentParams) {
 
   const performStop = useCallback(async () => {
     const currentSessionId = sessionIdRef.current;
-    sessionIdRef.current = null;
-    setSessionId(null);
-    setStatus('idle');
-    if (currentSessionId) {
+    if (!currentSessionId) {
+      setStatus('idle');
+      return;
+    }
+    try {
       const params: StopStreamAgentParams = {
         callId,
         sessionId: currentSessionId,
         accessToken,
       };
-      try {
-        await stopStreamAgent(params);
-      } catch {
-        // Best-effort teardown.
-      }
+      await stopStreamAgent(params);
+    } catch {
+      // Best-effort teardown on network error
+    } finally {
+      sessionIdRef.current = null;
+      setSessionId(null);
+      setStatus('idle');
     }
   }, [callId, accessToken]);
 
