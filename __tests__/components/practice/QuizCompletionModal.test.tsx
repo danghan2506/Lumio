@@ -58,7 +58,7 @@ describe('QuizCompletionModal', () => {
       />
     );
 
-    expect(getByText('Outstanding! 🌟')).toBeTruthy();
+    expect(getByText('Outstanding!')).toBeTruthy();
     expect(getByText('You answered all questions correctly!')).toBeTruthy();
     expect(getByText('4 / 4')).toBeTruthy();
     expect(getByText('+20 XP')).toBeTruthy();
@@ -81,7 +81,7 @@ describe('QuizCompletionModal', () => {
       />
     );
 
-    expect(getByText('Great Job! 👍')).toBeTruthy();
+    expect(getByText('Great Job!')).toBeTruthy();
     expect(getByText('2 / 4')).toBeTruthy();
     expect(getByText('50%')).toBeTruthy();
     expect(getByText('+10 XP')).toBeTruthy();
@@ -101,7 +101,7 @@ describe('QuizCompletionModal', () => {
       />
     );
 
-    expect(getByText('Keep Going! 💪')).toBeTruthy();
+    expect(getByText('Keep Going!')).toBeTruthy();
     expect(getByText('0 / 4')).toBeTruthy();
     expect(getByText('0%')).toBeTruthy();
     expect(getByText('+0 XP')).toBeTruthy();

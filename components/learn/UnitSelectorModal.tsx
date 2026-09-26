@@ -64,13 +64,13 @@ export function UnitSelectorModal({
         <View
           testID="unit-selector-modal"
           style={{
-            backgroundColor: colors.deepIndigo,
+            backgroundColor: colors.warmIvory,
             borderTopLeftRadius: 32,
             borderTopRightRadius: 32,
             borderTopWidth: 1,
             borderLeftWidth: 1,
             borderRightWidth: 1,
-            borderColor: 'rgba(255, 255, 255, 0.12)',
+            borderColor: 'rgba(36, 27, 74, 0.08)',
             maxHeight: '85%',
             paddingBottom: Math.max(insets.bottom, 20),
             width: '100%',
@@ -83,7 +83,7 @@ export function UnitSelectorModal({
                 width: 40,
                 height: 4,
                 borderRadius: 2,
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                backgroundColor: 'rgba(36, 27, 74, 0.15)',
               }}
             />
           </View>
@@ -97,11 +97,11 @@ export function UnitSelectorModal({
               paddingHorizontal: 20,
               paddingVertical: 12,
               borderBottomWidth: 1,
-              borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+              borderBottomColor: 'rgba(36, 27, 74, 0.08)',
             }}
           >
             <Text
-              style={{ fontFamily: 'Fredoka_700Bold', color: colors.cream }}
+              style={{ fontFamily: 'Fredoka_700Bold', color: colors.deepIndigo }}
               className="text-xl"
             >
               Select Unit
@@ -117,12 +117,12 @@ export function UnitSelectorModal({
                 width: 44,
                 height: 44,
                 borderRadius: 22,
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                backgroundColor: 'rgba(36, 27, 74, 0.05)',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Ionicons name="close" size={20} color={colors.cream} />
+              <Ionicons name="close" size={20} color={colors.deepIndigo} />
             </TouchableOpacity>
           </View>
 
@@ -163,16 +163,16 @@ export function UnitSelectorModal({
 
               // Border and background styling based on active / locked state
               const cardBorderColor = isActive
-                ? colors.daylightAmber
+                ? colors.lumioCoral
                 : isLocked
-                ? 'rgba(255, 255, 255, 0.06)'
-                : 'rgba(255, 255, 255, 0.12)';
+                ? 'rgba(36, 27, 74, 0.06)'
+                : 'rgba(36, 27, 74, 0.08)';
 
               const cardBgColor = isActive
-                ? 'rgba(255, 183, 77, 0.12)'
+                ? 'rgba(234, 230, 255, 0.6)'
                 : isLocked
-                ? 'rgba(255, 255, 255, 0.03)'
-                : 'rgba(255, 255, 255, 0.06)';
+                ? 'rgba(36, 27, 74, 0.03)'
+                : '#FFFFFF';
 
               return (
                 <TouchableOpacity
@@ -192,7 +192,7 @@ export function UnitSelectorModal({
                     marginBottom: 12,
                     padding: 14,
                     borderRadius: 20,
-                    borderWidth: isActive ? 2 : 1.5,
+                    borderWidth: isActive ? 2 : 1,
                     borderColor: cardBorderColor,
                     backgroundColor: cardBgColor,
                     opacity: isLocked ? 0.6 : 1,
@@ -209,8 +209,8 @@ export function UnitSelectorModal({
                       backgroundColor: isCompleted
                         ? 'rgba(53, 208, 160, 0.15)'
                         : isActive
-                        ? 'rgba(255, 183, 77, 0.2)'
-                        : 'rgba(255, 255, 255, 0.08)',
+                        ? 'rgba(255, 107, 87, 0.15)'
+                        : 'rgba(36, 27, 74, 0.05)',
                       alignItems: 'center',
                       justifyContent: 'center',
                       marginRight: 12,
@@ -232,7 +232,7 @@ export function UnitSelectorModal({
                       <Text
                         style={{
                           fontFamily: 'Fredoka_700Bold',
-                          color: colors.cream,
+                          color: isLocked ? colors.slate : colors.deepIndigo,
                           fontSize: 16,
                           flexShrink: 1,
                         }}
@@ -244,8 +244,8 @@ export function UnitSelectorModal({
                       {isActive && (
                         <View
                           style={{
-                            backgroundColor: 'rgba(255, 183, 77, 0.2)',
-                            borderColor: 'rgba(255, 183, 77, 0.5)',
+                            backgroundColor: 'rgba(255, 107, 87, 0.15)',
+                            borderColor: 'rgba(255, 107, 87, 0.3)',
                             borderWidth: 1,
                             borderRadius: 12,
                             paddingHorizontal: 8,
@@ -256,7 +256,7 @@ export function UnitSelectorModal({
                           <Text
                             style={{
                               fontFamily: 'PlusJakartaSans_700Bold',
-                              color: colors.daylightAmber,
+                              color: colors.lumioCoral,
                               fontSize: 10,
                             }}
                           >
@@ -270,9 +270,8 @@ export function UnitSelectorModal({
                       <Text
                         style={{
                           fontFamily: 'PlusJakartaSans_500Medium',
-                          color: colors.lavenderMist,
+                          color: colors.slate,
                           fontSize: 12,
-                          opacity: 0.8,
                           marginBottom: 6,
                         }}
                         numberOfLines={1}
@@ -293,7 +292,7 @@ export function UnitSelectorModal({
                         style={{
                           flex: 1,
                           height: 6,
-                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          backgroundColor: 'rgba(36, 27, 74, 0.08)',
                           borderRadius: 999,
                           overflow: 'hidden',
                           marginRight: 8,
@@ -304,7 +303,7 @@ export function UnitSelectorModal({
                             width: `${percentage}%`,
                             backgroundColor: isCompleted
                               ? colors.mint
-                              : colors.daylightAmber,
+                              : colors.lumioCoral,
                             height: '100%',
                             borderRadius: 999,
                           }}
@@ -314,9 +313,8 @@ export function UnitSelectorModal({
                       <Text
                         style={{
                           fontFamily: 'PlusJakartaSans_500Medium',
-                          color: colors.lavenderMist,
+                          color: colors.slate,
                           fontSize: 11,
-                          opacity: 0.7,
                         }}
                       >
                         {progress.completedCount} / {progress.totalCount} lessons
@@ -346,13 +344,13 @@ export function UnitSelectorModal({
                       <Ionicons
                         name="radio-button-on"
                         size={20}
-                        color={colors.daylightAmber}
+                        color={colors.lumioCoral}
                       />
                     ) : (
                       <Ionicons
                         name="chevron-forward"
                         size={18}
-                        color="rgba(255, 255, 255, 0.3)"
+                        color={colors.slate}
                       />
                     )}
                   </View>

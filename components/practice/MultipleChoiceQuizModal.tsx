@@ -86,6 +86,17 @@ export function MultipleChoiceQuizModal({
     }
   };
 
+  const handleRequestClose = () => {
+    if (isQuizFinished && savingProgress) {
+      return;
+    }
+    if (isQuizFinished) {
+      void handleClaimFinish();
+      return;
+    }
+    requestExit();
+  };
+
   if (!visible) return null;
 
   return (
@@ -93,7 +104,7 @@ export function MultipleChoiceQuizModal({
       visible={visible}
       animationType="slide"
       presentationStyle="fullScreen"
-      onRequestClose={requestExit}
+      onRequestClose={handleRequestClose}
     >
       <StatusBar barStyle="dark-content" backgroundColor={colors.cream} />
       <View

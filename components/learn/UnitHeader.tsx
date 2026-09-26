@@ -38,13 +38,12 @@ export function UnitHeader({
 
   return (
     <View className="mb-4">
-      {/* Top Bar */}
+      {/* Top Bar Navigation */}
       <View className="flex-row items-center justify-between px-4 py-2">
         <TouchableOpacity
           onPress={handlePrev}
           disabled={!canGoPrev}
-          className={`w-11 h-11 items-center justify-center rounded-full bg-slate-800/40 ${!canGoPrev ? 'opacity-30' : ''}`}
-          activeOpacity={0.7}
+          className={`w-11 h-11 items-center justify-center rounded-full bg-deep-indigo/5 border border-deep-indigo/10 active:opacity-70 ${!canGoPrev ? 'opacity-30' : ''}`}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           testID="unit-header-prev"
           accessibilityRole="button"
@@ -54,8 +53,8 @@ export function UnitHeader({
           <View testID="unit-header-back-button" accessible={false}>
             <Ionicons
               name="chevron-back"
-              size={24}
-              color={canGoPrev ? colors.cream : colors.lavenderMist}
+              size={20}
+              color={canGoPrev ? colors.deepIndigo : colors.slate}
             />
           </View>
         </TouchableOpacity>
@@ -72,18 +71,14 @@ export function UnitHeader({
         >
           <View className="flex-row items-center justify-center">
             <Text
-              style={{ fontFamily: 'Fredoka_700Bold' }}
-              className="text-lg text-cream text-center mr-1"
+              className="text-lg font-display text-deep-indigo text-center mr-1"
               numberOfLines={1}
             >
               {unitTitle}
             </Text>
-            <Ionicons name="chevron-down" size={16} color={colors.cream} />
+            <Ionicons name="chevron-down" size={16} color={colors.deepIndigo} />
           </View>
-          <Text
-            style={{ fontFamily: 'PlusJakartaSans_500Medium' }}
-            className="text-xs text-lavender-mist/70"
-          >
+          <Text className="text-xs font-sans text-slate mt-0.5">
             {subtitle}
           </Text>
         </TouchableOpacity>
@@ -91,8 +86,7 @@ export function UnitHeader({
         <TouchableOpacity
           onPress={handleNext}
           disabled={!canGoNext}
-          className={`w-11 h-11 items-center justify-center rounded-full bg-slate-800/40 ${!canGoNext ? 'opacity-30' : ''}`}
-          activeOpacity={0.7}
+          className={`w-11 h-11 items-center justify-center rounded-full bg-deep-indigo/5 border border-deep-indigo/10 active:opacity-70 ${!canGoNext ? 'opacity-30' : ''}`}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           testID="unit-header-next"
           accessibilityRole="button"
@@ -102,19 +96,43 @@ export function UnitHeader({
           <View testID="unit-header-bookmark-button" accessible={false}>
             <Ionicons
               name="chevron-forward"
-              size={24}
-              color={canGoNext ? colors.cream : colors.lavenderMist}
+              size={20}
+              color={canGoNext ? colors.deepIndigo : colors.slate}
             />
           </View>
         </TouchableOpacity>
       </View>
 
-      {/* Hero Mascot Banner */}
-      <View className="mx-4 mt-3 overflow-hidden rounded-3xl bg-canvas-dark-end/30 border border-slate-700/40 items-center justify-center py-4 px-6 relative">
-        <Image
-          source={images.lumiTutor}
-          style={{ width: 140, height: 140, resizeMode: 'contain' }}
-        />
+      {/* Unit Guidebook Card: Compact, Educational, Safe Mascot Emblem */}
+      <View className="mx-4 mt-2 p-4 rounded-3xl bg-warm-ivory border border-deep-indigo/8 flex-row items-center justify-between shadow-sm">
+        <View className="flex-1 mr-3">
+          <View className="bg-lumio-coral/15 self-start px-2.5 py-0.5 rounded-full mb-1.5">
+            <Text className="text-[10px] font-sans-bold text-lumio-coral uppercase tracking-wider">
+              Unit {unitNumber} Guidebook
+            </Text>
+          </View>
+          <Text
+            className="text-base font-display text-deep-indigo mb-0.5"
+            numberOfLines={1}
+          >
+            Core Grammar & Vocabulary
+          </Text>
+          <Text
+            className="text-xs font-sans text-slate leading-4"
+            numberOfLines={2}
+          >
+            Review essential vocabulary, grammar, and key phrases.
+          </Text>
+        </View>
+
+        {/* Mascot Safe Frame: Circular emblem with safe scale */}
+        <View className="w-16 h-16 rounded-full bg-[#1E1738] border-2 border-daylight-amber/40 items-center justify-center overflow-hidden shadow-sm">
+          <Image
+            source={images.lumiTutor}
+            className="w-12 h-12"
+            resizeMode="contain"
+          />
+        </View>
       </View>
     </View>
   );

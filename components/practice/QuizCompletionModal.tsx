@@ -43,13 +43,13 @@ export function QuizCompletionModal({
       ? images.lumiTutor
       : images.lumiDefault;
 
-  // Header texts
+  // Header texts - strictly text only, no emojis per DESIGN.md §7
   const titleText =
     scoreTier === 'perfect'
-      ? 'Outstanding! 🌟'
+      ? 'Outstanding!'
       : scoreTier === 'partial'
-      ? 'Great Job! 👍'
-      : 'Keep Going! 💪';
+      ? 'Great Job!'
+      : 'Keep Going!';
 
   const subtitleText =
     scoreTier === 'perfect'
@@ -60,237 +60,162 @@ export function QuizCompletionModal({
 
   const isZeroScore = scoreTier === 'zero';
 
+  // Sanitize lesson title to eliminate orphan string (DEF-05)
+  const formattedLessonLabel =
+    lessonTitle && lessonTitle.trim().length > 2
+      ? `Lesson • ${lessonTitle.trim()}`
+      : 'Practice Review';
+
   return (
     <Modal
       visible={visible}
       transparent
       animationType="slide"
-      onRequestClose={onClaim}
+      statusBarTranslucent
+      onRequestClose={saving ? undefined : onClaim}
     >
       <View
         testID="quiz-completion-modal"
-        className="flex-1 bg-black/80 justify-end"
+        className="flex-1 bg-scrim justify-end"
       >
         <View
-          style={{
-            backgroundColor: colors.warmIvory,
-            borderTopLeftRadius: 36,
-            borderTopRightRadius: 36,
-            borderTopWidth: 1,
-            borderColor: 'rgba(36, 27, 74, 0.08)',
-            paddingBottom: Math.max(insets.bottom, 24),
-          }}
-          className="p-6 items-center shadow-2xl"
+          style={{ paddingBottom: Math.max(insets.bottom, 24) }}
+          className="p-6 items-center bg-warm-ivory rounded-t-[36px] border-t border-deep-indigo/8 shadow-2xl"
         >
-          {/* Mascot Image */}
-          <View className="items-center mb-3 -mt-20">
+          {/* Mascot Safe Frame: Circular emblem with safe scale to prevent clipped stars */}
+          <View className="w-28 h-28 rounded-full bg-[#201B44] border-4 border-daylight-amber/40 items-center justify-center mb-3 -mt-20 overflow-hidden shadow-xl">
             <Image
               source={mascotSource}
-              style={{ width: 140, height: 140 }}
+              className="w-20 h-20"
               resizeMode="contain"
             />
           </View>
 
           {/* Title & Subtitle */}
-          <Text
-            style={{
-              fontFamily: 'Fredoka_700Bold',
-              color: colors.deepIndigo,
-            }}
-            className="text-2xl text-center mb-1.5"
-          >
+          <Text className="text-2xl font-display text-deep-indigo text-center mb-1">
             {titleText}
           </Text>
 
-          <Text
-            style={{
-              fontFamily: 'PlusJakartaSans_500Medium',
-              color: colors.slate,
-            }}
-            className="text-xs text-center uppercase tracking-wider mb-2"
-          >
-            {lessonTitle}
+          {/* Sanitized Lesson Label */}
+          <Text className="text-xs font-sans-bold text-slate uppercase tracking-wider mb-2">
+            {formattedLessonLabel}
           </Text>
 
-          <Text
-            style={{
-              fontFamily: 'PlusJakartaSans_400Regular',
-              color: colors.slate,
-            }}
-            className="text-sm text-center leading-5 mb-6 px-4"
-          >
+          <Text className="text-sm font-sans text-slate text-center leading-5 mb-6 px-4">
             {subtitleText}
           </Text>
 
-          {/* Stats Summary Cards */}
-          <View className="flex-row items-center justify-center w-full mb-6 space-x-3">
+          {/* Stats Summary Cards - WCAG AAA Compliant */}
+          <View className="flex-row items-center justify-center w-full mb-6">
             {/* Correct Answers Card */}
-            <View
-              style={{
-                backgroundColor: 'rgba(36, 27, 74, 0.04)',
-                borderColor: 'rgba(36, 27, 74, 0.08)',
-              }}
-              className="flex-1 p-3.5 rounded-2xl border items-center mr-2 shadow-sm"
-            >
+            <View className="flex-1 p-3.5 rounded-2xl bg-deep-indigo/3 border border-deep-indigo/8 items-center mr-2 shadow-sm">
               <View className="flex-row items-center mb-1">
                 <Ionicons
                   name={isZeroScore ? 'close-circle' : 'checkmark-circle'}
                   size={16}
-                  color={isZeroScore ? colors.lumioCoral : colors.mint}
+                  color={isZeroScore ? colors.lumioCoral : '#1F8A6B'}
                   style={{ marginRight: 4 }}
                 />
                 <Text
-                  style={{
-                    fontFamily: 'PlusJakartaSans_600SemiBold',
-                    color: isZeroScore ? colors.lumioCoral : colors.mint,
-                  }}
-                  className="text-xs"
+                  className={`text-xs font-sans-bold ${
+                    isZeroScore ? 'text-lumio-coral' : 'text-mint-dark'
+                  }`}
                 >
                   {`${accuracy}%`}
                 </Text>
               </View>
-              <Text
-                style={{
-                  fontFamily: 'Fredoka_700Bold',
-                  color: colors.deepIndigo,
-                }}
-                className="text-lg mb-0.5"
-              >
+              <Text className="text-lg font-display text-deep-indigo mb-0.5">
                 {`${correctAnswersCount} / ${totalQuestions}`}
               </Text>
-              <Text
-                style={{
-                  fontFamily: 'PlusJakartaSans_400Regular',
-                  color: colors.slate,
-                }}
-                className="text-[11px]"
-              >
+              <Text className="text-[11px] font-sans text-slate">
                 Correct Answers
               </Text>
             </View>
 
             {/* XP Earned Card */}
-            <View
-              style={{
-                backgroundColor: 'rgba(36, 27, 74, 0.04)',
-                borderColor: 'rgba(36, 27, 74, 0.08)',
-              }}
-              className="flex-1 p-3.5 rounded-2xl border items-center ml-2 shadow-sm"
-            >
+            <View className="flex-1 p-3.5 rounded-2xl bg-daylight-amber/10 border border-daylight-amber/30 items-center ml-2 shadow-sm">
               <View className="flex-row items-center mb-1">
                 <Ionicons
                   name="sparkles"
                   size={16}
-                  color={colors.daylightAmber}
+                  color={colors.daylightAmberDark}
                   style={{ marginRight: 4 }}
                 />
-                <Text
-                  style={{
-                    fontFamily: 'PlusJakartaSans_600SemiBold',
-                    color: colors.daylightAmber,
-                  }}
-                  className="text-xs"
-                >
+                <Text className="text-xs font-sans-bold text-amber-dark">
                   XP Reward
                 </Text>
               </View>
-              <Text
-                style={{
-                  fontFamily: 'Fredoka_700Bold',
-                  color: calculatedXp > 0 ? colors.daylightAmber : colors.slate,
-                }}
-                className="text-lg mb-0.5"
-              >
+              <Text className="text-lg font-display text-amber-dark mb-0.5">
                 {`+${calculatedXp} XP`}
               </Text>
-              <Text
-                style={{
-                  fontFamily: 'PlusJakartaSans_400Regular',
-                  color: colors.slate,
-                }}
-                className="text-[11px]"
-              >
+              <Text className="text-[11px] font-sans text-slate">
                 {calculatedXp > 0 ? 'Experience Points' : 'No XP Earned'}
               </Text>
             </View>
           </View>
 
-          {/* Action Buttons */}
-          <View className="w-full space-y-3">
+          {/* Action Buttons - 3D Tactile Layering */}
+          <View className="w-full">
             {isZeroScore ? (
               <>
-                {/* 0% Score: Primary is "Try Again" */}
-                <TouchableOpacity
-                  testID="retry-quiz-btn"
-                  onPress={onRetry}
-                  activeOpacity={0.85}
-                  style={{ backgroundColor: colors.lumioCoral }}
-                  className="w-full py-4 rounded-2xl items-center shadow-lg mb-2.5 flex-row justify-center"
-                  accessibilityRole="button"
-                  accessibilityLabel="Try again"
-                >
-                  <Ionicons name="refresh" size={18} color={colors.cream} style={{ marginRight: 6 }} />
-                  <Text
-                    style={{
-                      fontFamily: 'PlusJakartaSans_700Bold',
-                      color: colors.cream,
-                    }}
-                    className="text-base"
+                {/* 0% Score: Primary is "Try Again" with 3D base */}
+                <View className="w-full rounded-full bg-lumio-coral-dark pt-0 pb-1 mb-2.5 shadow-md">
+                  <TouchableOpacity
+                    testID="retry-quiz-btn"
+                    onPress={onRetry}
+                    disabled={saving}
+                    activeOpacity={0.9}
+                    className="w-full py-4 rounded-full bg-lumio-coral items-center justify-center flex-row active:translate-y-0.5"
+                    accessibilityRole="button"
+                    accessibilityLabel="Try again"
                   >
-                    Try Again
-                  </Text>
-                </TouchableOpacity>
+                    <Ionicons name="refresh" size={18} color={colors.cream} style={{ marginRight: 6 }} />
+                    <Text className="text-base font-sans-bold text-cream">
+                      Try Again
+                    </Text>
+                  </TouchableOpacity>
+                </View>
 
                 {/* Secondary: Close */}
                 <TouchableOpacity
                   testID="claim-finish-btn"
                   onPress={onClaim}
+                  disabled={saving}
                   activeOpacity={0.7}
-                  className="w-full py-3 rounded-2xl items-center border border-[rgba(36,27,74,0.12)] bg-[rgba(36,27,74,0.04)]"
+                  className="w-full py-3.5 rounded-full bg-deep-indigo/5 border border-deep-indigo/10 items-center justify-center active:opacity-60"
                   accessibilityRole="button"
                   accessibilityLabel="Close"
                 >
-                  <Text
-                    style={{
-                      fontFamily: 'PlusJakartaSans_600SemiBold',
-                      color: colors.deepIndigo,
-                    }}
-                    className="text-sm"
-                  >
+                  <Text className="text-sm font-sans-bold text-deep-indigo">
                     Close
                   </Text>
                 </TouchableOpacity>
               </>
             ) : (
               <>
-                {/* >0% Score: Primary is "Claim Rewards & Finish" */}
-                <TouchableOpacity
-                  testID="claim-finish-btn"
-                  onPress={onClaim}
-                  disabled={saving}
-                  activeOpacity={0.85}
-                  style={{ backgroundColor: colors.lumioCoral }}
-                  className="w-full py-4 rounded-2xl items-center shadow-lg mb-2.5 flex-row justify-center"
-                  accessibilityRole="button"
-                  accessibilityLabel="Claim rewards and finish"
-                >
-                  {saving ? (
-                    <ActivityIndicator size="small" color={colors.cream} />
-                  ) : (
-                    <>
-                      <Text
-                        style={{
-                          fontFamily: 'PlusJakartaSans_700Bold',
-                          color: colors.cream,
-                        }}
-                        className="text-base mr-2"
-                      >
-                        Claim Rewards & Finish
-                      </Text>
-                      <Ionicons name="checkmark-done" size={18} color={colors.cream} />
-                    </>
-                  )}
-                </TouchableOpacity>
+                {/* >0% Score: Primary is "Claim Rewards & Finish" with 3D base */}
+                <View className="w-full rounded-full bg-lumio-coral-dark pt-0 pb-1 mb-2.5 shadow-md">
+                  <TouchableOpacity
+                    testID="claim-finish-btn"
+                    onPress={onClaim}
+                    disabled={saving}
+                    activeOpacity={0.9}
+                    className="w-full py-4 rounded-full bg-lumio-coral items-center justify-center flex-row active:translate-y-0.5"
+                    accessibilityRole="button"
+                    accessibilityLabel="Claim rewards and finish"
+                  >
+                    {saving ? (
+                      <ActivityIndicator size="small" color={colors.cream} />
+                    ) : (
+                      <>
+                        <Text className="text-base font-sans-bold text-cream mr-2">
+                          Claim Rewards & Finish
+                        </Text>
+                        <Ionicons name="checkmark-done" size={18} color={colors.cream} />
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
 
                 {/* Secondary: Retry option */}
                 <TouchableOpacity
@@ -298,19 +223,13 @@ export function QuizCompletionModal({
                   onPress={onRetry}
                   disabled={saving}
                   activeOpacity={0.7}
-                  className="w-full py-3 rounded-2xl items-center border border-[rgba(36,27,74,0.12)] bg-[rgba(36,27,74,0.04)] flex-row justify-center"
+                  className="w-full py-3.5 rounded-full bg-deep-indigo/5 border border-deep-indigo/10 items-center justify-center flex-row active:opacity-60"
                   accessibilityRole="button"
                   accessibilityLabel="Try again"
                 >
-                  <Ionicons name="refresh" size={14} color={colors.slate} style={{ marginRight: 6 }} />
-                  <Text
-                    style={{
-                      fontFamily: 'PlusJakartaSans_600SemiBold',
-                      color: colors.deepIndigo,
-                    }}
-                    className="text-sm"
-                  >
-                    Try Again
+                  <Ionicons name="refresh" size={16} color={colors.deepIndigo} style={{ marginRight: 6 }} />
+                  <Text className="text-sm font-sans-bold text-deep-indigo">
+                    Practice Again
                   </Text>
                 </TouchableOpacity>
               </>
