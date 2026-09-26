@@ -144,11 +144,11 @@ export function ActivityCard({
 
           {xpReward !== undefined && (
             <View className="flex-row items-center mr-3">
-              <Ionicons name="sparkles" size={12} color={colors.daylightAmber} style={{ marginRight: 4 }} />
+              <Ionicons name="sparkles" size={12} color={colors.daylightAmberDark} style={{ marginRight: 4 }} />
               <Text
                 style={{
                   fontFamily: 'PlusJakartaSans_500Medium',
-                  color: colors.daylightAmber,
+                  color: colors.daylightAmberDark,
                 }}
                 className="text-xs"
               >
