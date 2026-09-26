@@ -203,6 +203,37 @@ export function MascotStage({
       );
     }
 
+    if (callStatus === 'ended') {
+      return (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: 'rgba(53,208,160,0.15)',
+            paddingHorizontal: 14,
+            paddingVertical: 6,
+            borderRadius: 999,
+          }}
+        >
+          <Ionicons
+            name="checkmark-circle"
+            size={14}
+            color={colors.mint}
+            style={{ marginRight: 6 }}
+          />
+          <Text
+            style={{
+              fontFamily: 'PlusJakartaSans_600SemiBold',
+              color: colors.mint,
+              fontSize: 12,
+            }}
+          >
+            Lesson completed
+          </Text>
+        </View>
+      );
+    }
+
     return (
       <View
         style={{
