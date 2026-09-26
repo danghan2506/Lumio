@@ -255,12 +255,24 @@ class CompletionCoordinator:
         if self.request_completion(limit):
             await self._agent.simple_response(FAREWELL_INSTRUCTION, interrupt=False)
 
+    async def _delayed_close(self, grace_seconds: float = 3.5):
+        """Autonomously teardown agent connection after completion event."""
+        try:
+            await asyncio.sleep(grace_seconds)
+            await self._agent.close()
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            _completion_log.exception("Error during autonomous agent close")
+
     async def _send_event(self):
         minutes = max(1, round(self._elapsed() / 60))
         await self._agent.send_custom_event(
             completion_payload(self._lesson_id, self._xp_earned, minutes, self._reason)
         )
         self._event_sent = True
+        # Schedule autonomous teardown so the agent doesn't linger indefinitely
+        asyncio.create_task(self._delayed_close(grace_seconds=3.5))
 
     async def run(self):
         try:

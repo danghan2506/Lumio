@@ -535,3 +535,26 @@ def test_is_farewell_transcript_detects_completion_speech():
     assert not is_farewell_transcript("Let's practice the next word: Buenos dias.")
     assert not is_farewell_transcript("")
 
+
+@pytest.mark.asyncio
+async def test_completion_coordinator_schedules_delayed_close():
+    class DummyAgent:
+        def __init__(self):
+            self.closed = False
+            self.custom_events = []
+        async def send_custom_event(self, data):
+            self.custom_events.append(data)
+        async def close(self):
+            self.closed = True
+
+    dummy = DummyAgent()
+    coordinator = CompletionCoordinator(dummy, lesson_id="test", xp_earned=10)
+    coordinator.request_completion("test")
+    await coordinator._send_event()
+
+    assert coordinator._event_sent is True
+    assert len(dummy.custom_events) == 1
+    # Run delayed close with 0 delay to verify it invokes agent.close()
+    await coordinator._delayed_close(grace_seconds=0.0)
+    assert dummy.closed is True
+
