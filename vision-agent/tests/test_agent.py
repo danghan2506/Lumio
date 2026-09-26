@@ -497,6 +497,12 @@ async def test_caption_relay_emits_on_llm_transcript():
     assert caption_events[0]["is_final"] is False
 
 
+from agent import (
+    compute_dynamic_turn_limit,
+    is_farewell_transcript,
+)
+
+
 @pytest.mark.asyncio
 async def test_caption_relay_emits_empty_on_turn_end():
     agent = _FakeAgent()
@@ -510,4 +516,22 @@ async def test_caption_relay_emits_empty_on_turn_end():
     assert len(caption_events) == 1
     assert caption_events[0]["text"] == ""
     assert caption_events[0]["is_final"] is True
+
+
+def test_compute_dynamic_turn_limit_scales_with_content():
+    assert compute_dynamic_turn_limit({}) == 6
+    assert compute_dynamic_turn_limit({"vocabulary": [{"word": "a"}, {"word": "b"}]}) == 6
+    # 4 items -> (4 * 2) + 2 = 10
+    assert compute_dynamic_turn_limit({
+        "vocabulary": [{"word": "a"}, {"word": "b"}, {"word": "c"}],
+        "phrases": ["p1"]
+    }) == 10
+
+
+def test_is_farewell_transcript_detects_completion_speech():
+    assert is_farewell_transcript("That's all for today! Great job practicing.")
+    assert is_farewell_transcript("Congratulations on completing today's lesson!")
+    assert is_farewell_transcript("See you next time, goodbye!")
+    assert not is_farewell_transcript("Let's practice the next word: Buenos dias.")
+    assert not is_farewell_transcript("")
 

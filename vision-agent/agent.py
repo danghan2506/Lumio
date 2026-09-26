@@ -80,7 +80,36 @@ def caption_event(text, *, is_final=True):
     }
 
 
-def install_caption_relay(agent):
+FAREWELL_TRIGGER_PHRASES = (
+    "that's all for today",
+    "that is all for today",
+    "congratulations on completing",
+    "see you next time",
+    "lesson is complete",
+    "lesson is now complete",
+    "great job practicing today",
+    "wraps up our lesson",
+)
+
+
+def is_farewell_transcript(text: str) -> bool:
+    if not text:
+        return False
+    lower = text.lower()
+    return any(phrase in lower for phrase in FAREWELL_TRIGGER_PHRASES)
+
+
+def compute_dynamic_turn_limit(custom_data: dict, min_limit: int = 6) -> int:
+    lesson = custom_data.get("lesson") or {}
+    vocab = lesson.get("vocabulary") or custom_data.get("vocabulary") or []
+    phrases = lesson.get("phrases") or custom_data.get("phrases") or []
+    total_items = len(vocab) + len(phrases)
+    if total_items == 0:
+        return min_limit
+    return max(min_limit, total_items * 2 + 2)
+
+
+def install_caption_relay(agent, coordinator=None):
     """Subscribe to LLM output and agent turn events to relay speech as caption custom events.
 
     Emits ``teacher_caption`` custom events so the mobile client can display
@@ -99,6 +128,8 @@ def install_caption_relay(agent):
     async def _relay_captions():
         async for event in agent.llm.output:
             if isinstance(event, realtime.RealtimeAgentTranscript) and event.text:
+                if coordinator and not coordinator.completion_requested and is_farewell_transcript(event.text):
+                    coordinator.request_completion("transcript_detected")
                 try:
                     await agent.send_custom_event(
                         caption_event(event.text, is_final=False)
@@ -266,16 +297,17 @@ class CompletionCoordinator:
             pass
 
 
-def install_completion(agent, custom_data, *, turn_limit=DEFAULT_TURN_LIMIT):
+def install_completion(agent, custom_data, *, turn_limit=None):
     lesson = custom_data.get("lesson") or {}
     lesson_id = lesson.get("id") or custom_data.get("lesson_id")
     xp_earned = lesson.get("xpReward") or 0
     time_limit_minutes = lesson.get("estimatedMinutes") or DEFAULT_ESTIMATED_MINUTES
+    resolved_turn_limit = turn_limit or compute_dynamic_turn_limit(custom_data)
     coordinator = CompletionCoordinator(
         agent,
         lesson_id=lesson_id,
         xp_earned=xp_earned,
-        turn_limit=turn_limit,
+        turn_limit=resolved_turn_limit,
         time_limit_minutes=time_limit_minutes,
     )
     coordinator.install_functions()
@@ -470,7 +502,7 @@ async def join_call(agent: Agent, call_type: str, call_id: str, **kwargs) -> Non
     agent.llm.set_instructions(agent.instructions)
 
     coordinator = install_completion(agent, custom_data)
-    relay_captions = install_caption_relay(agent)
+    relay_captions = install_caption_relay(agent, coordinator)
 
     async with agent.join(call):
         completion = asyncio.create_task(coordinator.run())
