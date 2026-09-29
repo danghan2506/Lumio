@@ -107,7 +107,7 @@ describe('MultipleChoiceQuizModal', () => {
     // Finish quiz -> opens summary modal
     fireEvent.press(getByTestId('quiz-continue-btn'));
 
-    expect(getByText('Outstanding! 🌟')).toBeTruthy();
+    expect(getByText('Outstanding!')).toBeTruthy();
     expect(getByText('2 / 2')).toBeTruthy();
 
     // Claim reward & close

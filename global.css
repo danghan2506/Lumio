@@ -10,16 +10,22 @@
     --color-deep-indigo: #241B4A;
     --color-canvas-dark-end: #4B3FA8;
     --color-lumio-coral: #FF6B57;
+    --color-lumio-coral-dark: #D84936;
     --color-daylight-amber: #FFB74D;
+    --color-amber-dark: #B86200;
     --color-mint: #35D0A0;
+    --color-mint-dark: #1F8A6B;
     --color-mint-soft: #E6F9F3;
     --color-lavender-mist: #EAE6FF;
     --color-cream: #FFFBF4;
+    --color-warm-ivory: #FAF7F0;
     --color-slate: #5E5A80;
+    --color-scrim: rgba(20, 15, 45, 0.75);
 
     /* Font tokens */
     --font-display: Fredoka_700Bold, Fredoka, sans-serif;
     --font-sans: PlusJakartaSans_500Medium, PlusJakartaSans, sans-serif;
+    --font-sans-bold: PlusJakartaSans_700Bold, PlusJakartaSans, sans-serif;
     --font-mono: JetBrainsMono_500Medium, monospace;
   }
 }
@@ -47,10 +53,10 @@
   }
 
   .btn-secondary {
-    background-color: #241B4A;
-    border-width: 1.5px;
-    border-color: #5E5A80;
-    color: #FFFBF4;
+    background-color: #EAE6FF;
+    border-width: 1px;
+    border-color: rgba(36, 27, 74, 0.12);
+    color: #241B4A;
     border-radius: 9999px;
     min-height: 48px;
     padding-left: 24px;
