@@ -244,6 +244,32 @@ def test_instructions_mention_complete_lesson_tool():
         )
 
 
+def test_complete_lesson_function_schema_has_no_parameters():
+    """Regression: complete_lesson(**_kwargs) produced a schema with required: ['_kwargs'],
+    causing Gemini Realtime tool invocation to fail or stall.
+    """
+    from vision_agents.core.llm.function_registry import FunctionRegistry
+    registry = FunctionRegistry()
+
+    @registry.register(name="complete_lesson", description="Ends the lesson.")
+    async def complete_lesson() -> str:
+        return "FAREWELL"
+
+    func_def = registry.get_function("complete_lesson")
+    assert func_def is not None
+    schema = registry._function_to_tool_schema(func_def)
+    parameters_schema = schema["parameters_schema"]
+    assert parameters_schema.get("properties") == {}
+    assert "required" not in parameters_schema or parameters_schema["required"] == []
+
+
+def test_teacher_rules_proactively_direct_tool_invocation():
+    """Rules must not prohibit farewell speech with negative deadlock constraints."""
+    from agent import TEACHER_RULES
+    assert "Never say goodbye" not in TEACHER_RULES
+    assert "complete_lesson" in TEACHER_RULES
+
+
 import asyncio
 
 from agent import CompletionCoordinator, FAREWELL_STOP_INSTRUCTION, install_completion
@@ -471,6 +497,12 @@ async def test_caption_relay_emits_on_llm_transcript():
     assert caption_events[0]["is_final"] is False
 
 
+from agent import (
+    compute_dynamic_turn_limit,
+    is_farewell_transcript,
+)
+
+
 @pytest.mark.asyncio
 async def test_caption_relay_emits_empty_on_turn_end():
     agent = _FakeAgent()
@@ -484,4 +516,45 @@ async def test_caption_relay_emits_empty_on_turn_end():
     assert len(caption_events) == 1
     assert caption_events[0]["text"] == ""
     assert caption_events[0]["is_final"] is True
+
+
+def test_compute_dynamic_turn_limit_scales_with_content():
+    assert compute_dynamic_turn_limit({}) == 6
+    assert compute_dynamic_turn_limit({"vocabulary": [{"word": "a"}, {"word": "b"}]}) == 6
+    # 4 items -> (4 * 2) + 2 = 10
+    assert compute_dynamic_turn_limit({
+        "vocabulary": [{"word": "a"}, {"word": "b"}, {"word": "c"}],
+        "phrases": ["p1"]
+    }) == 10
+
+
+def test_is_farewell_transcript_detects_completion_speech():
+    assert is_farewell_transcript("That's all for today! Great job practicing.")
+    assert is_farewell_transcript("Congratulations on completing today's lesson!")
+    assert is_farewell_transcript("See you next time, goodbye!")
+    assert not is_farewell_transcript("Let's practice the next word: Buenos dias.")
+    assert not is_farewell_transcript("")
+
+
+@pytest.mark.asyncio
+async def test_completion_coordinator_schedules_delayed_close():
+    class DummyAgent:
+        def __init__(self):
+            self.closed = False
+            self.custom_events = []
+        async def send_custom_event(self, data):
+            self.custom_events.append(data)
+        async def close(self):
+            self.closed = True
+
+    dummy = DummyAgent()
+    coordinator = CompletionCoordinator(dummy, lesson_id="test", xp_earned=10)
+    coordinator.request_completion("test")
+    await coordinator._send_event()
+
+    assert coordinator._event_sent is True
+    assert len(dummy.custom_events) == 1
+    # Run delayed close with 0 delay to verify it invokes agent.close()
+    await coordinator._delayed_close(grace_seconds=0.0)
+    assert dummy.closed is True
 

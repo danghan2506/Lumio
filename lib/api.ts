@@ -43,16 +43,31 @@ export interface RecordLessonProgressParams {
   minutesPracticed?: number;
 }
 
+export function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number = 8000,
+  errorMessage: string = 'Request timed out'
+): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(errorMessage)), ms)
+    ),
+  ]);
+}
+
 export async function recordLessonProgress(
   params: RecordLessonProgressParams
 ): Promise<void> {
-  const { error } = await supabase.rpc('record_lesson_progress', {
+  const rpcPromise = supabase.rpc('record_lesson_progress', {
     p_lesson_id: params.lessonId,
     p_status: params.status,
     p_current_activity: params.currentActivity,
     p_xp_earned: params.xpEarned,
     p_minutes_practiced: params.minutesPracticed ?? 0,
   });
+
+  const { error } = await withTimeout(Promise.resolve(rpcPromise), 8000, 'Saving lesson progress timed out');
   if (error) {
     throw new Error(error.message);
   }

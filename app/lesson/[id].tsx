@@ -70,6 +70,19 @@ export default function AudioLessonScreen() {
       setShowSummary(true);
       setProgressError(null);
       lastPayloadRef.current = payload;
+
+      // 1. Immediately mute mic to stop user audio intake
+      if (call) {
+        void call.microphone.disable().catch(() => {});
+      }
+
+      // 2. Schedule clean call & agent teardown in parallel (non-blocking)
+      setTimeout(() => {
+        void teacher.stop();
+        void leave();
+      }, AUDIO_DRAIN_MS);
+
+      // 3. Persist progress concurrently
       try {
         await recordLessonProgress({
           lessonId: id || '',
@@ -81,12 +94,8 @@ export default function AudioLessonScreen() {
       } catch (err) {
         setProgressError(err instanceof Error ? err.message : 'Could not save your progress.');
       }
-      setTimeout(() => {
-        void teacher.stop();
-        void leave();
-      }, AUDIO_DRAIN_MS);
     },
-    [id, lesson, teacher, leave]
+    [id, lesson, teacher, leave, call]
   );
   handleLessonCompleteRef.current = handleLessonComplete;
 
