@@ -25,10 +25,10 @@ export const ProfileSkeletonLoader: React.FC = () => {
   }, [pulseAnim]);
 
   const skeletonCardStyle = {
-    backgroundColor: '#31265E',
+    backgroundColor: 'rgba(36, 27, 74, 0.05)',
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(94, 90, 128, 0.25)',
+    borderColor: 'rgba(36, 27, 74, 0.06)',
   };
 
   return (
@@ -56,7 +56,7 @@ export const ProfileSkeletonLoader: React.FC = () => {
             width: 84,
             height: 84,
             borderRadius: 42,
-            backgroundColor: 'rgba(234, 230, 255, 0.15)',
+            backgroundColor: 'rgba(36, 27, 74, 0.08)',
             marginBottom: 16,
           }}
         />
@@ -65,7 +65,7 @@ export const ProfileSkeletonLoader: React.FC = () => {
             width: 140,
             height: 20,
             borderRadius: 8,
-            backgroundColor: 'rgba(234, 230, 255, 0.15)',
+            backgroundColor: 'rgba(36, 27, 74, 0.08)',
             marginBottom: 8,
           }}
         />
@@ -74,7 +74,7 @@ export const ProfileSkeletonLoader: React.FC = () => {
             width: 180,
             height: 14,
             borderRadius: 6,
-            backgroundColor: 'rgba(234, 230, 255, 0.1)',
+            backgroundColor: 'rgba(36, 27, 74, 0.05)',
             marginBottom: 12,
           }}
         />
@@ -83,7 +83,7 @@ export const ProfileSkeletonLoader: React.FC = () => {
             width: 100,
             height: 24,
             borderRadius: 12,
-            backgroundColor: 'rgba(234, 230, 255, 0.1)',
+            backgroundColor: 'rgba(36, 27, 74, 0.05)',
           }}
         />
       </Animated.View>
@@ -107,7 +107,7 @@ export const ProfileSkeletonLoader: React.FC = () => {
               width: 50,
               height: 50,
               borderRadius: 25,
-              backgroundColor: 'rgba(234, 230, 255, 0.15)',
+              backgroundColor: 'rgba(36, 27, 74, 0.08)',
             }}
           />
           <View style={{ flex: 1, gap: 8 }}>
@@ -116,7 +116,7 @@ export const ProfileSkeletonLoader: React.FC = () => {
                 width: 120,
                 height: 18,
                 borderRadius: 6,
-                backgroundColor: 'rgba(234, 230, 255, 0.15)',
+                backgroundColor: 'rgba(36, 27, 74, 0.08)',
               }}
             />
             <View
@@ -124,7 +124,7 @@ export const ProfileSkeletonLoader: React.FC = () => {
                 width: 90,
                 height: 12,
                 borderRadius: 4,
-                backgroundColor: 'rgba(234, 230, 255, 0.1)',
+                backgroundColor: 'rgba(36, 27, 74, 0.05)',
               }}
             />
           </View>
@@ -133,7 +133,7 @@ export const ProfileSkeletonLoader: React.FC = () => {
               width: 100,
               height: 40,
               borderRadius: 20,
-              backgroundColor: 'rgba(234, 230, 255, 0.1)',
+              backgroundColor: 'rgba(36, 27, 74, 0.05)',
             }}
           />
         </View>
@@ -153,7 +153,7 @@ export const ProfileSkeletonLoader: React.FC = () => {
                 width: 36,
                 height: 36,
                 borderRadius: 12,
-                backgroundColor: 'rgba(234, 230, 255, 0.15)',
+                backgroundColor: 'rgba(36, 27, 74, 0.08)',
                 marginBottom: 16,
               }}
             />
@@ -162,7 +162,7 @@ export const ProfileSkeletonLoader: React.FC = () => {
                 width: 60,
                 height: 20,
                 borderRadius: 6,
-                backgroundColor: 'rgba(234, 230, 255, 0.15)',
+                backgroundColor: 'rgba(36, 27, 74, 0.08)',
                 marginBottom: 4,
               }}
             />
@@ -171,7 +171,7 @@ export const ProfileSkeletonLoader: React.FC = () => {
                 width: 80,
                 height: 10,
                 borderRadius: 4,
-                backgroundColor: 'rgba(234, 230, 255, 0.1)',
+                backgroundColor: 'rgba(36, 27, 74, 0.05)',
               }}
             />
           </Animated.View>
@@ -186,7 +186,7 @@ export const ProfileSkeletonLoader: React.FC = () => {
                 width: 36,
                 height: 36,
                 borderRadius: 12,
-                backgroundColor: 'rgba(234, 230, 255, 0.15)',
+                backgroundColor: 'rgba(36, 27, 74, 0.08)',
                 marginBottom: 16,
               }}
             />
@@ -195,7 +195,7 @@ export const ProfileSkeletonLoader: React.FC = () => {
                 width: 60,
                 height: 20,
                 borderRadius: 6,
-                backgroundColor: 'rgba(234, 230, 255, 0.15)',
+                backgroundColor: 'rgba(36, 27, 74, 0.08)',
                 marginBottom: 4,
               }}
             />
@@ -204,7 +204,7 @@ export const ProfileSkeletonLoader: React.FC = () => {
                 width: 80,
                 height: 10,
                 borderRadius: 4,
-                backgroundColor: 'rgba(234, 230, 255, 0.1)',
+                backgroundColor: 'rgba(36, 27, 74, 0.05)',
               }}
             />
           </Animated.View>
@@ -222,7 +222,7 @@ export const ProfileSkeletonLoader: React.FC = () => {
                 width: 36,
                 height: 36,
                 borderRadius: 12,
-                backgroundColor: 'rgba(234, 230, 255, 0.15)',
+                backgroundColor: 'rgba(36, 27, 74, 0.08)',
                 marginBottom: 16,
               }}
             />
@@ -231,7 +231,7 @@ export const ProfileSkeletonLoader: React.FC = () => {
                 width: 60,
                 height: 20,
                 borderRadius: 6,
-                backgroundColor: 'rgba(234, 230, 255, 0.15)',
+                backgroundColor: 'rgba(36, 27, 74, 0.08)',
                 marginBottom: 4,
               }}
             />
@@ -240,7 +240,7 @@ export const ProfileSkeletonLoader: React.FC = () => {
                 width: 80,
                 height: 10,
                 borderRadius: 4,
-                backgroundColor: 'rgba(234, 230, 255, 0.1)',
+                backgroundColor: 'rgba(36, 27, 74, 0.05)',
               }}
             />
           </Animated.View>
@@ -255,7 +255,7 @@ export const ProfileSkeletonLoader: React.FC = () => {
                 width: 36,
                 height: 36,
                 borderRadius: 12,
-                backgroundColor: 'rgba(234, 230, 255, 0.15)',
+                backgroundColor: 'rgba(36, 27, 74, 0.08)',
                 marginBottom: 16,
               }}
             />
@@ -264,7 +264,7 @@ export const ProfileSkeletonLoader: React.FC = () => {
                 width: 60,
                 height: 20,
                 borderRadius: 6,
-                backgroundColor: 'rgba(234, 230, 255, 0.15)',
+                backgroundColor: 'rgba(36, 27, 74, 0.08)',
                 marginBottom: 4,
               }}
             />
@@ -273,7 +273,7 @@ export const ProfileSkeletonLoader: React.FC = () => {
                 width: 80,
                 height: 10,
                 borderRadius: 4,
-                backgroundColor: 'rgba(234, 230, 255, 0.1)',
+                backgroundColor: 'rgba(36, 27, 74, 0.05)',
               }}
             />
           </Animated.View>
