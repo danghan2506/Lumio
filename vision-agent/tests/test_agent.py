@@ -477,24 +477,22 @@ def test_caption_event_defaults_to_final():
 
 @pytest.mark.asyncio
 async def test_caption_relay_emits_on_llm_transcript():
-    from vision_agents.core.llm import realtime as _realtime
+    agent = _agent_with_store()
+    relay_captions = install_caption_relay(agent, poll_interval=0.01)
 
-    agent = _FakeAgent()
-    relay_captions = install_caption_relay(agent)
-
-    task = asyncio.create_task(relay_captions())
-    await agent.llm._output_queue.put(
-        _realtime.RealtimeAgentTranscript(mode="delta", text="Let's learn Spanish today!")
+    agent.transcripts.update_agent_transcript(
+        text="Let's learn Spanish today!", mode="delta"
     )
-    await asyncio.sleep(0)
+    task = asyncio.create_task(relay_captions())
+    await asyncio.sleep(0.05)
     task.cancel()
     await asyncio.gather(task, return_exceptions=True)
 
     caption_events = [e for e in agent.events if e.get("type") == "teacher_caption"]
     assert len(caption_events) >= 1
-    assert caption_events[0]["text"] == "Let's learn Spanish today!"
-    assert caption_events[0]["speaker_name"] == "Lumi"
-    assert caption_events[0]["is_final"] is False
+    assert caption_events[-1]["text"] == "Let's learn Spanish today!"
+    assert caption_events[-1]["speaker_name"] == "Lumi"
+    assert caption_events[-1]["is_final"] is False
 
 
 from agent import (
@@ -557,4 +555,78 @@ async def test_completion_coordinator_schedules_delayed_close():
     # Run delayed close with 0 delay to verify it invokes agent.close()
     await coordinator._delayed_close(grace_seconds=0.0)
     assert dummy.closed is True
+
+
+from agent import CAPTION_POLL_SECONDS
+from vision_agents.core.agents.transcript.store import TranscriptStore
+
+
+def _agent_with_store():
+    agent = _FakeAgent()
+    agent.transcripts = TranscriptStore(agent_user_id="lumi-teacher")
+    agent.agent_user = type("U", (), {"id": "lumi-teacher"})()
+    return agent
+
+
+@pytest.mark.asyncio
+async def test_caption_relay_polls_accumulated_sentence():
+    agent = _agent_with_store()
+    relay_captions = install_caption_relay(agent, poll_interval=0.01)
+
+    agent.transcripts.update_agent_transcript(text="Hey ", mode="delta")
+    agent.transcripts.update_agent_transcript(text="there!", mode="delta")
+
+    task = asyncio.create_task(relay_captions())
+    await asyncio.sleep(0.05)
+    task.cancel()
+    await asyncio.gather(task, return_exceptions=True)
+
+    caption_events = [e for e in agent.events if e.get("type") == "teacher_caption"]
+    assert caption_events, "relay must emit from TranscriptStore without consuming llm.output"
+    assert caption_events[-1]["text"] == "Hey there!"
+    assert caption_events[-1]["is_final"] is False
+
+
+@pytest.mark.asyncio
+async def test_caption_relay_never_consumes_llm_output():
+    """Regression: the relay must not steal events (esp. PCM audio) from
+    agent.llm.output, which is a single-consumer queue shared with the
+    framework realtime flow. See report 2026-09-30 section 4.1."""
+    from getstream.video.rtc.track_util import AudioFormat, PcmData
+    from vision_agents.core.llm import realtime as _realtime
+    import numpy as np
+
+    agent = _agent_with_store()
+    relay_captions = install_caption_relay(agent, poll_interval=0.01)
+
+    pcm = PcmData(samples=np.zeros(160, dtype=np.int16), sample_rate=24000, format=AudioFormat.S16)
+    await agent.llm._output_queue.put(_realtime.RealtimeAudioOutput(data=pcm))
+
+    task = asyncio.create_task(relay_captions())
+    await asyncio.sleep(0.05)
+    task.cancel()
+    await asyncio.gather(task, return_exceptions=True)
+
+    remaining = agent.llm._output_queue.qsize() if hasattr(agent.llm._output_queue, "qsize") else 1
+    assert remaining >= 1, "audio events must stay in llm.output for the realtime flow"
+
+
+@pytest.mark.asyncio
+async def test_caption_relay_detects_farewell_on_accumulated_text():
+    from agent import CompletionCoordinator
+
+    agent = _agent_with_store()
+    coordinator = CompletionCoordinator(agent, lesson_id="l1", xp_earned=20)
+    relay_captions = install_caption_relay(agent, coordinator, poll_interval=0.01)
+
+    # Farewell split across two deltas: no single chunk matches, accumulated does.
+    agent.transcripts.update_agent_transcript(text="That's all ", mode="delta")
+    agent.transcripts.update_agent_transcript(text="for today!", mode="delta")
+
+    task = asyncio.create_task(relay_captions())
+    await asyncio.sleep(0.05)
+    task.cancel()
+    await asyncio.gather(task, return_exceptions=True)
+
+    assert coordinator.completion_requested is True
 

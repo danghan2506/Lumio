@@ -23,7 +23,6 @@ from vision_agents.core.agents.events import (
 )
 from vision_agents.core.edge.events import AudioReceivedEvent
 from vision_agents.core.instructions import Instructions
-from vision_agents.core.llm import realtime
 from vision_agents.plugins import gemini, getstream
 
 _timing_log = logging.getLogger("lumi.timing")
@@ -109,33 +108,52 @@ def compute_dynamic_turn_limit(custom_data: dict, min_limit: int = 6) -> int:
     return max(min_limit, total_items * 2 + 2)
 
 
-def install_caption_relay(agent, coordinator=None):
-    """Subscribe to LLM output and agent turn events to relay speech as caption custom events.
+CAPTION_POLL_SECONDS = 0.25
 
-    Emits ``teacher_caption`` custom events so the mobile client can display
-    live subtitles of what the AI teacher says.
 
-    Strategy:
-    - Consume ``agent.llm.output`` and emit each ``RealtimeAgentTranscript``
-      delta chunk as a non-final caption event (real-time streaming subtitles).
-    - On ``AgentTurnEndedEvent``, emit an empty final event so the client
-      starts its auto-clear timer.
+def _agent_transcript_text(agent) -> str:
+    """Non-destructive read of the accumulated agent transcript."""
+    transcripts = getattr(agent, "transcripts", None)
+    if transcripts is None:
+        return ""
+    user_id = getattr(getattr(agent, "agent_user", None), "id", None) or getattr(
+        agent, "_agent_user_id", ""
+    )
+    try:
+        buffer = transcripts.get_buffer(participant_id="", user_id=user_id)
+    except Exception:
+        return ""
+    if buffer is None:
+        return ""
+    return buffer.text
 
-    Returns an async coroutine ``_relay_captions`` that must be run as a task
-    for the duration of the call.
+
+def install_caption_relay(agent, coordinator=None, *, poll_interval=CAPTION_POLL_SECONDS):
+    """Poll the shared TranscriptStore and relay accumulated speech as captions.
+
+    Never consumes ``agent.llm.output``: that queue is single-consumer and
+    shared with the framework's realtime audio flow. Consuming it steals
+    ``RealtimeAudioOutput`` PCM chunks and silences the agent.
     """
 
     async def _relay_captions():
-        async for event in agent.llm.output:
-            if isinstance(event, realtime.RealtimeAgentTranscript) and event.text:
-                if coordinator and not coordinator.completion_requested and is_farewell_transcript(event.text):
-                    coordinator.request_completion("transcript_detected")
-                try:
-                    await agent.send_custom_event(
-                        caption_event(event.text, is_final=False)
-                    )
-                except Exception:
-                    pass  # Never disrupt audio for caption delivery
+        last_sent = ""
+        while True:
+            await asyncio.sleep(poll_interval)
+            text = _agent_transcript_text(agent)
+            if not text or text == last_sent:
+                if not text:
+                    last_sent = ""
+                continue
+            last_sent = text
+            if coordinator and not coordinator.completion_requested and is_farewell_transcript(text):
+                coordinator.request_completion("transcript_detected")
+            try:
+                await agent.send_custom_event(
+                    caption_event(text, is_final=False)
+                )
+            except Exception:
+                pass  # Never disrupt audio for caption delivery
 
     @agent.subscribe
     async def _on_agent_turn_end(event):
