@@ -477,24 +477,22 @@ def test_caption_event_defaults_to_final():
 
 @pytest.mark.asyncio
 async def test_caption_relay_emits_on_llm_transcript():
-    from vision_agents.core.llm import realtime as _realtime
+    agent = _agent_with_store()
+    relay_captions = install_caption_relay(agent, poll_interval=0.01)
 
-    agent = _FakeAgent()
-    relay_captions = install_caption_relay(agent)
-
-    task = asyncio.create_task(relay_captions())
-    await agent.llm._output_queue.put(
-        _realtime.RealtimeAgentTranscript(mode="delta", text="Let's learn Spanish today!")
+    agent.transcripts.update_agent_transcript(
+        text="Let's learn Spanish today!", mode="delta"
     )
-    await asyncio.sleep(0)
+    task = asyncio.create_task(relay_captions())
+    await asyncio.sleep(0.05)
     task.cancel()
     await asyncio.gather(task, return_exceptions=True)
 
     caption_events = [e for e in agent.events if e.get("type") == "teacher_caption"]
     assert len(caption_events) >= 1
-    assert caption_events[0]["text"] == "Let's learn Spanish today!"
-    assert caption_events[0]["speaker_name"] == "Lumi"
-    assert caption_events[0]["is_final"] is False
+    assert caption_events[-1]["text"] == "Let's learn Spanish today!"
+    assert caption_events[-1]["speaker_name"] == "Lumi"
+    assert caption_events[-1]["is_final"] is False
 
 
 from agent import (
@@ -557,4 +555,34 @@ async def test_completion_coordinator_schedules_delayed_close():
     # Run delayed close with 0 delay to verify it invokes agent.close()
     await coordinator._delayed_close(grace_seconds=0.0)
     assert dummy.closed is True
+
+
+from agent import CAPTION_POLL_SECONDS
+from vision_agents.core.agents.transcript.store import TranscriptStore
+
+
+def _agent_with_store():
+    agent = _FakeAgent()
+    agent.transcripts = TranscriptStore(agent_user_id="lumi-teacher")
+    agent.agent_user = type("U", (), {"id": "lumi-teacher"})()
+    return agent
+
+
+@pytest.mark.asyncio
+async def test_caption_relay_polls_accumulated_sentence():
+    agent = _agent_with_store()
+    relay_captions = install_caption_relay(agent, poll_interval=0.01)
+
+    agent.transcripts.update_agent_transcript(text="Hey ", mode="delta")
+    agent.transcripts.update_agent_transcript(text="there!", mode="delta")
+
+    task = asyncio.create_task(relay_captions())
+    await asyncio.sleep(0.05)
+    task.cancel()
+    await asyncio.gather(task, return_exceptions=True)
+
+    caption_events = [e for e in agent.events if e.get("type") == "teacher_caption"]
+    assert caption_events, "relay must emit from TranscriptStore without consuming llm.output"
+    assert caption_events[-1]["text"] == "Hey there!"
+    assert caption_events[-1]["is_final"] is False
 
