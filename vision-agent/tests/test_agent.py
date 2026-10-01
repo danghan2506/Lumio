@@ -586,3 +586,47 @@ async def test_caption_relay_polls_accumulated_sentence():
     assert caption_events[-1]["text"] == "Hey there!"
     assert caption_events[-1]["is_final"] is False
 
+
+@pytest.mark.asyncio
+async def test_caption_relay_never_consumes_llm_output():
+    """Regression: the relay must not steal events (esp. PCM audio) from
+    agent.llm.output, which is a single-consumer queue shared with the
+    framework realtime flow. See report 2026-09-30 section 4.1."""
+    from getstream.video.rtc.track_util import AudioFormat, PcmData
+    from vision_agents.core.llm import realtime as _realtime
+    import numpy as np
+
+    agent = _agent_with_store()
+    relay_captions = install_caption_relay(agent, poll_interval=0.01)
+
+    pcm = PcmData(samples=np.zeros(160, dtype=np.int16), sample_rate=24000, format=AudioFormat.S16)
+    await agent.llm._output_queue.put(_realtime.RealtimeAudioOutput(data=pcm))
+
+    task = asyncio.create_task(relay_captions())
+    await asyncio.sleep(0.05)
+    task.cancel()
+    await asyncio.gather(task, return_exceptions=True)
+
+    remaining = agent.llm._output_queue.qsize() if hasattr(agent.llm._output_queue, "qsize") else 1
+    assert remaining >= 1, "audio events must stay in llm.output for the realtime flow"
+
+
+@pytest.mark.asyncio
+async def test_caption_relay_detects_farewell_on_accumulated_text():
+    from agent import CompletionCoordinator
+
+    agent = _agent_with_store()
+    coordinator = CompletionCoordinator(agent, lesson_id="l1", xp_earned=20)
+    relay_captions = install_caption_relay(agent, coordinator, poll_interval=0.01)
+
+    # Farewell split across two deltas: no single chunk matches, accumulated does.
+    agent.transcripts.update_agent_transcript(text="That's all ", mode="delta")
+    agent.transcripts.update_agent_transcript(text="for today!", mode="delta")
+
+    task = asyncio.create_task(relay_captions())
+    await asyncio.sleep(0.05)
+    task.cancel()
+    await asyncio.gather(task, return_exceptions=True)
+
+    assert coordinator.completion_requested is True
+
