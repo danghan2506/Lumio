@@ -8,6 +8,7 @@ import ProfileScreen from '@/app/(tabs)/profile';
 import { useProfileData } from '@/hooks/useProfileData';
 import { useAuth } from '@/hooks/useAuth';
 import type { UserProfileOverview } from '@/lib/api';
+import { colors } from '@/theme/colors';
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
@@ -214,6 +215,7 @@ describe('ProfileScreen', () => {
 
     const refreshControl = scrollView.props.refreshControl;
     expect(refreshControl).toBeDefined();
+    expect(refreshControl.props.tintColor).toBe(colors.deepIndigo);
 
     act(() => {
       refreshControl.props.onRefresh();
