@@ -8,6 +8,7 @@ import ProfileScreen from '@/app/(tabs)/profile';
 import { useProfileData } from '@/hooks/useProfileData';
 import { useAuth } from '@/hooks/useAuth';
 import type { UserProfileOverview } from '@/lib/api';
+import { colors } from '@/theme/colors';
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
@@ -181,7 +182,7 @@ describe('ProfileScreen', () => {
     expect(getByText('Spanish')).toBeTruthy();
     expect(getByText(/Español/)).toBeTruthy();
     expect(getByText('🇪🇸')).toBeTruthy();
-    expect(getByText('Switch Language')).toBeTruthy();
+    expect(getByTestId('switch-language-button')).toBeTruthy();
 
     // Learning stats grid checks
     expect(getByText('1,250')).toBeTruthy();
@@ -214,6 +215,7 @@ describe('ProfileScreen', () => {
 
     const refreshControl = scrollView.props.refreshControl;
     expect(refreshControl).toBeDefined();
+    expect(refreshControl.props.tintColor).toBe(colors.deepIndigo);
 
     act(() => {
       refreshControl.props.onRefresh();

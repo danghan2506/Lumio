@@ -67,7 +67,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.deepIndigo }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.cream }}>
       <TabScreenWrapper>
         <ScrollView
           testID="profile-scroll-view"
@@ -83,7 +83,7 @@ export default function ProfileScreen() {
               refreshing={refreshing}
               onRefresh={refresh}
               colors={[colors.lumioCoral]}
-              tintColor={colors.cream}
+              tintColor={colors.deepIndigo}
             />
           }
         >
@@ -123,7 +123,7 @@ export default function ProfileScreen() {
                 style={{
                   fontFamily: 'Fredoka_700Bold',
                   fontSize: 20,
-                  color: colors.cream,
+                  color: colors.deepIndigo,
                   textAlign: 'center',
                 }}
               >
@@ -133,7 +133,7 @@ export default function ProfileScreen() {
                 style={{
                   fontFamily: 'PlusJakartaSans_500Medium',
                   fontSize: 14,
-                  color: colors.lavenderMist,
+                  color: colors.slate,
                   textAlign: 'center',
                   lineHeight: 20,
                 }}
@@ -198,7 +198,13 @@ export default function ProfileScreen() {
                         flag: profileOverview.activeLanguage.flag,
                         startedAt: profileOverview.createdAt,
                       }
-                    : null
+                    : {
+                        id: currentLanguage.id,
+                        name: currentLanguage.name,
+                        nativeName: currentLanguage.nativeName,
+                        flag: currentLanguage.flag,
+                        startedAt: profileOverview.createdAt,
+                      }
                 }
                 onSwitchLanguage={handleSwitchLanguage}
               />

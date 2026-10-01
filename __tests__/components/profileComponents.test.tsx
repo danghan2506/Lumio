@@ -410,7 +410,7 @@ describe('Profile Subcomponents', () => {
       expect(getByText('Spanish')).toBeTruthy();
       expect(getByText(/Español/)).toBeTruthy();
       expect(getByText('🇪🇸')).toBeTruthy();
-      expect(getByText('Switch Language')).toBeTruthy();
+      expect(getByTestId('switch-language-button')).toBeTruthy();
 
       const switchBtn = getByTestId('switch-language-button');
       fireEvent.press(switchBtn);
@@ -433,6 +433,39 @@ describe('Profile Subcomponents', () => {
       fireEvent.press(startBtn);
 
       expect(onSwitchLanguageMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('enforces circular 44x44 dimensions, flexShrink: 0, and single-line truncation to prevent layout bulging', () => {
+      const { getByTestId, getByText } = render(
+        <ActiveLanguageCard
+          activeLanguage={{
+            id: 'es',
+            name: 'Spanish',
+            nativeName: 'Español',
+            flag: '🇪🇸',
+            startedAt: '2026-08-01T00:00:00.000Z',
+          }}
+        />
+      );
+
+      const switchBtn = getByTestId('switch-language-button');
+      const btnStyle = typeof switchBtn.props.style === 'function'
+        ? switchBtn.props.style({ pressed: false })
+        : switchBtn.props.style;
+
+      expect(btnStyle).toMatchObject({
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        flexShrink: 0,
+      });
+
+      const titleText = getByText('Spanish');
+      expect(titleText.props.numberOfLines).toBe(1);
+
+      const subText = getByText(/Español/);
+      expect(subText.props.numberOfLines).toBe(1);
+      expect(subText.props.ellipsizeMode).toBe('tail');
     });
   });
 
