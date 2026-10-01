@@ -31,11 +31,11 @@ const StatCard: React.FC<StatItemProps> = ({
       style={{
         flex: 1,
         minWidth: '45%',
-        backgroundColor: colors.deepIndigo,
+        backgroundColor: colors.warmIvory,
         borderRadius: 24,
         padding: 16,
         borderWidth: 1,
-        borderColor: 'rgba(94, 90, 128, 0.35)',
+        borderColor: 'rgba(36, 27, 74, 0.06)',
         justifyContent: 'space-between',
         minHeight: 112,
       }}
@@ -69,7 +69,7 @@ const StatCard: React.FC<StatItemProps> = ({
           style={{
             fontFamily: 'PlusJakartaSans_700Bold',
             fontSize: 24,
-            color: colors.cream,
+            color: colors.deepIndigo,
             letterSpacing: 0.3,
             lineHeight: 28,
             marginBottom: 2,
@@ -82,7 +82,7 @@ const StatCard: React.FC<StatItemProps> = ({
           style={{
             fontFamily: 'PlusJakartaSans_600SemiBold',
             fontSize: 11,
-            color: colors.lavenderMist,
+            color: colors.slate,
             letterSpacing: 0.6,
             textTransform: 'uppercase',
           }}

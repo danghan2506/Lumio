@@ -178,11 +178,11 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
   return (
     <View
       style={{
-        backgroundColor: colors.deepIndigo,
+        backgroundColor: colors.warmIvory,
         borderRadius: 24,
         padding: 24,
         borderWidth: 1,
-        borderColor: 'rgba(94, 90, 128, 0.35)',
+        borderColor: 'rgba(36, 27, 74, 0.06)',
         alignItems: 'center',
       }}
     >
@@ -193,7 +193,7 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
             width: 88,
             height: 88,
             borderRadius: 44,
-            backgroundColor: 'rgba(234, 230, 255, 0.1)',
+            backgroundColor: 'rgba(234, 230, 255, 0.5)',
             borderWidth: 3,
             borderColor: colors.daylightAmber,
             overflow: 'hidden',
@@ -213,7 +213,7 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
               style={{
                 width: '100%',
                 height: '100%',
-                backgroundColor: 'rgba(255, 107, 87, 0.2)',
+                backgroundColor: 'rgba(255, 107, 87, 0.15)',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -222,7 +222,7 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
                 style={{
                   fontFamily: 'Fredoka_700Bold',
                   fontSize: 36,
-                  color: colors.daylightAmber,
+                  color: colors.lumioCoral,
                 }}
               >
                 {userInitial}
@@ -240,7 +240,7 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
                 left: 0,
                 right: 0,
                 bottom: 0,
-                backgroundColor: 'rgba(36, 27, 74, 0.75)',
+                backgroundColor: 'rgba(20, 15, 45, 0.75)',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -266,7 +266,7 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
             borderRadius: 17,
             backgroundColor: colors.lumioCoral,
             borderWidth: 2,
-            borderColor: colors.deepIndigo,
+            borderColor: colors.warmIvory,
             alignItems: 'center',
             justifyContent: 'center',
             opacity: pressed ? 0.85 : 1,
@@ -291,7 +291,7 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
           style={{
             fontFamily: 'Fredoka_700Bold',
             fontSize: 22,
-            color: colors.cream,
+            color: colors.deepIndigo,
             textAlign: 'center',
             letterSpacing: 0.44,
           }}
@@ -311,15 +311,15 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
               width: 32,
               height: 32,
               borderRadius: 16,
-              backgroundColor: 'rgba(234, 230, 255, 0.08)',
+              backgroundColor: 'rgba(36, 27, 74, 0.05)',
               borderWidth: 1,
-              borderColor: 'rgba(94, 90, 128, 0.35)',
+              borderColor: 'rgba(36, 27, 74, 0.08)',
               alignItems: 'center',
               justifyContent: 'center',
               opacity: pressed ? 0.8 : 1,
             })}
           >
-            <Ionicons name="pencil" size={15} color={colors.daylightAmber} />
+            <Ionicons name="pencil" size={15} color={colors.slate} />
           </Pressable>
         ) : null}
       </View>
@@ -344,7 +344,7 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: 'rgba(234, 230, 255, 0.08)',
+            backgroundColor: 'rgba(36, 27, 74, 0.04)',
             paddingHorizontal: 12,
             paddingVertical: 5,
             borderRadius: 9999,
@@ -357,7 +357,7 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
             style={{
               fontFamily: 'PlusJakartaSans_500Medium',
               fontSize: 12,
-              color: colors.lavenderMist,
+              color: colors.slate,
             }}
           >
             {formattedDate}
@@ -374,12 +374,12 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
         style={({ pressed }) => ({
           flexDirection: 'row',
           alignItems: 'center',
-          backgroundColor: copied ? 'rgba(53, 208, 160, 0.15)' : 'rgba(234, 230, 255, 0.05)',
+          backgroundColor: copied ? 'rgba(53, 208, 160, 0.12)' : 'rgba(36, 27, 74, 0.04)',
           paddingHorizontal: 16,
           paddingVertical: 10,
           borderRadius: 14,
           borderWidth: 1,
-          borderColor: copied ? colors.mint : 'rgba(94, 90, 128, 0.3)',
+          borderColor: copied ? colors.mint : 'rgba(36, 27, 74, 0.08)',
           minHeight: 48,
           gap: 8,
           opacity: pressed ? 0.8 : 1,
@@ -388,13 +388,13 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
         <Ionicons
           name={copied ? 'checkmark-circle' : 'copy-outline'}
           size={16}
-          color={copied ? colors.mint : colors.daylightAmber}
+          color={copied ? colors.mintDark : colors.daylightAmber}
         />
         <Text
           style={{
             fontFamily: 'PlusJakartaSans_500Medium',
             fontSize: 12,
-            color: copied ? colors.mint : colors.lavenderMist,
+            color: copied ? colors.mintDark : colors.slate,
           }}
         >
           {copied ? 'Copied!' : `ID: ${userId}`}
@@ -415,7 +415,7 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
         <Pressable
           style={{
             flex: 1,
-            backgroundColor: 'rgba(36, 27, 74, 0.7)',
+            backgroundColor: 'rgba(20, 15, 45, 0.65)',
             alignItems: 'center',
             justifyContent: 'center',
             paddingHorizontal: 24,
@@ -426,10 +426,10 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
             style={{
               width: '100%',
               maxWidth: 360,
-              backgroundColor: colors.deepIndigo,
+              backgroundColor: colors.warmIvory,
               borderRadius: 24,
               borderWidth: 1,
-              borderColor: 'rgba(94, 90, 128, 0.35)',
+              borderColor: 'rgba(36, 27, 74, 0.1)',
               padding: 24,
               gap: 16,
             }}
@@ -440,7 +440,7 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
               style={{
                 fontFamily: 'Fredoka_700Bold',
                 fontSize: 20,
-                color: colors.cream,
+                color: colors.deepIndigo,
                 letterSpacing: 0.4,
               }}
             >
@@ -464,7 +464,7 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
                 borderRadius: 14,
                 borderWidth: 2,
                 borderColor: colors.lumioCoral,
-                backgroundColor: 'rgba(234, 230, 255, 0.06)',
+                backgroundColor: '#FFFFFF',
                 paddingHorizontal: 16,
               }}
             >
@@ -480,7 +480,7 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
                 style={{
                   fontFamily: 'PlusJakartaSans_500Medium',
                   fontSize: 16,
-                  color: colors.cream,
+                  color: colors.deepIndigo,
                   minHeight: 48,
                   paddingVertical: 12,
                 }}
@@ -514,7 +514,8 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
                   minHeight: 48,
                   borderRadius: 9999,
                   borderWidth: 1.5,
-                  borderColor: colors.slate,
+                  borderColor: 'rgba(36, 27, 74, 0.15)',
+                  backgroundColor: 'rgba(36, 27, 74, 0.05)',
                   alignItems: 'center',
                   justifyContent: 'center',
                   opacity: pressed ? 0.8 : 1,
@@ -524,7 +525,7 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({
                   style={{
                     fontFamily: 'PlusJakartaSans_700Bold',
                     fontSize: 15,
-                    color: colors.cream,
+                    color: colors.deepIndigo,
                   }}
                 >
                   Cancel
