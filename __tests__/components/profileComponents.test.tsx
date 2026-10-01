@@ -410,7 +410,7 @@ describe('Profile Subcomponents', () => {
       expect(getByText('Spanish')).toBeTruthy();
       expect(getByText(/Español/)).toBeTruthy();
       expect(getByText('🇪🇸')).toBeTruthy();
-      expect(getByText('Switch Language')).toBeTruthy();
+      expect(getByTestId('switch-language-button')).toBeTruthy();
 
       const switchBtn = getByTestId('switch-language-button');
       fireEvent.press(switchBtn);

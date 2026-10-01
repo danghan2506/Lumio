@@ -181,7 +181,7 @@ describe('ProfileScreen', () => {
     expect(getByText('Spanish')).toBeTruthy();
     expect(getByText(/Español/)).toBeTruthy();
     expect(getByText('🇪🇸')).toBeTruthy();
-    expect(getByText('Switch Language')).toBeTruthy();
+    expect(getByTestId('switch-language-button')).toBeTruthy();
 
     // Learning stats grid checks
     expect(getByText('1,250')).toBeTruthy();

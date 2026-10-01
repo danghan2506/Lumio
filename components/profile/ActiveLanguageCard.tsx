@@ -36,11 +36,11 @@ export const ActiveLanguageCard: React.FC<ActiveLanguageCardProps> = ({
     return (
       <View
         style={{
-          backgroundColor: colors.deepIndigo,
+          backgroundColor: colors.warmIvory,
           borderRadius: 24,
           padding: 24,
           borderWidth: 1,
-          borderColor: 'rgba(94, 90, 128, 0.35)',
+          borderColor: 'rgba(36, 27, 74, 0.06)',
           alignItems: 'center',
           gap: 12,
         }}
@@ -64,7 +64,7 @@ export const ActiveLanguageCard: React.FC<ActiveLanguageCardProps> = ({
           style={{
             fontFamily: 'Fredoka_700Bold',
             fontSize: 20,
-            color: colors.cream,
+            color: colors.deepIndigo,
             textAlign: 'center',
           }}
         >
@@ -75,7 +75,7 @@ export const ActiveLanguageCard: React.FC<ActiveLanguageCardProps> = ({
           style={{
             fontFamily: 'PlusJakartaSans_400Regular',
             fontSize: 14,
-            color: colors.lavenderMist,
+            color: colors.slate,
             textAlign: 'center',
             lineHeight: 20,
             marginBottom: 4,
@@ -122,11 +122,11 @@ export const ActiveLanguageCard: React.FC<ActiveLanguageCardProps> = ({
   return (
     <View
       style={{
-        backgroundColor: colors.deepIndigo,
+        backgroundColor: colors.warmIvory,
         borderRadius: 24,
         padding: 20,
         borderWidth: 1,
-        borderColor: 'rgba(94, 90, 128, 0.35)',
+        borderColor: 'rgba(36, 27, 74, 0.06)',
       }}
     >
       {/* Header Micro-label */}
@@ -160,7 +160,7 @@ export const ActiveLanguageCard: React.FC<ActiveLanguageCardProps> = ({
         />
       </View>
 
-      {/* Main Row: Flag + Name + Switch Button */}
+      {/* Main Row: Flag + Name + Circular Switch Button */}
       <View
         style={{
           flexDirection: 'row',
@@ -170,15 +170,15 @@ export const ActiveLanguageCard: React.FC<ActiveLanguageCardProps> = ({
         }}
       >
         {/* Flag Badge & Info */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1, minWidth: 0 }}>
           <View
             style={{
-              width: 50,
-              height: 50,
-              borderRadius: 25,
-              backgroundColor: 'rgba(234, 230, 255, 0.1)',
+              width: 48,
+              height: 48,
+              borderRadius: 24,
+              backgroundColor: 'rgba(234, 230, 255, 0.5)',
               borderWidth: 1.5,
-              borderColor: 'rgba(234, 230, 255, 0.2)',
+              borderColor: 'rgba(36, 27, 74, 0.08)',
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -186,12 +186,13 @@ export const ActiveLanguageCard: React.FC<ActiveLanguageCardProps> = ({
             <Text style={{ fontSize: 26 }}>{activeLanguage.flag}</Text>
           </View>
 
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
             <Text
+              numberOfLines={1}
               style={{
                 fontFamily: 'Fredoka_700Bold',
-                fontSize: 19,
-                color: colors.cream,
+                fontSize: 18,
+                color: colors.deepIndigo,
                 letterSpacing: 0.38,
               }}
             >
@@ -199,11 +200,12 @@ export const ActiveLanguageCard: React.FC<ActiveLanguageCardProps> = ({
             </Text>
 
             <Text
+              numberOfLines={1}
+              ellipsizeMode="tail"
               style={{
                 fontFamily: 'PlusJakartaSans_500Medium',
                 fontSize: 13,
-                color: colors.lavenderMist,
-                marginTop: 2,
+                color: colors.slate,
               }}
             >
               {activeLanguage.nativeName}
@@ -212,36 +214,25 @@ export const ActiveLanguageCard: React.FC<ActiveLanguageCardProps> = ({
           </View>
         </View>
 
-        {/* Ghost Pill Switch Button */}
+        {/* Circular Switch Button */}
         <Pressable
           testID="switch-language-button"
           onPress={onSwitchLanguage}
           accessibilityRole="button"
           accessibilityLabel="Switch active learning language"
           style={({ pressed }) => ({
-            minHeight: 48,
-            minWidth: 48,
-            paddingHorizontal: 16,
-            borderRadius: 9999,
-            borderWidth: 1.5,
-            borderColor: 'rgba(234, 230, 255, 0.25)',
-            backgroundColor: pressed ? 'rgba(234, 230, 255, 0.1)' : 'transparent',
-            flexDirection: 'row',
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: pressed ? 'rgba(36, 27, 74, 0.1)' : 'rgba(36, 27, 74, 0.05)',
+            borderWidth: 1,
+            borderColor: 'rgba(36, 27, 74, 0.08)',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 6,
+            flexShrink: 0,
           })}
         >
-          <Ionicons name="swap-horizontal" size={16} color={colors.cream} />
-          <Text
-            style={{
-              fontFamily: 'PlusJakartaSans_600SemiBold',
-              fontSize: 13,
-              color: colors.cream,
-            }}
-          >
-            Switch Language
-          </Text>
+          <Ionicons name="swap-horizontal" size={20} color={colors.deepIndigo} />
         </Pressable>
       </View>
     </View>
