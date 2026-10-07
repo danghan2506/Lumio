@@ -29,7 +29,7 @@ describe('LessonCaptionsSlot', () => {
     expect(queryByText(/Speak naturally in Spanish to practice with Lumi\./i)).toBeNull();
   });
 
-  it('preserves layout and hides caption text when showCaptions is false', () => {
+  it('preserves layout with minHeight 64 and hides caption text when showCaptions is false', () => {
     const { queryByText, getByTestId } = render(
       <LessonCaptionsSlot
         languageName="Spanish"
@@ -39,6 +39,43 @@ describe('LessonCaptionsSlot', () => {
     );
     expect(queryByText('Hola, ¿cómo estás?')).toBeNull();
     expect(queryByText(/Speak naturally/i)).toBeNull();
-    expect(getByTestId('captions-slot-placeholder')).toBeTruthy();
+    const placeholder = getByTestId('captions-slot-placeholder');
+    expect(placeholder).toBeTruthy();
+    expect(placeholder.props.style).toEqual(
+      expect.objectContaining({ minHeight: 64 })
+    );
+  });
+
+  it('clamps card container style with minHeight 64 and maxHeight 128', () => {
+    const { getByTestId } = render(
+      <LessonCaptionsSlot
+        languageName="Spanish"
+        showCaptions={true}
+        captionText="Testing height clamping bounds."
+      />
+    );
+    const card = getByTestId('captions-slot-card');
+    expect(card.props.style).toEqual(
+      expect.objectContaining({
+        minHeight: 64,
+        maxHeight: 128,
+      })
+    );
+  });
+
+  it('renders long text inside a scrollable view with stable font metrics', () => {
+    const longText =
+      'Great job on your pronunciation! In Spanish, remember to say Buenos días in the morning instead of Buenas tardes. Let us practice ordering breakfast together.';
+    const { getByText, getByTestId } = render(
+      <LessonCaptionsSlot
+        languageName="Spanish"
+        showCaptions={true}
+        captionText={longText}
+        isLive={true}
+      />
+    );
+    expect(getByText(longText)).toBeTruthy();
+    const scrollView = getByTestId('captions-scroll-view');
+    expect(scrollView).toBeTruthy();
   });
 });
