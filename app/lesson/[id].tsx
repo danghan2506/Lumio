@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -19,8 +19,7 @@ import {
   LessonSummaryModal,
 } from '@/components/lesson';
 
-const SUMMARY_DELAY_MS = 3000;
-const AUDIO_DRAIN_MS = 6000;
+const AUDIO_DRAIN_MS = 1200;
 
 export default function AudioLessonScreen() {
   const insets = useSafeAreaInsets();
@@ -38,23 +37,6 @@ export default function AudioLessonScreen() {
 
   const handleLessonCompleteRef = useRef<((payload: LessonCompleteEvent) => void) | null>(null);
   const lastPayloadRef = useRef<LessonCompleteEvent | null>(null);
-  const summaryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const teardownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Clear pending completion timers on unmount so a delayed modal/teardown
-  // never fires after the user has already navigated away.
-  useEffect(() => {
-    return () => {
-      if (summaryTimerRef.current !== null) {
-        clearTimeout(summaryTimerRef.current);
-        summaryTimerRef.current = null;
-      }
-      if (teardownTimerRef.current !== null) {
-        clearTimeout(teardownTimerRef.current);
-        teardownTimerRef.current = null;
-      }
-    };
-  }, []);
   const completionProxy = useCallback((payload: LessonCompleteEvent) => {
     handleLessonCompleteRef.current?.(payload);
   }, []);
@@ -85,36 +67,17 @@ export default function AudioLessonScreen() {
 
   const handleLessonComplete = useCallback(
     async (payload: LessonCompleteEvent) => {
+      setShowSummary(true);
       setProgressError(null);
       lastPayloadRef.current = payload;
 
-      // 1. Immediately mute mic to stop user audio intake (keeps the
-      // pulsing "listening" UI alive while the farewell plays out).
+      // 1. Immediately mute mic to stop user audio intake
       if (call) {
         void call.microphone.disable().catch(() => {});
       }
 
-      // Clear any previously scheduled timers so a manual retry doesn't
-      // stack duplicate modals/teardowns.
-      if (summaryTimerRef.current !== null) {
-        clearTimeout(summaryTimerRef.current);
-      }
-      if (teardownTimerRef.current !== null) {
-        clearTimeout(teardownTimerRef.current);
-      }
-
-      // 2. Delay the summary modal so it never pops up mid-farewell. The
-      // completion event fires at farewell turn-end + 2s; the extra delay
-      // covers audio playout lag on the device.
-      summaryTimerRef.current = setTimeout(() => {
-        summaryTimerRef.current = null;
-        setShowSummary(true);
-      }, SUMMARY_DELAY_MS);
-
-      // 3. Schedule clean call & agent teardown in parallel (non-blocking),
-      // well after the 1-2 sentence farewell has finished playing.
-      teardownTimerRef.current = setTimeout(() => {
-        teardownTimerRef.current = null;
+      // 2. Schedule clean call & agent teardown in parallel (non-blocking)
+      setTimeout(() => {
         void teacher.stop();
         void leave();
       }, AUDIO_DRAIN_MS);
