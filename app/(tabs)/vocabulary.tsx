@@ -11,8 +11,10 @@ import {
   VocabularyFilterType,
 } from '@/components/vocabulary/VocabularyFilterBar';
 import { VocabularyListItem } from '@/components/vocabulary/VocabularyListItem';
+import { WordDetailBottomSheet } from '@/components/vocabulary/WordDetailBottomSheet';
 import { VocabularySkeletonLoader } from '@/components/vocabulary/VocabularySkeletonLoader';
 import { colors } from '@/theme/colors';
+import type { VocabularyWithProgress } from '@/types/vocabulary';
 
 export default function VocabularyScreen() {
   const router = useRouter();
@@ -27,10 +29,10 @@ export default function VocabularyScreen() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<VocabularyFilterType>('all');
+  const [selectedWord, setSelectedWord] = useState<VocabularyWithProgress | null>(null);
 
   const filteredVocabularies = useMemo(() => {
     return vocabularies.filter((item) => {
-      // Search filter
       const matchesSearch =
         searchQuery.trim().length === 0 ||
         item.word.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -38,7 +40,6 @@ export default function VocabularyScreen() {
 
       if (!matchesSearch) return false;
 
-      // Status chip filter
       if (activeFilter === 'all') return true;
       if (activeFilter === 'due') {
         return dueWords.some((d) => d.id === item.id);
@@ -110,63 +111,73 @@ export default function VocabularyScreen() {
             </Pressable>
           </View>
         ) : (
-          <FlatList
-            data={filteredVocabularies}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <VocabularyListItem
-                item={item}
-                onPress={() =>
-                  router.push({
-                    pathname: '/vocabulary/review',
-                    params: { wordId: item.id },
-                  } as any)
-                }
-              />
-            )}
-            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={refresh}
-                tintColor={colors.lumioCoral}
-              />
-            }
-            ListHeaderComponent={
-              <View className="pt-3">
-                <VocabularyHeroCard
-                  dueCount={stats.dueCount}
-                  masteredCount={stats.masteredCount}
-                  retentionRate={stats.retentionRate}
-                  onStartReview={() => router.push('/vocabulary/review' as any)}
+          <>
+            <FlatList
+              data={filteredVocabularies}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <VocabularyListItem
+                  item={item}
+                  onPress={() => setSelectedWord(item)}
                 />
-                <VocabularyFilterBar
-                  searchQuery={searchQuery}
-                  onSearchChange={setSearchQuery}
-                  activeFilter={activeFilter}
-                  onFilterChange={setActiveFilter}
-                  counts={filterCounts}
+              )}
+              contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={refresh}
+                  tintColor={colors.lumioCoral}
                 />
-              </View>
-            }
-            ListEmptyComponent={
-              <View className="py-12 items-center justify-center">
-                <Ionicons name="search-outline" size={40} color={colors.slate} />
-                <Text
-                  style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.deepIndigo }}
-                  className="text-base mt-2"
-                >
-                  No vocabulary found
-                </Text>
-                <Text
-                  style={{ fontFamily: 'PlusJakartaSans_400Regular', color: colors.slate }}
-                  className="text-xs text-center mt-1 text-gray-500"
-                >
-                  Try clearing your search query or changing filter.
-                </Text>
-              </View>
-            }
-          />
+              }
+              ListHeaderComponent={
+                <View className="pt-3">
+                  <VocabularyHeroCard
+                    dueCount={stats.dueCount}
+                    masteredCount={stats.masteredCount}
+                    retentionRate={stats.retentionRate}
+                    onStartReview={() => router.push('/vocabulary/review' as any)}
+                  />
+                  <VocabularyFilterBar
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                    activeFilter={activeFilter}
+                    onFilterChange={setActiveFilter}
+                    counts={filterCounts}
+                  />
+                </View>
+              }
+              ListEmptyComponent={
+                <View className="py-12 items-center justify-center">
+                  <Ionicons name="search-outline" size={40} color={colors.slate} />
+                  <Text
+                    style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.deepIndigo }}
+                    className="text-base mt-2"
+                  >
+                    No vocabulary found
+                  </Text>
+                  <Text
+                    style={{ fontFamily: 'PlusJakartaSans_400Regular', color: colors.slate }}
+                    className="text-xs text-center mt-1 text-gray-500"
+                  >
+                    Try clearing your search query or changing filter.
+                  </Text>
+                </View>
+              }
+            />
+
+            <WordDetailBottomSheet
+              visible={Boolean(selectedWord)}
+              item={selectedWord}
+              onClose={() => setSelectedWord(null)}
+              onPractice={(wordId) => {
+                setSelectedWord(null);
+                router.push({
+                  pathname: '/vocabulary/review',
+                  params: { wordId },
+                } as any);
+              }}
+            />
+          </>
         )}
       </SafeAreaView>
     </TabScreenWrapper>

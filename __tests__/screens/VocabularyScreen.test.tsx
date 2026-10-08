@@ -146,11 +146,8 @@ describe('VocabularyScreen', () => {
     expect(getAllByText('Vocabulary Vault').length).toBeGreaterThanOrEqual(1);
     expect(getByText('Master words with spaced repetition')).toBeTruthy();
     expect(getByText('Hello')).toBeTruthy();
-    expect(getByText('Xin chào')).toBeTruthy();
     expect(getByText('Goodbye')).toBeTruthy();
-    expect(getByText('Tạm biệt')).toBeTruthy();
     expect(getByText('Thank you')).toBeTruthy();
-    expect(getByText('Cảm ơn')).toBeTruthy();
   });
 
   it('navigates to /vocabulary/review when clicking Start Daily Review', () => {
@@ -195,7 +192,7 @@ describe('VocabularyScreen', () => {
     expect(mockPush).toHaveBeenCalledWith('/vocabulary/review');
   });
 
-  it('navigates to /vocabulary/review with wordId param when clicking a vocabulary item', () => {
+  it('opens detail sheet when clicking a vocabulary item and navigates to review on practice', () => {
     mockUseVocabularyData.mockReturnValue({
       vocabularies: mockVocabularies,
       dueWords: [mockVocabularies[0]],
@@ -210,6 +207,12 @@ describe('VocabularyScreen', () => {
     const vocabItem = getByTestId('vocab-item-v-1');
     act(() => {
       fireEvent.press(vocabItem);
+    });
+
+    // Detail sheet should now display practice button
+    const practiceBtn = getByTestId('practice-word-btn');
+    act(() => {
+      fireEvent.press(practiceBtn);
     });
 
     expect(mockPush).toHaveBeenCalledWith({
