@@ -21,112 +21,69 @@ export const VocabularyHeroCard: React.FC<VocabularyHeroCardProps> = ({
   const isAllCaughtUp = dueCount === 0;
 
   return (
-    <View className="bg-canvas-dark-end rounded-3xl p-5 mb-5 shadow-md border border-white/10">
-      {/* Header Info */}
-      <View className="flex-row items-center justify-between mb-4">
-        <View>
-          <Text
-            style={{ fontFamily: 'Fredoka_700Bold', color: colors.cream }}
-            className="text-xl leading-tight"
-          >
-            {isAllCaughtUp ? 'All Caught Up! ✨' : 'Vocabulary Vault'}
-          </Text>
-          <Text
-            style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.lavenderMist }}
-            className="text-xs mt-0.5"
-          >
-            {isAllCaughtUp
-              ? 'Great job keeping your streak alive'
-              : 'Daily spaced repetition queue'}
-          </Text>
-        </View>
+    <View className="bg-canvas-dark-end rounded-2xl p-4 mb-3.5 shadow-md border border-white/10 flex-row items-center justify-between">
+      {/* Left Column: Title & Stats Chips */}
+      <View className="flex-1 mr-3">
+        <Text
+          style={{ fontFamily: 'Fredoka_700Bold', color: colors.cream }}
+          className="text-base leading-tight"
+        >
+          {isAllCaughtUp ? 'All Caught Up! ✨' : 'Vocabulary Vault'}
+        </Text>
 
-        <View className="w-11 h-11 rounded-2xl bg-white/15 items-center justify-center">
-          <Ionicons
-            name={isAllCaughtUp ? 'sparkles' : 'layers'}
-            size={22}
-            color={colors.daylightAmber}
-          />
-        </View>
-      </View>
-
-      {/* Stats Deck */}
-      <View className="flex-row items-center justify-between bg-black/20 rounded-2xl p-3.5 mb-4">
-        <View className="items-center flex-1">
+        <View className="flex-row items-center mt-1.5 flex-wrap">
           <Text
             style={{ fontFamily: 'PlusJakartaSans_700Bold', color: colors.daylightAmber }}
-            className="text-lg"
+            className="text-xs"
           >
-            {dueCount}
+            <Text>{dueCount}</Text> Due
           </Text>
-          <Text
-            style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.lavenderMist }}
-            className="text-[11px]"
-          >
-            Due Cards
+          <Text style={{ color: colors.lavenderMist }} className="text-xs mx-1.5">
+            •
           </Text>
-        </View>
-
-        <View className="w-[1px] h-7 bg-white/15" />
-
-        <View className="items-center flex-1">
           <Text
             style={{ fontFamily: 'PlusJakartaSans_700Bold', color: colors.mint }}
-            className="text-lg"
+            className="text-xs"
           >
-            {masteredCount}
+            <Text>{masteredCount}</Text> Mastered
+          </Text>
+          <Text style={{ color: colors.lavenderMist }} className="text-xs mx-1.5">
+            •
           </Text>
           <Text
-            style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.lavenderMist }}
-            className="text-[11px]"
+            style={{ fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.lavenderMist }}
+            className="text-xs"
           >
-            Mastered
-          </Text>
-        </View>
-
-        <View className="w-[1px] h-7 bg-white/15" />
-
-        <View className="items-center flex-1">
-          <Text
-            style={{ fontFamily: 'PlusJakartaSans_700Bold', color: colors.cream }}
-            className="text-lg"
-          >
-            {retentionRate}%
-          </Text>
-          <Text
-            style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.lavenderMist }}
-            className="text-[11px]"
-          >
-            Retention
+            <Text>{retentionRate}%</Text>
           </Text>
         </View>
       </View>
 
-      {/* Action Button */}
+      {/* Right Column: Compact Action CTA */}
       {isAllCaughtUp ? (
         <Pressable
           testID="practice-all-btn"
           onPress={onPracticeAll ?? onStartReview}
-          className="bg-white/20 active:bg-white/30 py-3 rounded-2xl items-center flex-row justify-center border border-white/20"
+          className="bg-white/20 active:bg-white/30 px-3.5 py-2.5 rounded-xl items-center flex-row justify-center border border-white/20"
         >
-          <Ionicons name="refresh" size={18} color={colors.cream} className="mr-2" />
+          <Ionicons name="refresh" size={15} color={colors.cream} />
           <Text
             style={{ fontFamily: 'PlusJakartaSans_700Bold', color: colors.cream }}
-            className="text-sm ml-2"
+            className="text-xs ml-1.5"
           >
-            Practice All Vocabulary
+            Practice All
           </Text>
         </Pressable>
       ) : (
         <Pressable
           testID="start-review-btn"
           onPress={onStartReview}
-          className="bg-lumio-coral active:opacity-90 py-3.5 rounded-2xl items-center flex-row justify-center shadow-lg active:translate-y-0.5"
+          className="bg-lumio-coral active:opacity-90 px-3.5 py-2.5 rounded-xl items-center flex-row justify-center shadow-md active:translate-y-0.5"
         >
-          <Ionicons name="play" size={18} color={colors.cream} className="mr-2" />
+          <Ionicons name="play" size={15} color={colors.cream} />
           <Text
             style={{ fontFamily: 'PlusJakartaSans_700Bold', color: colors.cream }}
-            className="text-sm ml-2"
+            className="text-xs ml-1.5"
           >
             Start Daily Review
           </Text>
