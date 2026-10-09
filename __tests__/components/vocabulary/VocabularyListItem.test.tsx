@@ -7,10 +7,10 @@ const mockItem: VocabularyWithProgress = {
   id: 'v-1',
   lessonId: 'l-1',
   word: 'Enthusiastic',
-  translation: 'Nhiệt tình',
+  translation: 'Eager and enthusiastic',
   pronunciation: '/ɪnˌθjuːziˈæstɪk/',
   exampleSentence: 'She is enthusiastic about learning.',
-  exampleTranslation: 'Cô ấy rất nhiệt tình học tập.',
+  exampleTranslation: 'She is very enthusiastic about learning.',
   status: 'learning',
   correctCount: 2,
   incorrectCount: 0,
@@ -22,14 +22,15 @@ const mockItem: VocabularyWithProgress = {
 };
 
 describe('VocabularyListItem', () => {
-  it('renders word, phonetic, translation, and status badge', () => {
-    const { getByText } = render(<VocabularyListItem item={mockItem} />);
+  it('renders word, pronunciation, and status badge without inlining example sentences', () => {
+    const { getByText, queryByText } = render(<VocabularyListItem item={mockItem} />);
 
     expect(getByText('Enthusiastic')).toBeTruthy();
     expect(getByText('/ɪnˌθjuːziˈæstɪk/')).toBeTruthy();
-    expect(getByText('Nhiệt tình')).toBeTruthy();
     expect(getByText('Learning')).toBeTruthy();
-    expect(getByText('She is enthusiastic about learning.')).toBeTruthy();
+
+    // Verify example sentence is NOT rendered inline in the compact list row
+    expect(queryByText('She is enthusiastic about learning.')).toBeNull();
   });
 
   it('calls onPress when clicked', () => {

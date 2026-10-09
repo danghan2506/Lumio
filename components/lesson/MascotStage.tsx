@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, Image, TouchableOpacity, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   useSharedValue,
@@ -25,6 +25,13 @@ export function MascotStage({
   isMuted,
   onRetryTeacher,
 }: MascotStageProps) {
+  const { height: windowHeight } = useWindowDimensions();
+  const isCompact = windowHeight < 720;
+  const outerFrameSize = isCompact ? 150 : 190;
+  const auraSize = isCompact ? 134 : 170;
+  const avatarFrameSize = isCompact ? 124 : 156;
+  const avatarImageSize = isCompact ? 116 : 148;
+  const containerPaddingY = isCompact ? 8 : 16;
   const pulseScale = useSharedValue(1);
   const pulseOpacity = useSharedValue(0.4);
 
@@ -268,11 +275,11 @@ export function MascotStage({
   };
 
   return (
-    <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+    <View testID="mascot-stage-container" style={{ alignItems: 'center', paddingVertical: containerPaddingY }}>
       <View
         style={{
-          width: 190,
-          height: 190,
+          width: outerFrameSize,
+          height: outerFrameSize,
           justifyContent: 'center',
           alignItems: 'center',
         }}
@@ -282,9 +289,9 @@ export function MascotStage({
           style={[
             {
               position: 'absolute',
-              width: 170,
-              height: 170,
-              borderRadius: 85,
+              width: auraSize,
+              height: auraSize,
+              borderRadius: auraSize / 2,
               backgroundColor: isLive ? colors.lumioCoral : 'transparent',
             },
             animatedGlowStyle,
@@ -294,9 +301,9 @@ export function MascotStage({
         {/* Mascot Avatar Frame */}
         <View
           style={{
-            width: 156,
-            height: 156,
-            borderRadius: 78,
+            width: avatarFrameSize,
+            height: avatarFrameSize,
+            borderRadius: avatarFrameSize / 2,
             borderWidth: 3,
             borderColor: isLive ? colors.lumioCoral : 'rgba(94,90,128,0.3)',
             overflow: 'hidden',
@@ -307,7 +314,7 @@ export function MascotStage({
         >
           <Image
             source={images.lumiTutor}
-            style={{ width: 148, height: 148 }}
+            style={{ width: avatarImageSize, height: avatarImageSize }}
             resizeMode="cover"
           />
         </View>

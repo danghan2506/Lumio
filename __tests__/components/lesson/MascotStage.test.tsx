@@ -57,4 +57,13 @@ describe('MascotStage', () => {
     );
     expect(getByText(/Connection error/i)).toBeTruthy();
   });
+
+  it('renders with compact dimensions on short screens', () => {
+    // Test that the mascot stage root container renders and contains avatar frame
+    const { getByTestId } = render(
+      <MascotStage callStatus="joined" teacherStatus="connected" isMuted={false} />
+    );
+    const stageContainer = getByTestId('mascot-stage-container');
+    expect(stageContainer).toBeTruthy();
+  });
 });

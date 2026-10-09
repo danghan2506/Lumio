@@ -176,7 +176,6 @@ export default function AudioLessonScreen() {
         backgroundColor: colors.deepIndigo,
         paddingTop: topInset,
         paddingBottom: bottomInset,
-        justifyContent: 'space-between',
       }}
     >
       {/* ─── Connecting / Joining Overlay ─── */}
@@ -245,7 +244,7 @@ export default function AudioLessonScreen() {
       )}
 
       {/* ─── Header & Connection Error ─── */}
-      <View>
+      <View style={{ flexShrink: 0, zIndex: 10 }}>
         <LessonHeader
           languageFlag={language?.flag}
           languageName={language?.name}
@@ -322,14 +321,16 @@ export default function AudioLessonScreen() {
       </View>
 
       {/* ─── Center Stage: Mascot + Captions Slot ─── */}
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View
+        style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 8, minHeight: 0 }}
+      >
         <MascotStage
           callStatus={status}
           teacherStatus={teacher.status}
           isMuted={isMuted}
           onRetryTeacher={() => void teacher.retry()}
         />
-        <View style={{ marginTop: 24, width: '100%' }}>
+        <View style={{ marginTop: 16, width: '100%', maxWidth: 440 }}>
           <LessonCaptionsSlot
             languageName={language?.name}
             showCaptions={showCaptions}
@@ -340,7 +341,16 @@ export default function AudioLessonScreen() {
       </View>
 
       {/* ─── Audio Controls ─── */}
-      <View style={{ paddingHorizontal: 20, paddingBottom: 24 }}>
+      <View
+        style={{
+          flexShrink: 0,
+          paddingHorizontal: 20,
+          paddingTop: 16,
+          paddingBottom: 16,
+          minHeight: 96,
+          justifyContent: 'center',
+        }}
+      >
         <AudioControls
           isMuted={isMuted}
           isCallJoined={status === 'joined'}
