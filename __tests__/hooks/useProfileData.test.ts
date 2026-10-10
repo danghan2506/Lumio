@@ -81,7 +81,7 @@ describe('useProfileData', () => {
 
       await waitFor(() => expect(result.current.loading).toBe(false));
 
-      expect(getUserProfileOverview).toHaveBeenCalledWith('user-123');
+      expect(getUserProfileOverview).toHaveBeenCalledWith('user-123', undefined);
       expect(result.current.profileOverview).toEqual(mockOverview);
       expect(result.current.error).toBeNull();
       expect(result.current.refreshing).toBe(false);
@@ -130,8 +130,29 @@ describe('useProfileData', () => {
       rerender({});
 
       await waitFor(() => expect(result.current.loading).toBe(false));
-      expect(getUserProfileOverview).toHaveBeenCalledWith('user-123');
+      expect(getUserProfileOverview).toHaveBeenCalledWith('user-123', undefined);
       expect(result.current.profileOverview).toEqual(mockOverview);
+    });
+  });
+
+  describe('languageId option', () => {
+    it('passes languageId through to getUserProfileOverview and refetches on change', async () => {
+      (useAuth as jest.Mock).mockReturnValue({
+        user: { id: 'user-123', email: 'alex@example.com' },
+        loading: false,
+        session: null,
+        signOut: jest.fn(),
+      });
+      (getUserProfileOverview as jest.Mock).mockResolvedValue(mockOverview);
+
+      const { rerender } = renderHook(
+        ({ languageId }: { languageId: 'es' | 'ko' }) => useProfileData({ languageId }),
+        { initialProps: { languageId: 'es' as const } }
+      );
+
+      await waitFor(() => expect(getUserProfileOverview).toHaveBeenCalledWith('user-123', 'es'));
+      rerender({ languageId: 'ko' });
+      await waitFor(() => expect(getUserProfileOverview).toHaveBeenCalledWith('user-123', 'ko'));
     });
   });
 
