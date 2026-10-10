@@ -648,11 +648,13 @@ export interface UserProfileOverview {
   avatarUrl: string | null;
   createdAt: string;
   activeLanguage: Language | null;
+  activeLanguageStartedAt: string | null;
   stats: UserProfileStats;
 }
 
 export async function getUserProfileOverview(
-  userId: string
+  userId: string,
+  languageId?: LanguageId
 ): Promise<UserProfileOverview | null> {
   const [
     profileRes,
@@ -670,11 +672,11 @@ export async function getUserProfileOverview(
       .maybeSingle(),
     supabase
       .from('lesson_progress')
-      .select('status, xp_earned')
+      .select('lesson_id, status, xp_earned')
       .eq('user_id', userId),
     supabase
       .from('vocabulary_progress')
-      .select('status')
+      .select('lesson_id, status')
       .eq('user_id', userId),
     supabase
       .from('daily_activity')
@@ -697,6 +699,40 @@ export async function getUserProfileOverview(
   if (dailyActivityRes.error) {
     throw new Error(dailyActivityRes.error.message);
   }
+
+  let lessonIdsForLanguage: Set<string> | null = null;
+  if (languageId) {
+    const { data: unitRows, error: unitsError } = await supabase
+      .from('units')
+      .select('id')
+      .eq('language_id', languageId);
+    if (unitsError) {
+      throw new Error(unitsError.message);
+    }
+    const unitIds = (unitRows ?? []).map((unit) => unit.id);
+    let lessonRows: { id: string }[] = [];
+    if (unitIds.length > 0) {
+      const { data: lessonsData, error: lessonsError } = await supabase
+        .from('lessons')
+        .select('id')
+        .in('unit_id', unitIds);
+      if (lessonsError) {
+        throw new Error(lessonsError.message);
+      }
+      lessonRows = lessonsData ?? [];
+    }
+    lessonIdsForLanguage = new Set(lessonRows.map((lesson) => lesson.id));
+  }
+
+  const inLanguageScope = (lessonId: string): boolean =>
+    lessonIdsForLanguage === null || lessonIdsForLanguage.has(lessonId);
+
+  const lessonProgressList = (lessonProgressRes.data ?? []).filter((item) =>
+    inLanguageScope(item.lesson_id)
+  );
+  const vocabProgressList = (vocabProgressRes.data ?? []).filter((item) =>
+    inLanguageScope(item.lesson_id)
+  );
 
   if (!profileRes.data) {
     // Attempt fallback from active auth session
@@ -721,7 +757,6 @@ export async function getUserProfileOverview(
         ? (languages.find((l) => l.id === activeLangRow.language_id) ?? null)
         : null;
 
-      const lessonProgressList = lessonProgressRes.data ?? [];
       const totalXp = lessonProgressList.reduce(
         (sum, item) => sum + (item.xp_earned || 0),
         0
@@ -730,7 +765,6 @@ export async function getUserProfileOverview(
         (item) => item.status === 'completed'
       ).length;
 
-      const vocabProgressList = vocabProgressRes.data ?? [];
       const masteredWords = vocabProgressList.filter(
         (item) => item.status === 'mastered'
       ).length;
@@ -750,6 +784,7 @@ export async function getUserProfileOverview(
         avatarUrl,
         createdAt,
         activeLanguage,
+        activeLanguageStartedAt: activeLangRow?.started_at ?? null,
         stats: {
           totalXp,
           completedLessons,
@@ -769,7 +804,6 @@ export async function getUserProfileOverview(
     ? (languages.find((l) => l.id === activeLangRow.language_id) ?? null)
     : null;
 
-  const lessonProgressList = lessonProgressRes.data ?? [];
   const totalXp = lessonProgressList.reduce(
     (sum, item) => sum + (item.xp_earned || 0),
     0
@@ -778,7 +812,6 @@ export async function getUserProfileOverview(
     (item) => item.status === 'completed'
   ).length;
 
-  const vocabProgressList = vocabProgressRes.data ?? [];
   const masteredWords = vocabProgressList.filter(
     (item) => item.status === 'mastered'
   ).length;
@@ -798,6 +831,7 @@ export async function getUserProfileOverview(
     avatarUrl: profile.avatar_url,
     createdAt: profile.created_at,
     activeLanguage,
+    activeLanguageStartedAt: activeLangRow?.started_at ?? null,
     stats: {
       totalXp,
       completedLessons,

@@ -1,20 +1,28 @@
 import React from 'react';
 import { Alert } from 'react-native';
-import { render, fireEvent, act } from '@testing-library/react-native';
+import { render, fireEvent, act, waitFor } from '@testing-library/react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 
 import ProfileScreen from '@/app/(tabs)/profile';
 import { useProfileData } from '@/hooks/useProfileData';
 import { useAuth } from '@/hooks/useAuth';
+import { setActiveLanguage } from '@/lib/api';
 import type { UserProfileOverview } from '@/lib/api';
+import { useLanguageStore } from '@/store/useLanguageStore';
 import { colors } from '@/theme/colors';
 
 const mockPush = jest.fn();
+const mockReplace = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({
     push: mockPush,
+    replace: mockReplace,
   }),
+}));
+
+jest.mock('@/lib/api', () => ({
+  setActiveLanguage: jest.fn(),
 }));
 
 const mockRefresh = jest.fn();
@@ -85,6 +93,7 @@ const mockOverview: UserProfileOverview = {
     flag: '🇪🇸',
     learnerLanguage: 'vi',
   },
+  activeLanguageStartedAt: '2026-01-20T12:00:00.000Z',
   stats: {
     totalXp: 1250,
     completedLessons: 18,
@@ -98,6 +107,8 @@ describe('ProfileScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    useLanguageStore.setState({ selectedLanguage: 'es', hasSelectedLanguage: true });
+    (setActiveLanguage as jest.Mock).mockResolvedValue(undefined);
 
     mockUseAuth.mockReturnValue({
       session: null,
@@ -224,7 +235,7 @@ describe('ProfileScreen', () => {
     expect(mockRefresh).toHaveBeenCalledTimes(1);
   });
 
-  it('5. Navigates to /(tabs)/learn when switch language button is pressed', () => {
+  it('5. Opens the language sheet instead of navigating when switch button is pressed', () => {
     mockUseProfileData.mockReturnValue({
       profileOverview: mockOverview,
       loading: false,
@@ -235,12 +246,70 @@ describe('ProfileScreen', () => {
       updateAvatar: mockUpdateAvatar,
     });
 
-    const { getByTestId } = render(<ProfileScreen />);
-    const switchBtn = getByTestId('switch-language-button');
+    const { getByTestId, queryByTestId } = render(<ProfileScreen />);
+    expect(queryByTestId('language-switcher-modal')).toBeNull();
 
-    fireEvent.press(switchBtn);
+    fireEvent.press(getByTestId('switch-language-button'));
 
-    expect(mockPush).toHaveBeenCalledWith('/(tabs)/learn');
+    expect(getByTestId('language-switcher-modal')).toBeTruthy();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('8. Switches language on confirm: store + RPC + refresh + home', async () => {
+    mockUseProfileData.mockReturnValue({
+      profileOverview: mockOverview,
+      loading: false,
+      refreshing: false,
+      uploadingAvatar: false,
+      error: null,
+      refresh: mockRefresh,
+      updateAvatar: mockUpdateAvatar,
+    });
+
+    const { getByTestId, getByText, queryByTestId } = render(<ProfileScreen />);
+    fireEvent.press(getByTestId('switch-language-button'));
+    fireEvent.press(getByTestId('language-option-ko'));
+
+    expect(getByTestId('lang-confirm')).toBeTruthy();
+    expect(getByText('Switch to Korean?')).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.press(getByTestId('lang-confirm-confirm'));
+    });
+
+    expect(setActiveLanguage).toHaveBeenCalledWith('ko');
+    expect(useLanguageStore.getState().selectedLanguage).toBe('ko');
+    expect(mockRefresh).toHaveBeenCalled();
+    expect(mockReplace).toHaveBeenCalledWith('/(tabs)');
+    expect(queryByTestId('lang-confirm')).toBeNull();
+  });
+
+  it('9. Rolls back the store and shows a friendly error when switch fails', async () => {
+    (setActiveLanguage as jest.Mock).mockRejectedValueOnce(new Error('nope'));
+    mockUseProfileData.mockReturnValue({
+      profileOverview: mockOverview,
+      loading: false,
+      refreshing: false,
+      uploadingAvatar: false,
+      error: null,
+      refresh: mockRefresh,
+      updateAvatar: mockUpdateAvatar,
+    });
+
+    const { getByTestId, getByText, queryByText } = render(<ProfileScreen />);
+    fireEvent.press(getByTestId('switch-language-button'));
+    fireEvent.press(getByTestId('language-option-ko'));
+
+    await act(async () => {
+      fireEvent.press(getByTestId('lang-confirm-confirm'));
+    });
+
+    await waitFor(() => {
+      expect(useLanguageStore.getState().selectedLanguage).toBe('es');
+    });
+    expect(mockReplace).not.toHaveBeenCalled();
+    expect(getByText("Couldn't switch language. Please try again.")).toBeTruthy();
+    expect(queryByText(/nope/)).toBeNull();
   });
 
   it('6. Calls signOut() when sign out is confirmed', async () => {

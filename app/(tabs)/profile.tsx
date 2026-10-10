@@ -16,19 +16,28 @@ import {
   LearningStatsGrid,
   ProfileActionSection,
   ProfileSkeletonLoader,
+  LanguageSwitcherModal,
 } from '@/components/profile';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Toast, useToast } from '@/components/ui/Toast';
 import { useProfileData } from '@/hooks/useProfileData';
 import { useAuth } from '@/hooks/useAuth';
 import { resolveDisplayName } from '@/lib/displayName';
+import { setActiveLanguage } from '@/lib/api';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { languages } from '@/data/languages';
+import type { Language } from '@/types/learning';
 import { colors } from '@/theme/colors';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { signOut, user } = useAuth();
-  const { selectedLanguage } = useLanguageStore();
+  const { selectedLanguage, setSelectedLanguage } = useLanguageStore();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [switcherVisible, setSwitcherVisible] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<Language | null>(null);
+  const [isSwitching, setIsSwitching] = useState(false);
+  const toast = useToast();
 
   const currentLanguage =
     languages.find((l) => l.id === selectedLanguage) ??
@@ -45,7 +54,7 @@ export default function ProfileScreen() {
     refresh,
     updateAvatar,
     updateDisplayName,
-  } = useProfileData();
+  } = useProfileData({ languageId: selectedLanguage ?? undefined });
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -59,7 +68,53 @@ export default function ProfileScreen() {
   };
 
   const handleSwitchLanguage = () => {
-    router.push('/(tabs)/learn');
+    setSwitcherVisible(true);
+  };
+
+  const handleSelectLanguage = (language: Language) => {
+    setSwitcherVisible(false);
+    if (language.id === (profileOverview?.activeLanguage?.id ?? selectedLanguage)) {
+      return;
+    }
+    setConfirmTarget(language);
+  };
+
+  const handleConfirmSwitch = async () => {
+    if (!confirmTarget || isSwitching) {
+      return;
+    }
+    const target = confirmTarget;
+    const previous = selectedLanguage;
+    setSelectedLanguage(target.id);
+    if (!user) {
+      setConfirmTarget(null);
+      await refresh();
+      router.replace('/(tabs)');
+      toast.show({ message: `Switched to ${target.name}.`, type: 'success' });
+      return;
+    }
+    setIsSwitching(true);
+    try {
+      await setActiveLanguage(target.id);
+    } catch {
+      if (previous) {
+        setSelectedLanguage(previous);
+      } else {
+        setSelectedLanguage('en');
+      }
+      setIsSwitching(false);
+      setConfirmTarget(null);
+      toast.show({ message: "Couldn't switch language. Please try again.", type: 'error' });
+      return;
+    }
+    setConfirmTarget(null);
+    await refresh();
+    setIsSwitching(false);
+    router.replace('/(tabs)');
+    toast.show({
+      message: `Switched to ${target.name}. Your progress is saved per language.`,
+      type: 'success',
+    });
   };
 
   const handleSignIn = () => {
@@ -196,7 +251,9 @@ export default function ProfileScreen() {
                         name: profileOverview.activeLanguage.name,
                         nativeName: profileOverview.activeLanguage.nativeName,
                         flag: profileOverview.activeLanguage.flag,
-                        startedAt: profileOverview.createdAt,
+                        startedAt:
+                          profileOverview.activeLanguageStartedAt ??
+                          profileOverview.createdAt,
                       }
                     : {
                         id: currentLanguage.id,
@@ -270,6 +327,30 @@ export default function ProfileScreen() {
             </>
           )}
         </ScrollView>
+
+        {/* Language Switcher */}
+        <LanguageSwitcherModal
+          visible={switcherVisible}
+          activeLanguageId={profileOverview?.activeLanguage?.id ?? selectedLanguage}
+          onSelect={handleSelectLanguage}
+          onClose={() => setSwitcherVisible(false)}
+        />
+        <ConfirmDialog
+          testID="lang-confirm"
+          visible={confirmTarget !== null}
+          title={`Switch to ${confirmTarget?.name ?? ''}?`}
+          message={`Your ${currentLanguage.name} progress is saved and will be here when you come back.`}
+          confirmLabel="Switch"
+          onConfirm={() => void handleConfirmSwitch()}
+          onCancel={() => {
+            if (!isSwitching) {
+              setConfirmTarget(null);
+            }
+          }}
+          iconName="swap-horizontal"
+          isConfirming={isSwitching}
+        />
+        <Toast ref={toast.ref} />
       </TabScreenWrapper>
     </SafeAreaView>
   );
