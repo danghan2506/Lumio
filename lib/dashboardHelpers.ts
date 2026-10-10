@@ -6,6 +6,7 @@ import type { ContinueLessonInfo, DailyPlanItem } from '@/types/home';
  *  MUST match the timezone used in Supabase RPCs
  *  (supabase/migrations/*_init_lumio_schema.sql, record_lesson_progress / record_vocabulary_review). */
 export const APP_TIMEZONE = 'Asia/Ho_Chi_Minh';
+export const DAILY_XP_TARGET = 40;
 
 /** A day counts toward streaks and daysActive only if the user did real work that day. */
 export function hasDailyActivity(act: DailyActivity): boolean {

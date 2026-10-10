@@ -14,6 +14,7 @@ import {
   findContinueLesson,
   generateDailyPlan,
   getTodayDateString,
+  DAILY_XP_TARGET,
 } from '@/lib/dashboardHelpers';
 import { languages } from '@/data/languages';
 import { resolveDisplayName } from '@/lib/displayName';
@@ -23,7 +24,7 @@ import type { DashboardData, UseDashboardDataReturn } from '@/types/home';
 
 const DEFAULT_LANGUAGE_ID: LanguageId = 'en';
 
-export { getTodayDateString } from '@/lib/dashboardHelpers';
+export { getTodayDateString, DAILY_XP_TARGET } from '@/lib/dashboardHelpers';
 
 export function useDashboardData(): UseDashboardDataReturn {
   const { user, loading: authLoading } = useAuth();
@@ -88,8 +89,8 @@ export function useDashboardData(): UseDashboardDataReturn {
 
         const { streak, isStreakActiveToday } = calculateStreak(activities, todayStr);
         const todayActivity = activities.find((a) => a.activity_date === todayStr) ?? null;
-        const currentXp = todayActivity?.xp_earned ?? 0;
-        const targetXp = 20;
+        const targetXp = DAILY_XP_TARGET;
+        const currentXp = Math.min(DAILY_XP_TARGET, todayActivity?.xp_earned ?? 0);
         const isCompleted = currentXp >= targetXp;
 
         const continueLesson = findContinueLesson(unitsWithLessons);
