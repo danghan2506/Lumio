@@ -38,7 +38,7 @@ export const LanguageSwitcherModal: React.FC<LanguageSwitcherModalProps> = ({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+      <View className="flex-1 justify-end">
         {/* Backdrop Tap Target */}
         <TouchableOpacity
           testID="language-switcher-backdrop"
@@ -46,60 +46,23 @@ export const LanguageSwitcherModal: React.FC<LanguageSwitcherModalProps> = ({
           onPress={onClose}
           accessibilityRole="button"
           accessibilityLabel="Close language picker"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.6)',
-          }}
+          className="absolute inset-0 bg-black/60"
         />
 
         {/* Bottom Sheet Container */}
         <View
           testID="language-switcher-modal"
-          style={{
-            backgroundColor: colors.warmIvory,
-            borderTopLeftRadius: 32,
-            borderTopRightRadius: 32,
-            borderTopWidth: 1,
-            borderLeftWidth: 1,
-            borderRightWidth: 1,
-            borderColor: 'rgba(36, 27, 74, 0.08)',
-            maxHeight: '85%',
-            paddingBottom: Math.max(insets.bottom, 20),
-            width: '100%',
-          }}
+          style={{ paddingBottom: Math.max(insets.bottom, 20) }}
+          className="bg-warm-ivory rounded-t-[32px] border-t border-l border-r border-deep-indigo/8 max-h-[85%] w-full"
         >
           {/* Sheet Handle */}
           <View className="items-center pt-3 pb-1">
-            <View
-              style={{
-                width: 40,
-                height: 4,
-                borderRadius: 2,
-                backgroundColor: 'rgba(36, 27, 74, 0.15)',
-              }}
-            />
+            <View className="w-10 h-1 rounded bg-deep-indigo/15" />
           </View>
 
           {/* Header Bar */}
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingHorizontal: 20,
-              paddingVertical: 12,
-              borderBottomWidth: 1,
-              borderBottomColor: 'rgba(36, 27, 74, 0.08)',
-            }}
-          >
-            <Text
-              style={{ fontFamily: 'Fredoka_700Bold', color: colors.deepIndigo }}
-              className="text-xl"
-            >
+          <View className="flex-row items-center justify-between px-5 py-3 border-b border-deep-indigo/8">
+            <Text className="text-xl font-display text-deep-indigo">
               Choose Language
             </Text>
             <TouchableOpacity
@@ -109,15 +72,7 @@ export const LanguageSwitcherModal: React.FC<LanguageSwitcherModalProps> = ({
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               accessibilityRole="button"
               accessibilityLabel="Close language picker"
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                backgroundColor: 'rgba(36, 27, 74, 0.05)',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
+              className="w-11 h-11 rounded-full bg-deep-indigo/5 items-center justify-center shrink-0"
             >
               <Ionicons name="close" size={20} color={colors.deepIndigo} />
             </TouchableOpacity>
@@ -144,79 +99,30 @@ export const LanguageSwitcherModal: React.FC<LanguageSwitcherModalProps> = ({
                   accessibilityRole="button"
                   accessibilityLabel={`Switch to ${lang.name}${isActive ? ', currently active' : ''}`}
                   accessibilityState={{ selected: isActive }}
-                  style={{
-                    minHeight: 72,
-                    marginBottom: 12,
-                    padding: 14,
-                    borderRadius: 20,
-                    borderWidth: isActive ? 2 : 1,
-                    borderColor: isActive
-                      ? colors.lumioCoral
-                      : 'rgba(36, 27, 74, 0.08)',
-                    backgroundColor: isActive
-                      ? 'rgba(234, 230, 255, 0.6)'
-                      : colors.warmIvory,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                  }}
+                  className={`min-h-[72px] mb-3 p-3.5 rounded-[20px] flex-row items-center border ${
+                    isActive
+                      ? 'border-2 border-lumio-coral bg-lavender-mist/60'
+                      : 'bg-warm-ivory border-deep-indigo/8'
+                  }`}
                 >
                   {/* Flag Badge */}
-                  <View
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 24,
-                      backgroundColor: 'rgba(234, 230, 255, 0.5)',
-                      borderWidth: 1.5,
-                      borderColor: 'rgba(36, 27, 74, 0.08)',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginRight: 12,
-                    }}
-                  >
-                    <Text style={{ fontSize: 26 }}>{lang.flag}</Text>
+                  <View className="w-12 h-12 rounded-full bg-lavender-mist/50 border-[1.5px] border-deep-indigo/8 items-center justify-center mr-3">
+                    <Text className="text-[26px]">{lang.flag}</Text>
                   </View>
 
                   {/* Language Info */}
-                  <View style={{ flex: 1, minWidth: 0, marginRight: 10 }}>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        marginBottom: 2,
-                      }}
-                    >
+                  <View className="flex-1 min-w-0 mr-2.5">
+                    <View className="flex-row items-center mb-0.5">
                       <Text
-                        style={{
-                          fontFamily: 'Fredoka_700Bold',
-                          color: colors.deepIndigo,
-                          fontSize: 18,
-                          flexShrink: 1,
-                        }}
+                        className="text-lg font-display text-deep-indigo shrink"
                         numberOfLines={1}
                       >
                         {lang.name}
                       </Text>
 
                       {isActive && (
-                        <View
-                          style={{
-                            backgroundColor: 'rgba(255, 107, 87, 0.15)',
-                            borderColor: 'rgba(255, 107, 87, 0.3)',
-                            borderWidth: 1,
-                            borderRadius: 12,
-                            paddingHorizontal: 8,
-                            paddingVertical: 2,
-                            marginLeft: 6,
-                          }}
-                        >
-                          <Text
-                            style={{
-                              fontFamily: 'PlusJakartaSans_700Bold',
-                              color: colors.lumioCoral,
-                              fontSize: 10,
-                            }}
-                          >
+                        <View className="bg-lumio-coral/15 border border-lumio-coral/30 rounded-xl px-2 py-0.5 ml-1.5">
+                          <Text className="text-[10px] font-sans-bold text-lumio-coral">
                             ACTIVE
                           </Text>
                         </View>
@@ -224,11 +130,7 @@ export const LanguageSwitcherModal: React.FC<LanguageSwitcherModalProps> = ({
                     </View>
 
                     <Text
-                      style={{
-                        fontFamily: 'PlusJakartaSans_500Medium',
-                        color: colors.slate,
-                        fontSize: 13,
-                      }}
+                      className="text-[13px] font-sans text-slate"
                       numberOfLines={1}
                       ellipsizeMode="tail"
                     >
@@ -238,14 +140,7 @@ export const LanguageSwitcherModal: React.FC<LanguageSwitcherModalProps> = ({
                   </View>
 
                   {/* Status Indicator */}
-                  <View
-                    style={{
-                      width: 28,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
+                  <View className="w-7 items-center justify-center shrink-0">
                     {isActive ? (
                       <Ionicons
                         name="checkmark-circle"
