@@ -9,6 +9,7 @@ import { TodaysPlanList } from '@/components/home/TodaysPlanList';
 import { AiVideoHighlightCard } from '@/components/home/AiVideoHighlightCard';
 import { DashboardSkeletonLoader } from '@/components/home/DashboardSkeletonLoader';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { DAILY_XP_TARGET } from '@/lib/dashboardHelpers';
 import { colors } from '@/theme/colors';
 
 export default function HomeScreen() {
@@ -70,7 +71,7 @@ export default function HomeScreen() {
 
         <DailyGoalCard
           currentXp={data?.dailyGoal.currentXp ?? 0}
-          targetXp={data?.dailyGoal.targetXp ?? 20}
+          targetXp={data?.dailyGoal.targetXp ?? DAILY_XP_TARGET}
           isCompleted={data?.dailyGoal.isCompleted ?? false}
         />
 
