@@ -620,10 +620,10 @@
   Expected: all PASS.
 
 - [ ] **Step 3: Manual device checklist**
-  1. Log in, finish part of Spanish Unit 1 → Profile shows ES progress.
-  2. Switch to Korean via sheet + confirm → lands on Home, Learn shows Korean units from scratch.
-  3. Complete a Korean lesson → Profile stats reflect Korean only.
-  4. Switch back to Spanish → Spanish progress intact.
+  1. Log in, finish part of one language's Unit 1 (e.g. Spanish) → Profile shows that language's progress.
+  2. Switch to another language (e.g. Korean) via sheet + confirm → lands on Home, Learn shows the new language's units from scratch.
+  3. Complete a lesson there → Profile stats reflect the new language only.
+  4. Switch back → prior language progress intact. Repeat for each pair among en/es/ko/fr.
   5. Log out → guest switch changes content locally without crash.
   6. Airplane-mode switch (authed) → friendly toast, store rolled back.
 

@@ -8,10 +8,12 @@
 
 Let the user change the active learning language from the Profile screen via a
 bottom-sheet picker + reusable confirm dialog. Switching languages must never
-destroy progress: learning Spanish, switching to Korean, then switching back to
-Spanish must restore the exact Spanish progress (completed lessons, XP,
-vocabulary). Profile stats (XP, completed lessons, mastered words) are scoped
-to the active language; streak / days active stay global.
+destroy progress: progress is kept independently per language, so leaving any
+language (e.g. Spanish) for another (e.g. Korean) and switching back restores
+the exact prior progress (completed lessons, XP, vocabulary). This applies to
+all languages in `data/languages.ts` (currently en, es, ko, fr), not just the
+Spanish/Korean example. Profile stats (XP, completed lessons, mastered words)
+are scoped to the active language; streak / days active stay global.
 
 ## 2. Current behavior (verified in repo)
 
@@ -209,8 +211,9 @@ TDD per repo notes: failing test → minimal implementation → pass → commit.
 Unit-test pure logic (stats filtering, rollback decision); component-test the
 two new components with RNTL (render, callbacks, defaults, loading/disabled
 states); extend `profileApi.test.ts`, `useProfileData.test.ts`,
-`ProfileScreen.test.tsx`. Manual pass: ES in-progress → KO → study KO →
-back to ES with ES progress intact; guest switch without crash. Finish with
+`ProfileScreen.test.tsx`. Manual pass: study language A in-progress → switch to
+language B → study B → switch back to A with A's progress intact (repeat for
+each language pair among en/es/ko/fr); guest switch without crash. Finish with
 `npm run lint` + `npm run typecheck` clean.
 
 ## 7. Files touched
