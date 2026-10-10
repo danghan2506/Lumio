@@ -147,4 +147,5 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.record_vocabulary_review(text, text, text, boolean, numeric, integer, timestamptz, integer, integer) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.record_vocabulary_review(text, text, text, boolean, numeric, integer, timestamptz, integer, integer) TO authenticated;

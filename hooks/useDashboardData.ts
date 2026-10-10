@@ -90,7 +90,7 @@ export function useDashboardData(): UseDashboardDataReturn {
         const { streak, isStreakActiveToday } = calculateStreak(activities, todayStr);
         const todayActivity = activities.find((a) => a.activity_date === todayStr) ?? null;
         const targetXp = DAILY_XP_TARGET;
-        const currentXp = Math.min(DAILY_XP_TARGET, todayActivity?.xp_earned ?? 0);
+        const currentXp = Math.max(0, Math.min(DAILY_XP_TARGET, todayActivity?.xp_earned ?? 0));
         const isCompleted = currentXp >= targetXp;
 
         const continueLesson = findContinueLesson(unitsWithLessons);
