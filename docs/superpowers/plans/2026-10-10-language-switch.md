@@ -331,10 +331,6 @@
     expect(overview?.activeLanguageStartedAt).toBe('2026-01-20T12:00:00.000Z');
   });
   ```
-  (Adjust the 75 to whatever the existing fixture sums to at implementation
-  time — read the `mockLessonProgressRows` in that file first; keep the
-  assertion on the real sum.)
-
 - [ ] **Step 2: Run tests to verify they fail**
   Run: `npx jest __tests__/lib/profileApi.test.ts -t "getUserProfileOverview"`
   Expected: FAIL — `totalXp` unscoped (129 vs 30), `activeLanguageStartedAt` undefined.
@@ -435,7 +431,7 @@
 
 - [ ] **Step 2: Run test to verify it fails**
   Run: `npx jest __tests__/hooks/useProfileData.test.ts`
-  Expected: FAIL — `getUserProfileOverview` called with `('user-1')` (no second arg).
+  Expected: FAIL — `getUserProfileOverview` called with `('user-123')` (no second arg).
 
 - [ ] **Step 3: Minimal implementation**
   In `hooks/useProfileData.ts`:
