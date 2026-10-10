@@ -85,6 +85,7 @@ const mockOverview: UserProfileOverview = {
     flag: '🇪🇸',
     learnerLanguage: 'vi',
   },
+  activeLanguageStartedAt: '2026-01-20T12:00:00.000Z',
   stats: {
     totalXp: 1250,
     completedLessons: 18,

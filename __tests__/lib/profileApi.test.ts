@@ -26,6 +26,7 @@ describe('lib/api profile aggregation and avatar upload', () => {
         select: jest.fn().mockReturnThis(),
         update: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
+        in: jest.fn().mockReturnThis(),
         maybeSingle: jest.fn().mockResolvedValue(resp),
         single: jest.fn().mockResolvedValue(resp),
         then: (onfulfilled: any, onrejected: any) =>
@@ -112,6 +113,7 @@ describe('lib/api profile aggregation and avatar upload', () => {
           nativeName: 'Español',
           flag: '🇪🇸',
         }),
+        activeLanguageStartedAt: '2026-01-20T12:00:00.000Z',
         stats: {
           totalXp: 90, // 30 + 45 + 15 + 0
           completedLessons: 2, // 2 completed
@@ -311,6 +313,69 @@ describe('lib/api profile aggregation and avatar upload', () => {
       });
 
       await expect(getUserProfileOverview(mockUserId)).rejects.toThrow('Activity error');
+    });
+
+    it('scopes XP/completed/mastered to the requested language', async () => {
+      setupSupabaseFromMock({
+        profiles: { data: mockProfileRow, error: null },
+        user_languages: { data: mockUserLanguageRow, error: null },
+        lesson_progress: {
+          data: [
+            { lesson_id: 'es-unit-1-lesson-1', status: 'completed', xp_earned: 30 },
+            { lesson_id: 'ko-unit-1-lesson-1', status: 'completed', xp_earned: 99 },
+          ],
+          error: null,
+        },
+        vocabulary_progress: {
+          data: [
+            { lesson_id: 'es-unit-1-lesson-1', status: 'mastered' },
+            { lesson_id: 'es-unit-1-lesson-1', status: 'mastered' },
+            { lesson_id: 'ko-unit-1-lesson-1', status: 'mastered' },
+            { lesson_id: 'ko-unit-1-lesson-1', status: 'mastered' },
+            { lesson_id: 'ko-unit-1-lesson-1', status: 'mastered' },
+            { lesson_id: 'ko-unit-1-lesson-1', status: 'mastered' },
+            { lesson_id: 'ko-unit-1-lesson-1', status: 'mastered' },
+          ],
+          error: null,
+        },
+        daily_activity: { data: mockDailyActivityRows, error: null },
+        units: { data: [{ id: 'es-unit-1' }, { id: 'es-unit-2' }], error: null },
+        lessons: { data: [{ id: 'es-unit-1-lesson-1' }], error: null },
+      });
+
+      const overview = await getUserProfileOverview(mockUserId, 'es');
+
+      expect(overview?.stats.totalXp).toBe(30);
+      expect(overview?.stats.completedLessons).toBe(1);
+      expect(overview?.stats.masteredWords).toBe(2);
+    });
+
+    it('returns global stats when languageId is omitted (backward compat)', async () => {
+      setupSupabaseFromMock({
+        profiles: { data: mockProfileRow, error: null },
+        user_languages: { data: mockUserLanguageRow, error: null },
+        lesson_progress: { data: mockLessonProgressRows, error: null },
+        vocabulary_progress: { data: mockVocabProgressRows, error: null },
+        daily_activity: { data: mockDailyActivityRows, error: null },
+      });
+
+      const overview = await getUserProfileOverview(mockUserId);
+
+      expect(overview?.stats.totalXp).toBe(90);
+    });
+
+    it('exposes activeLanguageStartedAt from the active user_language row', async () => {
+      setupSupabaseFromMock({
+        profiles: { data: mockProfileRow, error: null },
+        user_languages: { data: mockUserLanguageRow, error: null },
+        lesson_progress: { data: [], error: null },
+        vocabulary_progress: { data: [], error: null },
+        daily_activity: { data: [], error: null },
+      });
+
+      const overview = await getUserProfileOverview(mockUserId);
+
+      expect(overview?.activeLanguageStartedAt).toBe('2026-01-20T12:00:00.000Z');
     });
   });
 
