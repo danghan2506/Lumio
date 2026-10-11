@@ -21,3 +21,8 @@ export {
 } from './ProfileActionSection';
 
 export { ProfileSkeletonLoader } from './ProfileSkeletonLoader';
+
+export {
+  LanguageSwitcherModal,
+  type LanguageSwitcherModalProps,
+} from './LanguageSwitcherModal';

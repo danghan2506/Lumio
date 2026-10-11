@@ -7,6 +7,7 @@ import {
   type UserProfileOverview,
 } from '@/lib/api';
 import { resolveDisplayName } from '@/lib/displayName';
+import type { LanguageId } from '@/types/learning';
 
 const DEFAULT_ERROR_MESSAGE = 'Unable to load profile. Please try again.';
 
@@ -33,9 +34,14 @@ export interface UseProfileDataReturn {
 
 export const DISPLAY_NAME_MAX_LENGTH = 30;
 
-export function useProfileData(): UseProfileDataReturn {
+export interface UseProfileDataOptions {
+  languageId?: LanguageId;
+}
+
+export function useProfileData(options?: UseProfileDataOptions): UseProfileDataReturn {
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id;
+  const languageId = options?.languageId;
 
   const [profileOverview, setProfileOverview] = useState<UserProfileOverview | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -60,7 +66,7 @@ export function useProfileData(): UseProfileDataReturn {
       setError(null);
 
       try {
-        const data = await getUserProfileOverview(userId);
+        const data = await getUserProfileOverview(userId, languageId);
         setProfileOverview(data);
       } catch (err: unknown) {
         setError(getFriendlyErrorMessage(err));
@@ -70,7 +76,7 @@ export function useProfileData(): UseProfileDataReturn {
         setRefreshing(false);
       }
     },
-    [userId]
+    [userId, languageId]
   );
 
   useEffect(() => {
