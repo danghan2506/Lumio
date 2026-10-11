@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Modal, Image, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { images } from '@/constants/images';
 
@@ -20,31 +21,35 @@ export const ReviewCompletionModal: React.FC<ReviewCompletionModalProps> = ({
   graduatedCount,
   onClose,
 }) => {
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, 24);
+  const bottomInset = Math.max(insets.bottom, 24);
   const accuracy = totalCards > 0 ? Math.round((correctCount / totalCards) * 100) : 100;
 
   return (
     <Modal
       visible={visible}
-      transparent
       animationType="fade"
+      statusBarTranslucent
       onRequestClose={onClose}
     >
       <View
         testID="review-completion-modal"
-        className="flex-1 bg-black/80 justify-center items-center px-6"
+        style={{
+          flex: 1,
+          backgroundColor: colors.deepIndigo,
+          paddingTop: topInset,
+          paddingBottom: bottomInset,
+        }}
+        className="px-6 justify-between items-center"
       >
-        <View
-          style={{
-            backgroundColor: colors.deepIndigo,
-            borderColor: 'rgba(255, 255, 255, 0.1)',
-          }}
-          className="w-full max-w-sm rounded-3xl p-6 border items-center shadow-2xl"
-        >
+        {/* Upper & Center Celebration Section */}
+        <View className="flex-1 w-full items-center justify-center">
           {/* Lumi Mascot Celebration */}
-          <View className="w-24 h-24 mb-3 items-center justify-center">
+          <View className="w-28 h-28 mb-4 items-center justify-center">
             <Image
               source={images.lumiCelebration}
-              style={{ width: 90, height: 90 }}
+              style={{ width: 110, height: 110 }}
               resizeMode="contain"
             />
           </View>
@@ -55,15 +60,26 @@ export const ReviewCompletionModal: React.FC<ReviewCompletionModalProps> = ({
               fontFamily: 'Fredoka_700Bold',
               color: colors.cream,
             }}
-            className="text-2xl text-center mb-1"
+            className="text-3xl text-center mb-1.5"
           >
             Review Complete!
+          </Text>
+
+          {/* Subtitle */}
+          <Text
+            style={{
+              fontFamily: 'PlusJakartaSans_500Medium',
+              color: colors.lavenderMist,
+            }}
+            className="text-sm text-center mb-5 opacity-80"
+          >
+            You’ve reviewed all cards in this batch!
           </Text>
 
           {/* XP Banner */}
           <View
             style={{ backgroundColor: `${colors.daylightAmber}25` }}
-            className="px-4 py-1.5 rounded-full border border-daylight-amber/40 mb-5"
+            className="px-5 py-2 rounded-full border border-daylight-amber/40 mb-6"
           >
             <Text
               style={{
@@ -77,14 +93,14 @@ export const ReviewCompletionModal: React.FC<ReviewCompletionModalProps> = ({
           </View>
 
           {/* Stats Deck */}
-          <View className="w-full flex-row items-center justify-between bg-black/25 rounded-2xl p-4 mb-6">
+          <View className="w-full flex-row items-center justify-between bg-white/5 border border-white/10 rounded-2xl p-4">
             <View className="items-center flex-1">
               <Text
                 style={{
                   fontFamily: 'PlusJakartaSans_700Bold',
                   color: colors.cream,
                 }}
-                className="text-base"
+                className="text-xl"
               >
                 {accuracy}%
               </Text>
@@ -93,13 +109,13 @@ export const ReviewCompletionModal: React.FC<ReviewCompletionModalProps> = ({
                   fontFamily: 'PlusJakartaSans_500Medium',
                   color: colors.lavenderMist,
                 }}
-                className="text-xs"
+                className="text-xs mt-0.5"
               >
                 Accuracy
               </Text>
             </View>
 
-            <View className="w-[1px] h-7 bg-white/15" />
+            <View className="w-[1px] h-8 bg-white/15" />
 
             <View className="items-center flex-1">
               <Text
@@ -107,7 +123,7 @@ export const ReviewCompletionModal: React.FC<ReviewCompletionModalProps> = ({
                   fontFamily: 'PlusJakartaSans_700Bold',
                   color: colors.cream,
                 }}
-                className="text-base"
+                className="text-xl"
               >
                 {totalCards}
               </Text>
@@ -116,13 +132,13 @@ export const ReviewCompletionModal: React.FC<ReviewCompletionModalProps> = ({
                   fontFamily: 'PlusJakartaSans_500Medium',
                   color: colors.lavenderMist,
                 }}
-                className="text-xs"
+                className="text-xs mt-0.5"
               >
                 Reviewed
               </Text>
             </View>
 
-            <View className="w-[1px] h-7 bg-white/15" />
+            <View className="w-[1px] h-8 bg-white/15" />
 
             <View className="items-center flex-1">
               <Text
@@ -130,7 +146,7 @@ export const ReviewCompletionModal: React.FC<ReviewCompletionModalProps> = ({
                   fontFamily: 'PlusJakartaSans_700Bold',
                   color: colors.mint,
                 }}
-                className="text-base"
+                className="text-xl"
               >
                 {graduatedCount}
               </Text>
@@ -139,20 +155,22 @@ export const ReviewCompletionModal: React.FC<ReviewCompletionModalProps> = ({
                   fontFamily: 'PlusJakartaSans_500Medium',
                   color: colors.lavenderMist,
                 }}
-                className="text-xs"
+                className="text-xs mt-0.5"
               >
                 Graduated
               </Text>
             </View>
           </View>
+        </View>
 
-          {/* Return CTA */}
+        {/* Return CTA - Single Pill-shaped Primary Button */}
+        <View className="w-full pb-2">
           <TouchableOpacity
             testID="close-completion-modal-btn"
             onPress={onClose}
             activeOpacity={0.85}
             style={{ backgroundColor: colors.lumioCoral }}
-            className="w-full py-3.5 rounded-2xl items-center shadow-md active:translate-y-0.5"
+            className="w-full py-4 rounded-full items-center justify-center shadow-lg active:translate-y-0.5"
           >
             <Text
               style={{
@@ -169,3 +187,4 @@ export const ReviewCompletionModal: React.FC<ReviewCompletionModalProps> = ({
     </Modal>
   );
 };
+

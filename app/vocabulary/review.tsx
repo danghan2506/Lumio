@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Pressable, BackHandler, Image } from 'react-native';
+import { View, Text, Pressable, BackHandler } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,7 +8,6 @@ import { FlipFlashcard } from '@/components/vocabulary/FlipFlashcard';
 import { ReviewExitConfirmDialog } from '@/components/vocabulary/ReviewExitConfirmDialog';
 import { ReviewCompletionModal } from '@/components/vocabulary/ReviewCompletionModal';
 import { colors } from '@/theme/colors';
-import { images } from '@/constants/images';
 import type { SrsGrade } from '@/lib/srs';
 import type { VocabularyWithProgress } from '@/types/vocabulary';
 
@@ -147,29 +146,7 @@ export default function VocabularyReviewScreen() {
 
       {/* Main Flashcard View */}
       <View className="flex-1 px-6 justify-center items-center">
-        {isSessionComplete ? (
-          <View className="items-center justify-center px-6">
-            <View className="w-24 h-24 mb-4 items-center justify-center">
-              <Image
-                source={images.lumiCelebration}
-                style={{ width: 96, height: 96 }}
-                resizeMode="contain"
-              />
-            </View>
-            <Text
-              style={{ fontFamily: 'Fredoka_700Bold', color: colors.cream }}
-              className="text-2xl text-center mb-1.5"
-            >
-              Session Complete! 🎉
-            </Text>
-            <Text
-              style={{ fontFamily: 'PlusJakartaSans_500Medium', color: colors.lavenderMist }}
-              className="text-sm text-center"
-            >
-              You’ve reviewed all cards in this batch!
-            </Text>
-          </View>
-        ) : currentCard ? (
+        {isSessionComplete ? null : currentCard ? (
           <FlipFlashcard
             key={currentCard.id}
             item={currentCard}
@@ -190,20 +167,7 @@ export default function VocabularyReviewScreen() {
 
       {/* Bottom Actions */}
       <View className="px-6 pb-6 pt-2">
-        {isSessionComplete ? (
-          <Pressable
-            testID="session-done-btn"
-            onPress={() => router.back()}
-            className="w-full py-4 rounded-2xl bg-lumio-coral items-center justify-center shadow-lg active:opacity-90 active:translate-y-0.5"
-          >
-            <Text
-              style={{ fontFamily: 'PlusJakartaSans_700Bold', color: colors.cream }}
-              className="text-base"
-            >
-              Back to Vocab Vault
-            </Text>
-          </Pressable>
-        ) : isFlipped ? (
+        {isSessionComplete ? null : isFlipped ? (
           <View className="flex-row items-center justify-between space-x-2">
             {/* Again (Grade 1) */}
             <Pressable
