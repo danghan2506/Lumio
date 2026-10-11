@@ -25,7 +25,7 @@ describe('Home Types Contract', () => {
       isStreakActiveToday: true,
       dailyGoal: {
         currentXp: 15,
-        targetXp: 20,
+        targetXp: 40,
         isCompleted: false,
       },
       continueLesson: {
@@ -54,7 +54,7 @@ describe('Home Types Contract', () => {
     };
 
     expect(mockData.streak).toBe(5);
-    expect(mockData.dailyGoal.targetXp).toBe(20);
+    expect(mockData.dailyGoal.targetXp).toBe(40);
     expect(mockData.continueLesson?.lessonId).toBe('en-unit-1-lesson-1');
   });
 });

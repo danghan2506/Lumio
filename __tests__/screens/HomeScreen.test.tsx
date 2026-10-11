@@ -24,7 +24,7 @@ const mockDashboardData = {
   isStreakActiveToday: true,
   dailyGoal: {
     currentXp: 15,
-    targetXp: 20,
+    targetXp: 40,
     isCompleted: false,
   },
   continueLesson: {
@@ -83,13 +83,25 @@ describe('HomeScreen', () => {
     expect(getByText(/Hola, Alex! 👋/i)).toBeTruthy();
     expect(getByText('Daily goal')).toBeTruthy();
     expect(getByText('15')).toBeTruthy();
-    expect(getByText('/ 20 XP')).toBeTruthy();
+    expect(getByText('/ 40 XP')).toBeTruthy();
     expect(getByText('CONTINUE LEARNING')).toBeTruthy();
     expect(getByText('Unit 1 • Greetings & Introductions')).toBeTruthy();
     expect(getByText("Today's plan")).toBeTruthy();
     expect(getByText('Lesson: Greetings')).toBeTruthy();
     expect(getByText('AI Video Call')).toBeTruthy();
     expect(getByText('Topic: Greetings & Introductions')).toBeTruthy();
+  });
+
+  it('falls back to DAILY_XP_TARGET (40) when dailyGoal targetXp is undefined', () => {
+    const savedDailyGoal = mockDashboardData.dailyGoal;
+    (mockDashboardData as any).dailyGoal = {
+      currentXp: 15,
+      targetXp: undefined,
+      isCompleted: false,
+    };
+    const { getByText } = render(<HomeScreen />);
+    expect(getByText('/ 40 XP')).toBeTruthy();
+    mockDashboardData.dailyGoal = savedDailyGoal;
   });
 
   it('navigates to the real lesson ID when Continue button is pressed', () => {

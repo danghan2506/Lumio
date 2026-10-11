@@ -80,11 +80,31 @@ describe('useDashboardData', () => {
     expect(result.current.data?.continueLesson?.lessonId).toBe('l2');
     expect(result.current.data?.continueLesson?.unitId).toBe('unit-1');
     expect(result.current.data?.dailyGoal.currentXp).toBe(15);
-    expect(result.current.data?.dailyGoal.targetXp).toBe(20);
+    expect(result.current.data?.dailyGoal.targetXp).toBe(40);
     expect(result.current.data?.dailyGoal.isCompleted).toBe(false);
     expect(result.current.data?.todaysPlan).toHaveLength(3);
     expect(result.current.data?.aiTopicLessonId).toBe('l2');
     expect(result.current.data?.aiTopicTitle).toBe('Goodbye');
+  });
+
+  it('caps dailyGoal.currentXp at DAILY_XP_TARGET (40) when activity xp exceeds cap', async () => {
+    (api.getDailyActivity as jest.Mock).mockResolvedValueOnce([
+      {
+        id: 'act-1',
+        activity_date: getTodayDateString(),
+        xp_earned: 55,
+        lessons_completed: 2,
+        vocabulary_reviews: 5,
+        minutes_practiced: 20,
+      },
+    ]);
+
+    const { result } = renderHook(() => useDashboardData());
+    await act(async () => {});
+
+    expect(result.current.data?.dailyGoal.currentXp).toBe(40);
+    expect(result.current.data?.dailyGoal.targetXp).toBe(40);
+    expect(result.current.data?.dailyGoal.isCompleted).toBe(true);
   });
 
   it('handles user name fallbacks properly', async () => {

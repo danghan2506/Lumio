@@ -1,16 +1,17 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { DAILY_XP_TARGET } from '@/lib/dashboardHelpers';
 
 interface DailyGoalCardProps {
   currentXp: number;
-  targetXp: number;
+  targetXp?: number;
   isCompleted?: boolean;
 }
 
 export const DailyGoalCard: React.FC<DailyGoalCardProps> = ({
   currentXp,
-  targetXp,
+  targetXp = DAILY_XP_TARGET,
   isCompleted = false,
 }) => {
   const percentage = Math.min(100, Math.max(0, (currentXp / targetXp) * 100));
