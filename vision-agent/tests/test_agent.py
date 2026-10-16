@@ -630,3 +630,16 @@ async def test_caption_relay_detects_farewell_on_accumulated_text():
 
     assert coordinator.completion_requested is True
 
+
+def test_build_instructions_includes_pronunciation_and_translation():
+    custom = {
+        "vocabulary": [
+            {"word": "Hola", "translation": "Hello", "pronunciation": "OH-lah"}
+        ],
+        "phrases": ["¿Cómo estás?"],
+    }
+    instructions = build_instructions(custom, "Spanish")
+    assert "Hola" in instructions
+    assert "Hello" in instructions
+    assert "OH-lah" in instructions
+

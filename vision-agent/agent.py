@@ -467,11 +467,23 @@ def build_instructions(custom_data: dict, language: str) -> str:
             f"{separator}Lesson goals: {', '.join(str(g) for g in goals)}."
         )
     if vocabulary:
-        words = ", ".join(
-            str(item.get("word", ""))
-            for item in vocabulary
-            if isinstance(item, dict) and item.get("word")
-        )
+        formatted = []
+        for item in vocabulary:
+            if not isinstance(item, dict) or not item.get("word"):
+                continue
+            word = str(item.get("word", ""))
+            extras = []
+            translation = item.get("translation")
+            if isinstance(translation, str) and translation.strip():
+                extras.append(translation.strip())
+            pronunciation = item.get("pronunciation")
+            if isinstance(pronunciation, str) and pronunciation.strip():
+                extras.append(pronunciation.strip())
+            if extras:
+                formatted.append(f"{word} ({', '.join(extras)})")
+            else:
+                formatted.append(word)
+        words = ", ".join(formatted)
         parts.append(f"Teach these words: {words}.")
     if phrases:
         parts.append(f"Practice phrases with the learner: {' · '.join(str(p) for p in phrases)}.")
