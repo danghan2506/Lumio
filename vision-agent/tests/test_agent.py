@@ -668,3 +668,20 @@ def test_all_instruction_paths_gate_complete_lesson_on_mastery():
         assert "complete_lesson" in instructions
         assert "3 attempt" in low or "three attempt" in low
 
+
+def test_build_instructions_handles_missing_pronunciation():
+    for vocab in (
+        [{"word": "Hola", "translation": "Hello", "pronunciation": None}],
+        [{"word": "Hola", "translation": "Hello", "pronunciation": ""}],
+        [{"word": "Hola"}],
+    ):
+        out = build_instructions({"vocabulary": vocab}, "Spanish")
+        assert "Hola" in out
+
+
+def test_null_or_empty_prompt_still_gets_strict_rules():
+    for prompt in (None, "", "   "):
+        low = build_instructions({"aiTeacherPrompt": prompt}, "Spanish").lower()
+        assert "do not advance" in low
+        assert "3 attempt" in low or "three attempt" in low
+
