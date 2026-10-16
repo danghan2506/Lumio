@@ -653,3 +653,18 @@ def test_teacher_rules_enforce_strict_repeat():
     assert "3 attempt" in low or "three attempt" in low
     assert "complete_lesson" in TEACHER_RULES
 
+
+def test_all_instruction_paths_gate_complete_lesson_on_mastery():
+    from agent import DEFAULT_INSTRUCTIONS, teacher_instructions
+
+    paths = [
+        DEFAULT_INSTRUCTIONS,
+        teacher_instructions("French"),
+        build_instructions({"aiTeacherPrompt": "Teach greetings."}, "Spanish"),
+        build_instructions({}, "Korean"),
+    ]
+    for instructions in paths:
+        low = instructions.lower()
+        assert "complete_lesson" in instructions
+        assert "3 attempt" in low or "three attempt" in low
+
