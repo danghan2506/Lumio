@@ -643,3 +643,13 @@ def test_build_instructions_includes_pronunciation_and_translation():
     assert "Hello" in instructions
     assert "OH-lah" in instructions
 
+
+def test_teacher_rules_enforce_strict_repeat():
+    from agent import TEACHER_RULES
+
+    low = TEACHER_RULES.lower()
+    assert "do not advance" in low
+    assert "repeat" in low
+    assert "3 attempt" in low or "three attempt" in low
+    assert "complete_lesson" in TEACHER_RULES
+
