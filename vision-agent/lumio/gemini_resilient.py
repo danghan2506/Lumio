@@ -44,18 +44,24 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_RESILIENT_MODEL = "gemini-3.8-live"
 DEFAULT_STALL_SECONDS = 25.0
+MIN_STALL_SECONDS = 5.0
 DEFAULT_MAX_RECOVERIES = 3
-DEFAULT_RECOVERY_ATTEMPTS = 3
+# Enough attempts for the documented backoff ladder (0.5s → 8s) to actually run:
+# Google's 1011 outages last for tens of seconds, so giving up after 1s of
+# backoff would hand the learner a dead session for no reason.
+DEFAULT_RECOVERY_ATTEMPTS = 5
 DEFAULT_WATCHDOG_INTERVAL = 2.0
 DEFAULT_BACKOFF_BASE = 0.5
 DEFAULT_BACKOFF_CAP = 8.0
 DEFAULT_SEND_TIMEOUT = 5.0
 
-# Server messages that prove the model is still doing something for the learner.
+# Server messages that prove the *model* produced something for the learner.
+# Input transcripts are deliberately absent: they only prove our audio reached
+# Google. A session can keep transcribing for minutes while never answering,
+# which is one of the production failures this watchdog exists to catch.
 MODEL_ACTIVITY_KINDS = frozenset(
     {
         "model_turn",
-        "input_transcript",
         "output_transcript",
         "interrupted",
         "turn_complete",
@@ -170,6 +176,14 @@ class SessionProxy:
     async def send_realtime_input(self, *args, **kwargs):
         return await self._session.send_realtime_input(*args, **kwargs)
 
+    def __repr__(self) -> str:
+        """Readable in the SDK's "connected to session %s" log line."""
+        session = self.__dict__.get("_session")
+        return (
+            f"<SessionProxy session={type(session).__name__} "
+            f"messages={sum(self.message_counts.values())}>"
+        )
+
     def __getattr__(self, name):
         session = self.__dict__.get("_session")
         if session is None:
@@ -209,7 +223,7 @@ class ResilientGeminiRealtime(GeminiRealtime):
         self.backoff_cap = float(backoff_cap)
         self.send_timeout = float(send_timeout)
         self.audio_debug = audio_debug
-        self.audio_guard = audio_guard or AudioGuard()
+        self.audio_guard = audio_guard or AudioGuard(clock=clock)
 
         self._clock = clock
         self.healthy = True
@@ -329,12 +343,24 @@ class ResilientGeminiRealtime(GeminiRealtime):
     def _seconds_since_model_activity(self) -> float:
         return self._clock() - self._last_model_activity_at
 
+    @property
+    def _uplink_frozen(self) -> bool:
+        """True when the phone keeps re-sending the same frame.
+
+        A frozen uplink is a phone-side problem: reconnecting to Gemini would
+        burn an attempt without fixing anything, and calling the agent deaf
+        would point the operator at the wrong component.
+        """
+        return self._frozen_windows >= 2
+
     async def _watchdog_tick(self) -> bool:
         """One watchdog pass. Returns True when a recovery was attempted."""
+        learner_speaking = self.audio_guard.learner_active and not self._uplink_frozen
+
         if should_recover(
             connected=self.connected,
             reconnecting=self._recovering,
-            learner_speaking=self.audio_guard.learner_active,
+            learner_speaking=learner_speaking,
             seconds_since_model_response=self._seconds_since_model_activity,
             stall_seconds=self.stall_seconds,
             recoveries=self._recoveries,
@@ -345,8 +371,10 @@ class ResilientGeminiRealtime(GeminiRealtime):
 
         if (
             not self._gave_up
+            and not self._recovering
+            and self._recoveries >= self.max_recoveries
             and self.connected
-            and self.audio_guard.learner_active
+            and learner_speaking
             and self._seconds_since_model_activity >= self.stall_seconds
         ):
             self._give_up("Gemini stopped answering and no recovery attempts are left")
@@ -381,11 +409,13 @@ class ResilientGeminiRealtime(GeminiRealtime):
     # ------------------------------------------------------------- recovery
     async def _recover_once(self, reason: str) -> bool:
         """Swap in a fresh session even if the reader is parked on a mute socket."""
-        had_reader = self._processing_task is not None
         await self._cancel_reader()
         ok = await self._establish_with_retries(reason)
-        if ok and had_reader:
-            self._spawn_reader()
+        if ok:
+            # Always make sure something reads the new session. A previous failed
+            # recovery already cleared the reader, so gating this on "was there a
+            # reader before" can leave the agent connected with nobody listening.
+            self._ensure_reader()
         return ok
 
     async def _establish_with_retries(self, reason: str) -> bool:
@@ -397,7 +427,7 @@ class ResilientGeminiRealtime(GeminiRealtime):
             self._recovering = True
             self._recoveries += 1
             status_logger.warning(
-                "Gemini session stalled (%s) → recovering (attempt %d/%d)",
+                "Gemini session needs recovery (%s) → recovering (attempt %d/%d)",
                 reason,
                 self._recoveries,
                 self.max_recoveries,
@@ -446,10 +476,25 @@ class ResilientGeminiRealtime(GeminiRealtime):
         status_logger.error(
             "Lumi is deaf: %s. Learner audio will no longer be answered.", reason
         )
+        status_logger.error("Gemini session diagnostics: %s", self._diagnostics())
         try:
             self._on_disconnected(reason=reason, clean=False)
         except Exception:  # noqa: BLE001
             logger.exception("Failed to propagate the Gemini disconnect")
+
+    def _diagnostics(self) -> str:
+        """Everything needed to explain a deaf session without re-running it."""
+        counts = dict(self._proxy.message_counts) if self._proxy is not None else {}
+        top = ", ".join(
+            f"{kind}={count}"
+            for kind, count in sorted(counts.items(), key=lambda item: -item[1])[:6]
+        )
+        return (
+            f"last server message {self._seconds_since_model_activity:.1f}s ago; "
+            f"sent={self._sent_frames} send_failures={self._send_failures} "
+            f"dropped={self._dropped_frames} frozen_windows={self._frozen_windows} "
+            f"recoveries={self._recoveries}; server_messages[{top or 'none'}]"
+        )
 
     # ------------------------------------------------------ processing loop
     async def _processing_loop(self) -> None:
@@ -494,11 +539,25 @@ class ResilientGeminiRealtime(GeminiRealtime):
             logger.debug("Processing loop has been cancelled")
 
     # ------------------------------------------------------------- plumbing
+    async def connect(self) -> None:
+        """Establish the session under the same lock the watchdog uses.
+
+        Serialising establishment keeps a single owner of the socket: without
+        it, a parent-initiated reconnect could race a watchdog recovery and
+        leave two live sessions (and two readers) behind.
+        """
+        async with self._recovery_lock:
+            await super().connect()
+
     async def _start_processing_task(self) -> None:
         await super()._start_processing_task()
         self._start_watchdog()
 
-    def _spawn_reader(self) -> None:
+    def _ensure_reader(self) -> None:
+        """Start reading the session unless a reader is already live."""
+        task = self._processing_task
+        if task is not None and not task.done():
+            return
         self._processing_task = asyncio.create_task(self._processing_loop())
 
     async def _cancel_reader(self) -> None:
@@ -515,14 +574,41 @@ class ResilientGeminiRealtime(GeminiRealtime):
         await super().close()
 
 
+def _env_float(
+    env, key: str, default: float, *, minimum: Optional[float] = None
+) -> float:
+    """Read a float from the environment without ever crashing the agent."""
+    raw = str(env.get(key) or "").strip()
+    try:
+        value = float(raw) if raw else float(default)
+    except ValueError:
+        status_logger.warning("%s=%r is not a number; using %s", key, raw, default)
+        value = float(default)
+
+    if minimum is not None and value < minimum:
+        status_logger.warning(
+            "%s=%s is too small (watchdog would thrash); using %ss", key, value, minimum
+        )
+        value = float(minimum)
+    return value
+
+
+def _env_flag(env, key: str) -> bool:
+    return str(env.get(key, "")).strip().lower() in {"1", "true", "yes", "on"}
+
+
 def build_llm(*, client=None, env=None, **overrides) -> ResilientGeminiRealtime:
     """Build the resilient Gemini Live LLM from environment configuration."""
     env = os.environ if env is None else env
     kwargs: dict[str, Any] = {
         "model": env.get("GEMINI_LIVE_MODEL") or DEFAULT_RESILIENT_MODEL,
-        "stall_seconds": float(env.get("LUMIO_STALL_SECONDS") or DEFAULT_STALL_SECONDS),
-        "audio_debug": str(env.get("LUMIO_AUDIO_DEBUG", "")).strip().lower()
-        in {"1", "true", "yes", "on"},
+        "stall_seconds": _env_float(
+            env,
+            "LUMIO_STALL_SECONDS",
+            DEFAULT_STALL_SECONDS,
+            minimum=MIN_STALL_SECONDS,
+        ),
+        "audio_debug": _env_flag(env, "LUMIO_AUDIO_DEBUG"),
     }
     if client is not None:
         kwargs["client"] = client
@@ -532,6 +618,7 @@ def build_llm(*, client=None, env=None, **overrides) -> ResilientGeminiRealtime:
 
 __all__ = [
     "DEFAULT_RESILIENT_MODEL",
+    "MIN_STALL_SECONDS",
     "ResilientGeminiRealtime",
     "SessionProxy",
     "backoff_delay",

@@ -9,7 +9,11 @@ Run with:
 
 import logging
 
-from lumio.logging_setup import LOGGER_NAME, configure_lumio_logging
+from lumio.logging_setup import (
+    LOGGER_NAME,
+    PACKAGE_LOGGER_NAME,
+    configure_lumio_logging,
+)
 
 
 def test_configure_lumio_logging_adds_one_stderr_handler():
@@ -37,6 +41,18 @@ def test_child_loggers_inherit_the_handler_and_the_level():
 
     assert child.handlers == []
     assert child.isEnabledFor(logging.INFO)
+
+
+def test_the_lumio_package_loggers_are_configured_too():
+    """Module loggers are named ``lumio.*``; without a handler their output is dropped."""
+    configure_lumio_logging()
+
+    package_logger = logging.getLogger(PACKAGE_LOGGER_NAME)
+
+    assert package_logger.handlers, "lumio.* records need a handler or they are dropped"
+    assert package_logger.propagate is False
+    assert logging.getLogger("lumio.gemini_resilient").isEnabledFor(logging.INFO)
+    assert logging.getLogger("lumio.audio_guard").isEnabledFor(logging.INFO)
 
 
 def test_level_can_be_raised_for_quiet_runs():

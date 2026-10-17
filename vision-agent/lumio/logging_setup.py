@@ -6,6 +6,10 @@ handler: every INFO line (timing, lesson completion, Gemini recovery) was
 silently dropped and only raw WARNING text showed up. One stderr handler on the
 ``lumi`` logger fixes that, using the SDK's own line format so the console
 output stays consistent.
+
+The ``lumio`` package loggers (``lumio.gemini_resilient``, ``lumio.audio_guard``
+— named after their modules) get the same treatment: their debug output is how
+a bad lesson is diagnosed, and it must not depend on the root logger.
 """
 
 from __future__ import annotations
@@ -16,6 +20,8 @@ import sys
 from typing import Optional, Union
 
 LOGGER_NAME = "lumi"
+PACKAGE_LOGGER_NAME = "lumio"
+LOGGER_NAMES = (LOGGER_NAME, PACKAGE_LOGGER_NAME)
 DEFAULT_LEVEL = "INFO"
 LOG_LEVEL_ENV = "LUMIO_LOG_LEVEL"
 _FORMAT = "%(asctime)s.%(msecs)03d | %(levelname)-8s | %(message)s"
@@ -36,21 +42,29 @@ def resolve_level(level: Optional[Union[str, int]] = None) -> int:
 def configure_lumio_logging(
     level: Optional[Union[str, int]] = None, stream=None
 ) -> logging.Logger:
-    """Attach a stderr handler to the ``lumi`` logger. Safe to call twice."""
-    logger = logging.getLogger(LOGGER_NAME)
+    """Attach a stderr handler to Lumio's loggers. Safe to call twice."""
+    resolved = resolve_level(level)
+    logger = None
 
-    if not logger.handlers:
-        handler = logging.StreamHandler(stream or sys.stderr)
-        handler.setFormatter(logging.Formatter(_FORMAT, datefmt=_DATE_FORMAT))
-        logger.addHandler(handler)
+    for name in LOGGER_NAMES:
+        current = logging.getLogger(name)
+        if not current.handlers:
+            handler = logging.StreamHandler(stream or sys.stderr)
+            handler.setFormatter(logging.Formatter(_FORMAT, datefmt=_DATE_FORMAT))
+            current.addHandler(handler)
+        current.setLevel(resolved)
+        current.propagate = False
+        if name == LOGGER_NAME:
+            logger = current
 
-    logger.setLevel(resolve_level(level))
-    logger.propagate = False
+    assert logger is not None  # LOGGER_NAMES always contains LOGGER_NAME
     return logger
 
 
 __all__ = [
     "LOGGER_NAME",
+    "LOGGER_NAMES",
+    "PACKAGE_LOGGER_NAME",
     "configure_lumio_logging",
     "resolve_level",
 ]

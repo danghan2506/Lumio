@@ -5,16 +5,21 @@ Run with:
 """
 
 import asyncio
+import logging
+from contextlib import contextmanager
 
 import numpy as np
 import pytest
 from google.genai import types
+from vision_agents.plugins.gemini.gemini_realtime import GeminiRealtime
 from websockets.exceptions import ConnectionClosedError
 from websockets.frames import Close
 
-from lumio.audio_guard import AudioGuard
+from lumio.audio_guard import AudioGuard, WindowStats
 from lumio.gemini_resilient import (
     DEFAULT_RESILIENT_MODEL,
+    DEFAULT_STALL_SECONDS,
+    MIN_STALL_SECONDS,
     ResilientGeminiRealtime,
     SessionProxy,
     backoff_delay,
@@ -22,6 +27,32 @@ from lumio.gemini_resilient import (
     classify_message,
     should_recover,
 )
+
+
+class CaptureHandler(logging.Handler):
+    """Collects log messages so tests can assert on what the operator sees."""
+
+    def __init__(self):
+        super().__init__()
+        self.messages = []
+
+    def emit(self, record):
+        self.messages.append(record.getMessage())
+
+
+@contextmanager
+def captured_status_logs():
+    """Capture everything the agent prints about Gemini recovery."""
+    handler = CaptureHandler()
+    target = logging.getLogger("lumi.gemini")
+    previous = target.level
+    target.setLevel(logging.DEBUG)
+    target.addHandler(handler)
+    try:
+        yield handler.messages
+    finally:
+        target.removeHandler(handler)
+        target.setLevel(previous)
 
 
 class FakeClock:
@@ -151,6 +182,14 @@ async def test_proxy_forwards_sends_and_tracks_message_times():
     assert messages
 
 
+def test_proxy_repr_is_readable_in_the_agent_log():
+    """The SDK logs "connected to session %s" — a bare object address is useless."""
+    text = repr(SessionProxy(FakeSession()))
+
+    assert text.startswith("<SessionProxy session=FakeSession")
+    assert text.endswith("messages=0>")
+
+
 def test_classify_message_names_the_shapes_we_see_in_production():
     assert classify_message(resumption_update()) == "resumption"
     assert classify_message(model_turn_message()) == "model_turn"
@@ -201,6 +240,15 @@ def test_build_llm_reads_environment():
     default = build_llm(env={}, client=object())
     assert default.model == DEFAULT_RESILIENT_MODEL
     assert "context_window_compression" not in default.get_config()
+
+
+def test_build_llm_survives_a_nonsense_stall_seconds():
+    """A typo in .env must not crash the agent, and a tiny value must not thrash."""
+    broken = build_llm(env={"LUMIO_STALL_SECONDS": "soon"}, client=object())
+    assert broken.stall_seconds == pytest.approx(DEFAULT_STALL_SECONDS)
+
+    thrashing = build_llm(env={"LUMIO_STALL_SECONDS": "0.01"}, client=object())
+    assert thrashing.stall_seconds == pytest.approx(MIN_STALL_SECONDS)
 
 
 # ---------------------------------------------------------- processing loop
@@ -307,7 +355,7 @@ async def test_watchdog_stays_quiet_when_learner_is_silent():
 
 
 # -------------------------------------------------------- audio forwarding
-async def test_audio_is_not_sent_while_recovering_and_frozen_audio_is_reported():
+async def test_audio_is_not_sent_while_recovering():
     clock = FakeClock()
     llm = ResilientGeminiRealtime(client=object(), clock=clock)
     llm.audio_guard = AudioGuard(window_seconds=4.0, clock=clock)
@@ -323,3 +371,189 @@ async def test_audio_is_not_sent_while_recovering_and_frozen_audio_is_reported()
     llm._recovering = False
     await llm.simple_audio_response(speech_frame())
     assert len(session.sent) == 1
+
+
+def test_frozen_uplink_is_reported_once_per_episode():
+    llm = ResilientGeminiRealtime(client=object())
+    frozen = WindowStats(
+        chunks=200,
+        voiced_frames=0,
+        distinct_rms=1,
+        max_identical_run=200,
+        max_rms=0.0968,
+        mean_rms=0.0968,
+    )
+    healthy = WindowStats(
+        chunks=200, voiced_frames=14, distinct_rms=88, max_identical_run=3
+    )
+
+    llm._handle_audio_window(frozen)
+    llm._handle_audio_window(frozen)
+    assert llm._frozen_warned is False, "one odd window is not proof of a stuck phone"
+
+    llm._handle_audio_window(frozen)
+    assert (llm._frozen_windows, llm._frozen_warned) == (3, True)
+
+    llm._handle_audio_window(healthy)
+    assert (llm._frozen_windows, llm._frozen_warned) == (0, False)
+
+    llm._handle_audio_window(frozen)
+    assert llm._frozen_warned is False, "a new episode warns again"
+
+
+# ------------------------------------------------- code-review regressions
+async def test_recovery_always_leaves_a_live_reader_behind():
+    """A failed recovery clears the reader; the next success must put it back.
+
+    Gating the reader on "there was a reader before" left the agent connected
+    with nobody reading the socket — the exact symptom this branch fixes.
+    """
+    clock = FakeClock()
+    llm = ResilientGeminiRealtime(
+        client=object(),
+        stall_seconds=5.0,
+        max_recoveries=3,
+        recovery_attempts=1,
+        backoff_base=0.0,
+        clock=clock,
+    )
+    llm.audio_guard = AudioGuard(clock=clock)
+    llm.connected = True
+    llm._real_session = FakeSession()
+    attempts = []
+
+    async def flaky_establish_session():
+        attempts.append(clock.t)
+        if len(attempts) == 1:
+            raise OSError("google blip")
+
+    llm._establish_session = flaky_establish_session
+
+    clock.t = 100.0
+    llm.audio_guard.feed(speech_frame())
+    assert await llm._watchdog_tick() is True
+    assert llm._processing_task is None, "the failed recovery left nothing reading"
+    assert llm.connected is True
+
+    clock.t = 200.0
+    llm.audio_guard.feed(speech_frame(seed=2))
+    assert await llm._watchdog_tick() is True
+    assert len(attempts) == 2
+    assert llm._processing_task is not None, "the recovered session must be read"
+    assert not llm._processing_task.done()
+
+    await llm._cancel_reader()
+
+
+async def test_watchdog_does_not_give_up_while_a_recovery_is_in_flight():
+    """Giving up mid-recovery aborts the attempts that are still left."""
+    clock = FakeClock()
+    llm = ResilientGeminiRealtime(
+        client=object(), stall_seconds=5.0, max_recoveries=3, clock=clock
+    )
+    llm.audio_guard = AudioGuard(clock=clock)
+    llm.connected = True
+    llm._recovering = True
+    llm._recoveries = 1
+
+    async def must_not_establish():  # pragma: no cover - must not be called
+        raise AssertionError("a second recovery must not start")
+
+    llm._establish_session = must_not_establish
+
+    clock.t = 100.0
+    llm.audio_guard.feed(speech_frame())
+
+    assert await llm._watchdog_tick() is False
+    assert llm.healthy is True
+    assert llm.connected is True
+    assert llm._recoveries == 1
+
+
+async def test_a_frozen_uplink_does_not_trigger_a_recovery():
+    """A phone that repeats one frame cannot hear itself; Gemini is not the problem."""
+    clock = FakeClock()
+    llm = ResilientGeminiRealtime(client=object(), stall_seconds=5.0, clock=clock)
+    llm.audio_guard = AudioGuard(clock=clock)
+    llm.connected = True
+    llm._frozen_windows = 3
+
+    async def must_not_establish():  # pragma: no cover - must not be called
+        raise AssertionError("a frozen uplink must not burn a recovery attempt")
+
+    llm._establish_session = must_not_establish
+
+    clock.t = 100.0
+    llm.audio_guard.feed(speech_frame())
+    assert llm.audio_guard.learner_active is True  # the raw signal still says "speaking"
+
+    assert await llm._watchdog_tick() is False
+    assert llm._recoveries == 0
+    assert llm.healthy is True and llm.connected is True
+
+
+async def test_input_transcripts_are_not_model_activity():
+    """Transcription proves our audio arrived, not that Gemini answered.
+
+    A session that keeps transcribing for minutes without ever producing a model
+    turn is exactly the production failure this watchdog exists to catch.
+    """
+    clock = FakeClock()
+    llm = ResilientGeminiRealtime(client=object(), stall_seconds=5.0, clock=clock)
+    transcript = types.LiveServerMessage(
+        server_content=types.LiveServerContent(
+            input_transcription=types.Transcription(text="hola")
+        )
+    )
+
+    clock.t = 100.0
+    llm._last_model_activity_at = 0.0
+    llm._recoveries = 2
+    llm._on_server_message(transcript, classify_message(transcript))
+
+    assert llm._seconds_since_model_activity == pytest.approx(100.0)
+    assert llm._recoveries == 2, "a transcript is not an answer"
+
+    llm._on_server_message(model_turn_message(), "model_turn")
+    assert llm._seconds_since_model_activity == pytest.approx(0.0)
+    assert llm._recoveries == 0
+
+
+async def test_connect_waits_for_an_in_flight_recovery(monkeypatch):
+    """One owner of the socket: a parent reconnect must not race the watchdog."""
+    llm = ResilientGeminiRealtime(client=object())
+    connected = []
+
+    async def fake_parent_connect(self):
+        connected.append(True)
+
+    monkeypatch.setattr(GeminiRealtime, "connect", fake_parent_connect)
+
+    await llm._recovery_lock.acquire()
+    task = asyncio.create_task(llm.connect())
+    await asyncio.sleep(0)
+    await asyncio.sleep(0)
+    assert connected == [], "connect() must wait instead of opening a second session"
+
+    llm._recovery_lock.release()
+    await task
+    assert connected == [True]
+
+
+async def test_give_up_logs_enough_diagnostics_to_explain_itself():
+    """The next deaf session must be explainable from the log alone."""
+    llm = ResilientGeminiRealtime(client=object())
+    llm._proxy = SessionProxy(FakeSession())
+    llm._proxy.message_counts["resumption"] = 7
+    llm._sent_frames, llm._send_failures, llm._dropped_frames = 40, 3, 12
+    llm._frozen_windows = 1
+
+    with captured_status_logs() as messages:
+        llm._give_up("no answer while the learner kept talking")
+
+    text = " ".join(messages)
+    assert "Lumi is deaf" in text
+    assert "sent=40" in text
+    assert "send_failures=3" in text
+    assert "dropped=12" in text
+    assert "resumption=7" in text

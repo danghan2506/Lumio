@@ -52,3 +52,21 @@ TDD: mỗi bước có test viết trước (RED) rồi mới code (GREEN).
 - [x] Smoke server: `agent.py serve` → `/health` 200, `/ready` 200.
 - [x] End-to-end thật: `POST /calls/lumio-verify-172114/sessions` → 201 → log `Gemini Live ready: model=gemini-3.8-live compression=off resumption=on stall=25.0s` → `Gemini live connected to session <lumio.gemini_resilient.SessionProxy object ...>` → agent nói (transcript "Hello, my friend. Can you repeat after me?") → `DELETE .../sessions/...` 202 + tắt sạch.
 - [x] `git diff --stat`: chỉ chạm `vision-agent/` và `docs/` (không đụng app RN, không đụng `.venv`).
+
+## T9 — Vòng review code độc lập (trước khi mở PR)
+
+Reviewer độc lập (context riêng, không thấy hội thoại) soi `git diff 4c1eb6b..daca3cb`, chạy lại test suite (`74 passed`) và tái hiện 2 race bằng probe ngoài repo. Kết quả: 1 Critical + 3 Important, đều đã sửa.
+
+- [x] **C1 (Critical)** `_recover_once` gate reader theo `had_reader` → sau một lần hồi phục **thất bại**, reader đã bị xoá nên lần hồi phục thành công sau đó **không spawn lại reader**: `connected=True` mà không ai đọc socket (đúng triệu chứng gốc). Sửa: `_ensure_reader()` idempotent, luôn bảo đảm có reader sống sau khi hồi phục thành công.
+- [x] **I1 (Important)** Nhánh "give up" trong `_watchdog_tick` thiếu `not self._recovering` / `self._recoveries >= self.max_recoveries` → giữa lúc đang hồi phục (còn lượt) vẫn có thể tuyên bố "Lumi is deaf", huỷ luôn các lượt còn lại và để lại trạng thái không nhất quán. Sửa: thêm 2 điều kiện.
+- [x] **I2 (Important)** `input_transcript` bị tính là hoạt động của model → session transcribe liên tục mà không trả lời sẽ **reset đồng hồ stall mãi mãi** (đúng thất bại production 85s). Sửa: bỏ `input_transcript` khỏi `MODEL_ACTIVITY_KINDS`; transcript chỉ chứng minh audio đã tới Google.
+- [x] **I3 (Important)** Nhánh watchdog dùng `audio_guard.learner_active` trực tiếp, nên một cửa sổ vừa "frozen" vừa "voiced" sẽ tiêu một lượt hồi phục cho Gemini trong khi lỗi nằm ở phone. Sửa: `_uplink_frozen` chặn cả hồi phục lẫn give-up (ưu tiên cảnh báo frozen).
+- [x] **Minor** `lumio.*` (logger theo module) không nằm dưới handler `lumi` → log DEBUG/INFO của module bị nuốt; `configure_lumio_logging` nay cấu hình cả `lumi` và `lumio`.
+- [x] **Minor** thiếu log chẩn đoán khi give-up → thêm `_diagnostics()` (histogram message, sent/send_failures/dropped/frozen/recoveries).
+- [x] **Minor** `SessionProxy` không có `__repr__` → log "connected to session <SessionProxy object at 0x…>"; nay in `<SessionProxy session=... messages=N>`.
+- [x] **Minor** `DEFAULT_RECOVERY_ATTEMPTS` 3 → 5 để thang backoff 0.5→8s đã ghi trong D7 thực sự chạy được.
+- [x] **Minor** `LUMIO_STALL_SECONDS` đọc bằng `float()` trần → env sai làm chết agent lúc khởi động; nay `_env_float` + sàn `MIN_STALL_SECONDS = 5`.
+- [x] **Minor** tên test `..._and_frozen_audio_is_reported` không phản ánh nội dung → tách thành `test_audio_is_not_sent_while_recovering` + `test_frozen_uplink_is_reported_once_per_episode`.
+- [x] RED→GREEN: 9 test mới trong `tests/test_gemini_resilient.py` + 1 test trong `tests/test_logging_setup.py`; probe ngoài repo xác nhận logic cũ **fail** đúng chỗ (C1: reader sau hồi phục = `False`; I1: give-up giữa lúc đang hồi phục = `True`).
+- [x] `pytest -q -m "not integration"` → **84 passed**, 2 deselected.
+- [x] Reviewer kết luận: "Ready to merge? With fixes" → đã sửa hết Critical/Important và minor rẻ.
