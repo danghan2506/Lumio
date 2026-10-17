@@ -23,7 +23,9 @@ from vision_agents.core.agents.events import (
 )
 from vision_agents.core.edge.events import AudioReceivedEvent
 from vision_agents.core.instructions import Instructions
-from vision_agents.plugins import gemini, getstream
+from vision_agents.plugins import getstream
+
+from lumio.gemini_resilient import build_llm
 
 _timing_log = logging.getLogger("lumi.timing")
 _completion_log = logging.getLogger("lumi.completion")
@@ -537,7 +539,7 @@ async def create_agent(**kwargs) -> Agent:
         edge=getstream.Edge(),
         agent_user=User(name="Lumi the teacher", id="lumi-teacher"),
         instructions=DEFAULT_INSTRUCTIONS,
-        llm=gemini.Realtime(),
+        llm=build_llm(),
     )
     install_timing_logger(agent)
     return agent

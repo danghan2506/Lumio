@@ -697,3 +697,21 @@ def test_null_or_empty_prompt_still_gets_strict_rules():
         assert "do not advance" in low
         assert "3 attempt" in low or "three attempt" in low
 
+
+@pytest.mark.asyncio
+async def test_create_agent_runs_on_the_resilient_gemini_llm():
+    """The teacher must use the hardened wrapper.
+
+    Upstream vision-agents 0.6.9 drops session-resumption handles, reconnects
+    without guarding the loop and never notices a session that stopped
+    answering. See docs/superpowers/specs/2026-10-17-gemini-live-voice-resilience-design.md.
+    """
+    from agent import create_agent
+    from lumio.gemini_resilient import DEFAULT_RESILIENT_MODEL, ResilientGeminiRealtime
+
+    agent = await create_agent()
+
+    assert isinstance(agent.llm, ResilientGeminiRealtime)
+    assert agent.llm.model == DEFAULT_RESILIENT_MODEL
+    assert "context_window_compression" not in agent.llm.get_config()
+
