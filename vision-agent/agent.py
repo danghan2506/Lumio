@@ -23,7 +23,10 @@ from vision_agents.core.agents.events import (
 )
 from vision_agents.core.edge.events import AudioReceivedEvent
 from vision_agents.core.instructions import Instructions
-from vision_agents.plugins import gemini, getstream
+from vision_agents.plugins import getstream
+
+from lumio.gemini_resilient import build_llm
+from lumio.logging_setup import configure_lumio_logging
 
 _timing_log = logging.getLogger("lumi.timing")
 _completion_log = logging.getLogger("lumi.completion")
@@ -395,6 +398,10 @@ def install_timing_logger(agent: Agent) -> None:
 
 load_dotenv()
 
+# The SDK only configures its own logger, so without this every `lumi.*` line
+# (recoveries, audio warnings, timing) is dropped before it reaches the console.
+configure_lumio_logging()
+
 #: Human-readable language names keyed by the language ids used in
 #: ``data/languages.ts`` on the client.
 LANGUAGE_NAMES = {
@@ -537,7 +544,7 @@ async def create_agent(**kwargs) -> Agent:
         edge=getstream.Edge(),
         agent_user=User(name="Lumi the teacher", id="lumi-teacher"),
         instructions=DEFAULT_INSTRUCTIONS,
-        llm=gemini.Realtime(),
+        llm=build_llm(),
     )
     install_timing_logger(agent)
     return agent

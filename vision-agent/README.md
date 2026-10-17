@@ -52,6 +52,40 @@ The `serve` command exposes:
 | GET    | `/health` | Liveness check |
 | GET    | `/ready`  | Readiness check |
 
+## Voice resilience (Gemini Live)
+
+The teacher runs on `lumio.gemini_resilient` instead of the raw plugin, because
+Google's Live API closes sockets with 1011 and sometimes stops answering while
+the socket still looks healthy. The wrapper:
+
+- uses `gemini-3.8-live` and drops `context_window_compression` (a known 1011 trigger);
+- harvests every `session_resumption_update` handle, so a reconnect resumes the lesson;
+- reconnects with bounded retries (5 attempts, backoff 0.5s → 8s) and never lets
+  the message-reading task die silently;
+- runs a watchdog: when the learner keeps talking and Gemini has not answered for
+  `LUMIO_STALL_SECONDS`, it swaps in a fresh session, and after `max_recoveries`
+  failed attempts it says so loudly instead of pretending to be connected.
+  Only model output counts as an answer — an input transcript means our audio
+  arrived, not that Gemini replied. A frozen phone uplink is reported as such
+  instead of burning a recovery attempt on Gemini.
+
+| Env var | Default | Purpose |
+| ------- | ------- | ------- |
+| `GEMINI_LIVE_MODEL` | `gemini-3.8-live` | Live model to use |
+| `LUMIO_STALL_SECONDS` | `25` | Silence tolerated while the learner talks before recovering (minimum `5`) |
+| `LUMIO_AUDIO_DEBUG` | unset | `1` logs a learner-audio window every 4s (voiced %, frozen-frame detection) |
+| `LUMIO_LOG_LEVEL` | `INFO` | Console level for the agent's own `lumi.*` / `lumio.*` logs (timing, recovery, audio warnings) |
+
+Log lines to watch during a device test:
+
+- `Gemini Live ready: model=... compression=off ...` — startup configuration
+- `Gemini connection lost (...)` → `Gemini session re-established` — automatic recovery
+- `Gemini session needs recovery (...)` — the watchdog forcing a fresh session
+- `Learner audio looks frozen ...` — the phone repeats one frame; Gemini cannot hear the learner
+- `Lumi is deaf: ...` + `Gemini session diagnostics: ...` — recovery exhausted; the
+  diagnostics line reports what the session actually received, which is what made
+  earlier failures explainable after the fact
+
 ## Docker
 
 ```bash
