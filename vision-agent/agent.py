@@ -273,8 +273,13 @@ class CompletionCoordinator:
         if self.request_completion(limit):
             await self._agent.simple_response(FAREWELL_INSTRUCTION, interrupt=False)
 
-    async def _delayed_close(self, grace_seconds: float = 3.5):
-        """Autonomously teardown agent connection after completion event."""
+    async def _delayed_close(self, grace_seconds: float = 10.0):
+        """Autonomously teardown agent connection after completion event.
+
+        Grace period is intentionally generous (well beyond the 1-2 sentence
+        farewell plus client-side drain) so the safety-net close never races
+        the client's own teardown and cuts the farewell audio.
+        """
         try:
             await asyncio.sleep(grace_seconds)
             await self._agent.close()
@@ -289,8 +294,10 @@ class CompletionCoordinator:
             completion_payload(self._lesson_id, self._xp_earned, minutes, self._reason)
         )
         self._event_sent = True
-        # Schedule autonomous teardown so the agent doesn't linger indefinitely
-        asyncio.create_task(self._delayed_close(grace_seconds=3.5))
+        # Schedule autonomous teardown so the agent doesn't linger indefinitely.
+        # Client tears down around ~6s after the event; this 10s safety net
+        # only fires if the client is gone and never interrupts the farewell.
+        asyncio.create_task(self._delayed_close(grace_seconds=10.0))
 
     async def run(self):
         try:

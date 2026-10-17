@@ -7,6 +7,7 @@ export interface LessonSummaryModalProps {
   visible: boolean;
   xpReward: number;
   progressError?: string | null;
+  isSavingProgress?: boolean;
   userFeedback?: string;
   onChangeFeedback?: (text: string) => void;
   onRetryProgress?: () => void;
@@ -17,11 +18,13 @@ export function LessonSummaryModal({
   visible,
   xpReward,
   progressError,
+  isSavingProgress = false,
   userFeedback = '',
   onChangeFeedback,
   onRetryProgress,
   onClaimRewards,
 }: LessonSummaryModalProps) {
+  const isClaimDisabled = Boolean(progressError) || isSavingProgress;
   return (
     <Modal visible={visible} animationType="slide" transparent={true}>
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
@@ -114,6 +117,23 @@ export function LessonSummaryModal({
             </Text>
           </View>
 
+          {/* Saving indicator */}
+          {isSavingProgress && !progressError && (
+            <View style={{ alignItems: 'center', marginBottom: 16 }}>
+              <Text
+                style={{
+                  fontFamily: 'PlusJakartaSans_500Medium',
+                  color: colors.lavenderMist,
+                  fontSize: 12,
+                  textAlign: 'center',
+                  opacity: 0.8,
+                }}
+              >
+                Saving your progress…
+              </Text>
+            </View>
+          )}
+
           {/* Progress Error State */}
           {progressError && (
             <View style={{ alignItems: 'center', marginBottom: 16 }}>
@@ -194,10 +214,10 @@ export function LessonSummaryModal({
           <TouchableOpacity
             testID="claim-rewards-btn"
             onPress={() => {
-              if (progressError) return;
+              if (isClaimDisabled) return;
               onClaimRewards();
             }}
-            disabled={Boolean(progressError)}
+            disabled={isClaimDisabled}
             activeOpacity={0.8}
             style={{
               backgroundColor: colors.lumioCoral,
@@ -207,7 +227,7 @@ export function LessonSummaryModal({
               alignItems: 'center',
               paddingVertical: 14,
               marginBottom: 8,
-              opacity: progressError ? 0.6 : 1,
+              opacity: isClaimDisabled ? 0.6 : 1,
             }}
           >
             <Text
@@ -217,7 +237,7 @@ export function LessonSummaryModal({
                 fontSize: 16,
               }}
             >
-              Claim Rewards
+              {isSavingProgress && !progressError ? 'Saving…' : 'Claim Rewards'}
             </Text>
           </TouchableOpacity>
         </View>

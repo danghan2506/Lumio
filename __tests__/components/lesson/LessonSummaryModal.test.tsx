@@ -86,4 +86,21 @@ describe('LessonSummaryModal', () => {
     fireEvent.press(claimBtn);
     expect(onClaimRewards).not.toHaveBeenCalled();
   });
+
+  it('blocks Claim Rewards while progress is still saving', () => {
+    const onClaimRewards = jest.fn();
+    const { getByTestId, getByText } = render(
+      <LessonSummaryModal
+        visible={true}
+        xpReward={20}
+        isSavingProgress={true}
+        onClaimRewards={onClaimRewards}
+      />
+    );
+
+    expect(getByText(/Saving your progress/i)).toBeTruthy();
+    const claimBtn = getByTestId('claim-rewards-btn');
+    fireEvent.press(claimBtn);
+    expect(onClaimRewards).not.toHaveBeenCalled();
+  });
 });

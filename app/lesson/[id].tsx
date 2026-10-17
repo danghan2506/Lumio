@@ -31,6 +31,7 @@ export default function AudioLessonScreen() {
   const { lesson, language, loading, error } = useLessonAudioDetails(id || '');
   const { user, session } = useAuth();
   const [progressError, setProgressError] = useState<string | null>(null);
+  const [isSavingProgress, setIsSavingProgress] = useState(false);
   const [showCaptions, setShowCaptions] = useState(true);
   const [showSummary, setShowSummary] = useState(false);
   const [userFeedback, setUserFeedback] = useState('');
@@ -69,6 +70,7 @@ export default function AudioLessonScreen() {
     async (payload: LessonCompleteEvent) => {
       setShowSummary(true);
       setProgressError(null);
+      setIsSavingProgress(true);
       lastPayloadRef.current = payload;
 
       // 1. Immediately mute mic to stop user audio intake
@@ -93,6 +95,8 @@ export default function AudioLessonScreen() {
         });
       } catch (err) {
         setProgressError(err instanceof Error ? err.message : 'Could not save your progress.');
+      } finally {
+        setIsSavingProgress(false);
       }
     },
     [id, lesson, teacher, leave, call]
@@ -365,12 +369,14 @@ export default function AudioLessonScreen() {
         visible={showSummary}
         xpReward={lesson.xp_reward}
         progressError={progressError}
+        isSavingProgress={isSavingProgress}
         userFeedback={userFeedback}
         onChangeFeedback={setUserFeedback}
         onRetryProgress={() => {
           if (lastPayloadRef.current) void handleLessonComplete(lastPayloadRef.current);
         }}
         onClaimRewards={() => {
+          if (isSavingProgress || progressError) return;
           setShowSummary(false);
           router.replace('/(tabs)/learn');
         }}

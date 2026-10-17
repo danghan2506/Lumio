@@ -235,6 +235,39 @@ describe('AudioLessonScreen mascot-first UI architecture', () => {
     expect(recordLessonProgress).toHaveBeenCalledTimes(2);
   });
 
+  it('blocks Claim Rewards while progress save is still pending', async () => {
+    mockStatus = 'joined';
+    let resolveSave: () => void = () => {};
+    (recordLessonProgress as jest.Mock).mockImplementationOnce(
+      () => new Promise<void>((resolve) => { resolveSave = resolve; })
+    );
+    const { getByTestId } = render(<AudioLessonScreen />);
+
+    let completionPromise: Promise<void> | undefined;
+    act(() => {
+      completionPromise = mockOnLessonComplete?.({
+        type: 'lesson_complete',
+        lesson_id: 'les-1',
+        xp_earned: 10,
+        minutes_practiced: 2,
+      }) as unknown as Promise<void>;
+    });
+
+    // Modal is visible but save is pending -> Claim must be blocked
+    const claimBtn = getByTestId('claim-rewards-btn');
+    fireEvent.press(claimBtn);
+    expect(mockReplace).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolveSave();
+      await completionPromise;
+    });
+
+    // After save resolves, Claim works
+    fireEvent.press(getByTestId('claim-rewards-btn'));
+    expect(mockReplace).toHaveBeenCalledWith('/(tabs)/learn');
+  });
+
   it('shows teacher failed state and retry button', () => {
     mockStatus = 'joined';
     mockAgentStatus = 'failed';

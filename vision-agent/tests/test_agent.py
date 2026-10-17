@@ -557,6 +557,18 @@ async def test_completion_coordinator_schedules_delayed_close():
     assert dummy.closed is True
 
 
+def test_delayed_close_grace_covers_farewell_playout():
+    """Regression: autonomous close must not race the client's teardown.
+
+    The farewell is 1-2 sentences plus client-side drain (~6s); a 3.5s
+    safety net cut the speech. Default grace must stay generous.
+    """
+    import inspect
+
+    sig = inspect.signature(CompletionCoordinator._delayed_close)
+    assert sig.parameters["grace_seconds"].default >= 10.0
+
+
 from agent import CAPTION_POLL_SECONDS
 from vision_agents.core.agents.transcript.store import TranscriptStore
 
