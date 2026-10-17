@@ -630,3 +630,58 @@ async def test_caption_relay_detects_farewell_on_accumulated_text():
 
     assert coordinator.completion_requested is True
 
+
+def test_build_instructions_includes_pronunciation_and_translation():
+    custom = {
+        "vocabulary": [
+            {"word": "Hola", "translation": "Hello", "pronunciation": "OH-lah"}
+        ],
+        "phrases": ["¿Cómo estás?"],
+    }
+    instructions = build_instructions(custom, "Spanish")
+    assert "Hola" in instructions
+    assert "Hello" in instructions
+    assert "OH-lah" in instructions
+
+
+def test_teacher_rules_enforce_strict_repeat():
+    from agent import TEACHER_RULES
+
+    low = TEACHER_RULES.lower()
+    assert "do not advance" in low
+    assert "repeat" in low
+    assert "3 attempt" in low or "three attempt" in low
+    assert "complete_lesson" in TEACHER_RULES
+
+
+def test_all_instruction_paths_gate_complete_lesson_on_mastery():
+    from agent import DEFAULT_INSTRUCTIONS, teacher_instructions
+
+    paths = [
+        DEFAULT_INSTRUCTIONS,
+        teacher_instructions("French"),
+        build_instructions({"aiTeacherPrompt": "Teach greetings."}, "Spanish"),
+        build_instructions({}, "Korean"),
+    ]
+    for instructions in paths:
+        low = instructions.lower()
+        assert "complete_lesson" in instructions
+        assert "3 attempt" in low or "three attempt" in low
+
+
+def test_build_instructions_handles_missing_pronunciation():
+    for vocab in (
+        [{"word": "Hola", "translation": "Hello", "pronunciation": None}],
+        [{"word": "Hola", "translation": "Hello", "pronunciation": ""}],
+        [{"word": "Hola"}],
+    ):
+        out = build_instructions({"vocabulary": vocab}, "Spanish")
+        assert "Hola" in out
+
+
+def test_null_or_empty_prompt_still_gets_strict_rules():
+    for prompt in (None, "", "   "):
+        low = build_instructions({"aiTeacherPrompt": prompt}, "Spanish").lower()
+        assert "do not advance" in low
+        assert "3 attempt" in low or "three attempt" in low
+
