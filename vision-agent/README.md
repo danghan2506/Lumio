@@ -71,6 +71,7 @@ the socket still looks healthy. The wrapper:
 | `GEMINI_LIVE_MODEL` | `gemini-3.8-live` | Live model to use |
 | `LUMIO_STALL_SECONDS` | `25` | Silence tolerated while the learner talks before recovering |
 | `LUMIO_AUDIO_DEBUG` | unset | `1` logs a learner-audio window every 4s (voiced %, frozen-frame detection) |
+| `LUMIO_LOG_LEVEL` | `INFO` | Console level for the agent's own `lumi.*` logs (timing, recovery, audio warnings) |
 
 Log lines to watch during a device test:
 

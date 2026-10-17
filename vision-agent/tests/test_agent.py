@@ -715,3 +715,14 @@ async def test_create_agent_runs_on_the_resilient_gemini_llm():
     assert agent.llm.model == DEFAULT_RESILIENT_MODEL
     assert "context_window_compression" not in agent.llm.get_config()
 
+
+def test_agent_module_configures_lumio_logging():
+    """Importing the agent must make `lumi.*` logs visible in the console."""
+    import logging
+
+    import agent  # noqa: F401  (import side effect under test)
+
+    logger = logging.getLogger("lumi")
+    assert logger.handlers, "lumi.* records would be dropped without a handler"
+    assert logger.propagate is False
+

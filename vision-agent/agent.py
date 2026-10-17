@@ -26,6 +26,7 @@ from vision_agents.core.instructions import Instructions
 from vision_agents.plugins import getstream
 
 from lumio.gemini_resilient import build_llm
+from lumio.logging_setup import configure_lumio_logging
 
 _timing_log = logging.getLogger("lumi.timing")
 _completion_log = logging.getLogger("lumi.completion")
@@ -396,6 +397,10 @@ def install_timing_logger(agent: Agent) -> None:
             pass
 
 load_dotenv()
+
+# The SDK only configures its own logger, so without this every `lumi.*` line
+# (recoveries, audio warnings, timing) is dropped before it reaches the console.
+configure_lumio_logging()
 
 #: Human-readable language names keyed by the language ids used in
 #: ``data/languages.ts`` on the client.

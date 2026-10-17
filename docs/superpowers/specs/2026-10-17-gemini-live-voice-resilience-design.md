@@ -42,6 +42,7 @@ Không nằm trong phạm vi: sửa UI app, đổi kiến trúc call, thay model
 | D6 | Watchdog dựa trên "học viên đang nói + không có phản hồi" thay vì "không có message" | Server vẫn gửi resumption mỗi 4s nên "im lặng ở tầng message" không phát hiện được sự cố thật |
 | D7 | Hồi phục tối đa 3 lần liên tiếp, backoff 0.5→8s; sau đó log ĐỎ và báo `_on_disconnected` | Tránh vòng lặp vô hạn; đảm bảo trạng thái "chết" được báo đúng |
 | D8 | `AudioGuard` (đo `voiced%`, `distinct_rms`, `max_identical_run`) chạy mặc định ở mức cảnh báo, chi tiết khi `LUMIO_AUDIO_DEBUG=1` | Lần test tới vừa kiểm tra fix vừa chốt được nghi vấn audio "đóng băng" |
+| D9 | Tự gắn handler cho logger `lumi.*` (`lumio/logging_setup.py`) | SDK chỉ cấu hình logger `vision_agents`; log INFO của agent bị nuốt → không ai thấy được quá trình hồi phục. Mức log đổi được bằng `LUMIO_LOG_LEVEL` |
 
 ## 4. Thành phần
 
@@ -51,10 +52,12 @@ vision-agent/
     __init__.py
     audio_guard.py         # AudioGuard: cửa sổ 4s -> voiced%, distinct_rms, max_identical_run, learner_active
     gemini_resilient.py    # ResilientGeminiRealtime + _SessionProxy + policy thuần (backoff, should_recover)
+    logging_setup.py       # handler cho logger `lumi.*` (mặc định SDK chỉ cấu hình `vision_agents`)
   tests/
     test_audio_guard.py
     test_gemini_resilient.py
-  agent.py                 # create_agent() dùng build_llm(); env: GEMINI_LIVE_MODEL, LUMIO_AUDIO_DEBUG
+    test_logging_setup.py
+  agent.py                 # create_agent() dùng build_llm(); env: GEMINI_LIVE_MODEL, LUMIO_AUDIO_DEBUG, LUMIO_LOG_LEVEL
 ```
 
 `ResilientGeminiRealtime` ghi đè đúng 4 điểm: `get_config()`, `_session` (property → proxy), `_processing_loop()`, `simple_audio_response()`.

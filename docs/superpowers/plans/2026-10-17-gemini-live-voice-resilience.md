@@ -5,43 +5,50 @@ Spec: `docs/superpowers/specs/2026-10-17-gemini-live-voice-resilience-design.md`
 TDD: mỗi bước có test viết trước (RED) rồi mới code (GREEN).
 
 ## T1 — RED: test cho AudioGuard `tests/test_audio_guard.py`
-- [ ] Test 1: 200 frame giống hệt nhau (frozen) → `distinct_rms == 1`, `max_identical_run >= 199`, `voiced_frames == 0`.
-- [ ] Test 2: 200 frame khác nhau, biên độ lớn (speech) → `voiced_frames > 100`, `distinct_rms > 50`, `max_identical_run <= 1`.
-- [ ] Test 3: `learner_active` = True khi có frame voiced trong cửa sổ gần nhất; False khi toàn frozen.
-- [ ] Test 4: `snapshot()` trả số liệu của cửa sổ hiện tại rồi reset cửa sổ.
-- [ ] Chạy: `pytest tests/test_audio_guard.py` → FAIL (chưa có module).
+- [x] Test 1: 200 frame giống hệt nhau (frozen) → `distinct_rms == 1`, `max_identical_run >= 199`, `voiced_frames == 0`.
+- [x] Test 2: 200 frame khác nhau, biên độ lớn (speech) → `voiced_frames > 150`, `distinct_rms > 50`, `max_identical_run <= 1`.
+- [x] Test 3: `learner_active` = True khi có frame voiced gần đây; False khi toàn frozen / quá hạn.
+- [x] Test 4: `snapshot()` trả số liệu cửa sổ hiện tại rồi reset.
+- [x] Chạy `pytest tests/test_audio_guard.py` → RED (ModuleNotFoundError) → GREEN (6 passed).
 
 ## T2 — GREEN: `lumio/audio_guard.py`
-- [ ] `frame_rms`, `frame_digest`, `AudioGuard.feed(pcm)`, `AudioGuard.snapshot()`, `AudioGuard.learner_active`.
-- [ ] Ngưỡng voiced mặc định 0.03; cửa sổ mặc định 4.0s.
-- [ ] Chạy lại T1 → PASS.
+- [x] `frame_rms`, `frame_digest`, `frame_is_varying`, `AudioGuard.feed/snapshot/learner_active`.
+- [x] Ngưỡng voiced 0.03 + yêu cầu frame phải *biến thiên* (frame DC/giữ nguyên không tính là tiếng nói).
 
 ## T3 — RED: test cho policy + session proxy `tests/test_gemini_resilient.py`
-- [ ] Test 1: `backoff_delay(0..6)` tăng dần, chặn trên 8.0s.
-- [ ] Test 2: `should_recover` — không hồi phục khi khoẻ; hồi phục khi quá hạn + học viên đang nói; không hồi phục khi học viên im; không hồi phục khi hết lượt.
-- [ ] Test 3: `_SessionProxy` lấy được handle từ message `session_resumption_update` **đứng một mình** (không có `model_turn`), bỏ qua khi `resumable=False`.
-- [ ] Test 4: proxy chuyển tiếp `send_realtime_input` xuống session thật; `last_message_at` cập nhật; đếm loại message.
-- [ ] Test 5: `get_config()` của LLM: **không** còn `context_window_compression`, có `session_resumption` khi đã có handle.
-- [ ] Chạy: `pytest tests/test_gemini_resilient.py` → FAIL.
+- [x] Test 1: `backoff_delay` tăng dần, chặn trên 8.0s.
+- [x] Test 2: `should_recover` — không hồi phục khi khoẻ / khi học viên im / khi hết lượt.
+- [x] Test 3: `SessionProxy` lấy handle từ message `session_resumption_update` **đứng một mình**; bỏ qua `resumable=False`.
+- [x] Test 4: proxy chuyển tiếp `send_realtime_input`, cập nhật `last_message_at`, fallback attribute.
+- [x] Test 5: `get_config()` không còn `context_window_compression`; có `session_resumption` khi đã có handle.
+- [x] Test 6: `_processing_loop` sống sót qua lỗi 1011 (reconnect thật sự xảy ra, loop đọc tiếp).
+- [x] Test 7: `_processing_loop` báo "chết" rõ ràng khi reconnect thất bại liên tục.
+- [x] Test 8/9: watchdog hồi phục khi học viên đang nói mà Gemini im; im lặng khi học viên không nói.
+- [x] Test 10: audio không được gửi vào session đang chết.
+- [x] Chạy → RED → GREEN (20 passed, gồm cả `test_audio_guard.py`).
 
 ## T4 — GREEN: `lumio/gemini_resilient.py`
-- [ ] `ResilientGeminiRealtime(gemini.Realtime)`: ghi đè `get_config`, `_session`, `_processing_loop`, `simple_audio_response`.
-- [ ] `_processing_loop`: reconnect có retry + backoff, watchdog tick, hỏng hẳn → log đỏ + `_on_disconnected`.
-- [ ] `simple_audio_response`: bỏ qua khi đang hồi phục, không raise lỗi gửi (chỉ đếm + log 1 lần), đẩy frame vào `AudioGuard`.
-- [ ] Cảnh báo `learner audio looks frozen` sau 3 cửa sổ liên tiếp `voiced==0 && distinct_rms==1`.
-- [ ] Chạy lại T3 → PASS.
+- [x] `ResilientGeminiRealtime(gemini.Realtime)` ghi đè `get_config`, `_session`, `_processing_loop`, `simple_audio_response`, `close`.
+- [x] Reconnect có retry + backoff, có lock; hỏng hẳn → log ERROR + `_on_disconnected` (không còn "connected=True mà không ai đọc socket").
+- [x] Watchdog `_watchdog_tick` / `_watchdog_loop`, tự bật khi `_start_processing_task`, tự tắt khi `close`.
+- [x] `build_llm()` đọc `GEMINI_LIVE_MODEL`, `LUMIO_STALL_SECONDS`, `LUMIO_AUDIO_DEBUG`.
 
 ## T5 — Wiring `agent.py`
-- [ ] `build_llm()` đọc env `GEMINI_LIVE_MODEL` (mặc định `gemini-3.8-live`), `LUMIO_AUDIO_DEBUG`, `LUMIO_STALL_SECONDS`; `create_agent` dùng nó.
-- [ ] Log 1 dòng khi tạo: `model=... compression=off resume=on`.
-- [ ] `python -c "import agent"` OK (không cần mạng).
+- [x] `create_agent()` dùng `build_llm()` (bỏ `gemini.Realtime()` trần).
+- [x] Test wiring: `create_agent()` trả về `ResilientGeminiRealtime`, model `gemini-3.8-live`, không compression.
 
 ## T6 — Vệ sinh & tài liệu
-- [ ] `.gitignore`: thêm `diag.log`.
-- [ ] `README.md`: bảng env mới + cách chạy.
+- [x] `.gitignore`: thêm `diag.log`.
+- [x] `README.md`: mục "Voice resilience" + bảng env + các dòng log cần theo dõi.
 
-## T7 — Kiểm chứng cuối (bắt buộc)
-- [ ] `pytest` toàn bộ xanh.
-- [ ] Probe thật với Google: model `gemini-3.8-live` + **không** compression → có `audio_bytes` trả về và transcript (script tạm ngoài repo, không commit).
-- [ ] `git diff --stat` chỉ chạm `vision-agent/` + `docs/`; commit trên branch.
-- [ ] Báo user: cách chạy agent + những dòng log cần nhìn khi test trên app.
+## T7 — Observability (phát hiện khi kiểm chứng, ngoài kế hoạch ban đầu)
+- [x] Test: `configure_lumio_logging` gắn đúng 1 handler, idempotent, level theo `LUMIO_LOG_LEVEL`, con của `lumi` hưởng handler.
+- [x] `lumio/logging_setup.py` + gọi trong `agent.py` sau `load_dotenv()`.
+- [x] Lý do: SDK chỉ cấu hình logger `vision_agents` → mọi dòng INFO của agent bị nuốt (bằng chứng: log serve không có dòng "Gemini Live ready" trước khi sửa).
+
+## T8 — Kiểm chứng cuối (bắt buộc)
+- [x] `pytest -m "not integration"` → **74 passed**, 2 integration deselected.
+- [x] Probe API thật: `gemini-3.8-live` + compression OFF → `audio_bytes=66240`, `handles=1`, `go_away=0`, socket sống qua 30s stream im lặng.
+- [x] Smoke server: `agent.py serve` → `/health` 200, `/ready` 200.
+- [x] End-to-end thật: `POST /calls/lumio-verify-172114/sessions` → 201 → log `Gemini Live ready: model=gemini-3.8-live compression=off resumption=on stall=25.0s` → `Gemini live connected to session <lumio.gemini_resilient.SessionProxy object ...>` → agent nói (transcript "Hello, my friend. Can you repeat after me?") → `DELETE .../sessions/...` 202 + tắt sạch.
+- [x] `git diff --stat`: chỉ chạm `vision-agent/` và `docs/` (không đụng app RN, không đụng `.venv`).
